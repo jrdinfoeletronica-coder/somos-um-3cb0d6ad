@@ -11,6 +11,7 @@ import Membros from "./pages/Membros";
 import Repertorio from "./pages/Repertorio";
 import Configuracoes from "./pages/Configuracoes";
 import CadastroMembro from "./pages/CadastroMembro";
+import Comunicacao from "./pages/Comunicacao";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,8 @@ const App = () => (
           <Route path="/membros" element={<Membros />} />
           <Route path="/repertorio" element={<Repertorio />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
+          <Route path="/comunicacao" element={<Comunicacao />} />
+          <Route path="/relatorios" element={<NotFound />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
