@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { cn } from "@/lib/utils";
 import { Bell, Menu } from "lucide-react";
@@ -12,10 +13,20 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, title, isAdmin = true }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Limpar dados de sessão
+    localStorage.removeItem("chat_my_name");
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("userRole");
+    // Redirecionar para o login
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      <AppSidebar isAdmin={isAdmin} />
+      <AppSidebar isAdmin={isAdmin} onLogout={handleLogout} />
       
       <main
         className={cn(
