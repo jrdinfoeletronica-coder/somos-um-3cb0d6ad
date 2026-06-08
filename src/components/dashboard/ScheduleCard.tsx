@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface ScheduleCardProps {
+  id?: string;
   date: string;
   time: string;
   event: string;
@@ -11,6 +12,8 @@ interface ScheduleCardProps {
   status?: "confirmed" | "pending" | "cancelled";
   onConfirm?: () => void;
   onDecline?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
   showActions?: boolean;
 }
 
@@ -23,6 +26,8 @@ export function ScheduleCard({
   status = "pending",
   onConfirm,
   onDecline,
+  onEdit,
+  onDelete,
   showActions = false,
 }: ScheduleCardProps) {
   const statusConfig = {
@@ -114,14 +119,35 @@ export function ScheduleCard({
       </div>
 
       {/* Actions */}
-      {showActions && status === "pending" && (
-        <div className="flex items-center gap-3 pt-2">
-          <Button variant="gold" size="sm" onClick={onConfirm} className="flex-1">
-            Confirmar
-          </Button>
-          <Button variant="outline" size="sm" onClick={onDecline} className="flex-1">
-            Recusar
-          </Button>
+      {(showActions || onEdit || onDelete) && (
+        <div className="flex items-center justify-between gap-3 pt-3 border-t border-border mt-2">
+          {showActions && status === "pending" && (
+            <div className="flex items-center gap-2 flex-1">
+              <Button variant="gold" size="sm" onClick={onConfirm} className="flex-1 h-8">
+                Confirmar
+              </Button>
+              <Button variant="outline" size="sm" onClick={onDecline} className="flex-1 h-8">
+                Recusar
+              </Button>
+            </div>
+          )}
+          <div className="flex items-center gap-2 ml-auto">
+            {onEdit && (
+              <Button variant="soft" size="sm" onClick={onEdit} className="h-8">
+                Editar
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onDelete}
+                className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                Remover
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </div>

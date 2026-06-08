@@ -3,72 +3,150 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { SongCard } from "@/components/dashboard/SongCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Music, Plus, Search, Filter, ListMusic } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Music, Plus, Search, ListMusic } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-const mockSongs = [
-  {
-    title: "Quão Grande É o Meu Deus",
-    artist: "Soraya Moraes",
-    tone: "G",
-    bpm: 68,
-    timesPlayed: 42,
-    youtubeUrl: "https://youtube.com",
-    spotifyUrl: "https://spotify.com",
-  },
-  {
-    title: "Oceanos",
-    artist: "Hillsong United",
-    tone: "D",
-    bpm: 66,
-    timesPlayed: 38,
-    youtubeUrl: "https://youtube.com",
-    spotifyUrl: "https://spotify.com",
-  },
-  {
-    title: "Bondade de Deus",
-    artist: "Isaías Saad",
-    tone: "C",
-    bpm: 72,
-    timesPlayed: 35,
-    youtubeUrl: "https://youtube.com",
-  },
-  {
-    title: "Grande É o Senhor",
-    artist: "Adhemar de Campos",
-    tone: "A",
-    bpm: 78,
-    timesPlayed: 28,
-    spotifyUrl: "https://spotify.com",
-  },
-  {
-    title: "Nada Além do Sangue",
-    artist: "Fernandinho",
-    tone: "E",
-    bpm: 65,
-    timesPlayed: 24,
-    youtubeUrl: "https://youtube.com",
-    spotifyUrl: "https://spotify.com",
-  },
-  {
-    title: "Lugar Secreto",
-    artist: "Gabriela Rocha",
-    tone: "F",
-    bpm: 70,
-    timesPlayed: 20,
-    youtubeUrl: "https://youtube.com",
-  },
-];
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export default function Repertorio() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTone, setSelectedTone] = useState<string | null>(null);
+  
+  // Estados para o Modal de Música
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingSong, setEditingSong] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    title: "",
+    artist: "",
+    key: "C",
+    bpm: "",
+    youtube_url: "",
+    spotify_url: "",
+    tags: ""
+  });
 
+  const queryClient = useQueryClient();
   const tones = ["C", "D", "E", "F", "G", "A", "B"];
 
-  const filteredSongs = mockSongs.filter((song) => {
+  const { data: songs = [], isLoading } = useQuery({
+    queryKey: ['songs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('songs').select('*');
+      if (error) throw error;
+      return (data || []).map((s: any) => ({
+        ...s,
+        tone: s.key,
+        timesPlayed: s.times_played,
+        youtubeUrl: s.youtube_url,
+        spotifyUrl: s.spotify_url
+      }));
+    }
+  });
+
+  const saveSongMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        title: formData.title.trim(),
+        artist: formData.artist.trim() || "Autor Desconhecido",
+        key: formData.key,
+        bpm: formData.bpm ? parseInt(formData.bpm) : null,
+        youtube_url: formData.youtube_url.trim() || null,
+        spotify_url: formData.spotify_url.trim() || null,
+        tags: formData.tags ? formData.tags.split(",").map(t => t.trim()).filter(Boolean) : []
+      };
+
+      if (!payload.title) {
+        throw new Error("O título é obrigatório");
+      }
+
+      if (editingSong) {
+        const { error } = await supabase
+          .from("songs")
+          .update(payload)
+          .eq("id", editingSong.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("songs")
+          .insert([payload]);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["songs"] });
+      toast.success(editingSong ? "Música atualizada com sucesso!" : "Música adicionada ao repertório!");
+      setIsDialogOpen(false);
+      resetForm();
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao salvar música: " + err.message);
+    }
+  });
+
+  const deleteSongMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("songs").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["songs"] });
+      toast.success("Música removida com sucesso!");
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao remover música: " + err.message);
+    }
+  });
+
+  const resetForm = () => {
+    setEditingSong(null);
+    setFormData({
+      title: "",
+      artist: "",
+      key: "C",
+      bpm: "",
+      youtube_url: "",
+      spotify_url: "",
+      tags: ""
+    });
+  };
+
+  const handleOpenNewSong = () => {
+    resetForm();
+    setIsDialogOpen(true);
+  };
+
+  const handleOpenEditSong = (song: any) => {
+    setEditingSong(song);
+    setFormData({
+      title: song.title,
+      artist: song.artist || "",
+      key: song.key || "C",
+      bpm: song.bpm ? song.bpm.toString() : "",
+      youtube_url: song.youtube_url || "",
+      spotify_url: song.spotify_url || "",
+      tags: song.tags ? song.tags.join(", ") : ""
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteSong = (id: string) => {
+    if (confirm("Tem certeza que deseja remover esta música do repertório?")) {
+      deleteSongMutation.mutate(id);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveSongMutation.mutate();
+  };
+
+  const filteredSongs = songs.filter((song: any) => {
     const matchesSearch =
       song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      song.artist?.toLowerCase().includes(searchQuery.toLowerCase());
+      (song.artist && song.artist.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesTone = !selectedTone || song.tone === selectedTone;
     return matchesSearch && matchesTone;
   });
@@ -112,7 +190,7 @@ export default function Repertorio() {
             </div>
           </div>
 
-          <Button variant="gold">
+          <Button variant="gold" onClick={handleOpenNewSong}>
             <Plus className="w-4 h-4 mr-2" />
             Nova Música
           </Button>
@@ -121,39 +199,46 @@ export default function Repertorio() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="card-church p-4 text-center">
-            <p className="text-2xl font-display font-bold text-foreground">{mockSongs.length}</p>
+            <p className="text-2xl font-display font-bold text-foreground">{songs.length}</p>
             <p className="text-sm text-muted-foreground">Total de Músicas</p>
           </div>
           <div className="card-church p-4 text-center">
             <p className="text-2xl font-display font-bold text-accent">
-              {mockSongs.reduce((sum, s) => sum + (s.timesPlayed || 0), 0)}
+              {songs.reduce((sum: number, s: any) => sum + (s.timesPlayed || 0), 0)}
             </p>
             <p className="text-sm text-muted-foreground">Vezes Tocadas</p>
           </div>
           <div className="card-church p-4 text-center">
             <p className="text-2xl font-display font-bold text-foreground">
-              {new Set(mockSongs.map((s) => s.artist)).size}
+              {new Set(songs.map((s: any) => s.artist).filter(Boolean)).size}
             </p>
             <p className="text-sm text-muted-foreground">Artistas</p>
           </div>
           <div className="card-church p-4 text-center">
             <p className="text-2xl font-display font-bold text-foreground">
-              {mockSongs.filter((s) => s.youtubeUrl || s.spotifyUrl).length}
+              {songs.filter((s: any) => s.youtubeUrl || s.spotifyUrl).length}
             </p>
             <p className="text-sm text-muted-foreground">Com Links</p>
           </div>
         </div>
 
         {/* Songs Grid */}
-        {filteredSongs.length > 0 ? (
+        {isLoading ? (
+          <div className="text-center py-8">Carregando músicas...</div>
+        ) : filteredSongs.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredSongs.map((song, index) => (
+            {filteredSongs.map((song: any, index: number) => (
               <div
-                key={index}
+                key={song.id || index}
                 className="animate-slide-up"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <SongCard {...song} />
+                <SongCard
+                  {...song}
+                  showActions
+                  onEdit={() => handleOpenEditSong(song)}
+                  onDelete={() => handleDeleteSong(song.id)}
+                />
               </div>
             ))}
           </div>
@@ -168,13 +253,117 @@ export default function Repertorio() {
                 ? "Tente ajustar seus filtros"
                 : "Comece adicionando músicas ao repertório"}
             </p>
-            <Button variant="gold">
+            <Button variant="gold" onClick={handleOpenNewSong}>
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Primeira Música
             </Button>
           </div>
         )}
       </div>
+
+      {/* Modal Nova / Editar Música */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <form onSubmit={handleSubmit}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Music className="w-5 h-5 text-accent" />
+                {editingSong ? "Editar Música" : "Adicionar Nova Música"}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="song-title">Título *</Label>
+                  <Input
+                    id="song-title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Ex: A Casa é Sua"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="song-artist">Artista / Ministério *</Label>
+                  <Input
+                    id="song-artist"
+                    value={formData.artist}
+                    onChange={(e) => setFormData({ ...formData, artist: e.target.value })}
+                    placeholder="Ex: Casa Worship"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="song-key">Tom / Tom Original</Label>
+                  <select
+                    id="song-key"
+                    value={formData.key}
+                    onChange={(e) => setFormData({ ...formData, key: e.target.value })}
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    {tones.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="song-bpm">BPM</Label>
+                  <Input
+                    id="song-bpm"
+                    type="number"
+                    value={formData.bpm}
+                    onChange={(e) => setFormData({ ...formData, bpm: e.target.value })}
+                    placeholder="Ex: 72"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="song-yt">Link do YouTube</Label>
+                <Input
+                  id="song-yt"
+                  value={formData.youtube_url}
+                  onChange={(e) => setFormData({ ...formData, youtube_url: e.target.value })}
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="song-spot">Link do Spotify</Label>
+                <Input
+                  id="song-spot"
+                  value={formData.spotify_url}
+                  onChange={(e) => setFormData({ ...formData, spotify_url: e.target.value })}
+                  placeholder="https://open.spotify.com/track/..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="song-tags">Tags (separadas por vírgula)</Label>
+                <Input
+                  id="song-tags"
+                  value={formData.tags}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                  placeholder="Adoração, Celebração, Rápida"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" variant="gold" disabled={saveSongMutation.isPending}>
+                {saveSongMutation.isPending ? "Salvando..." : "Salvar Música"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

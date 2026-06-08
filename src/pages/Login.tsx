@@ -150,12 +150,22 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Não tem uma conta?{" "}
-            <Button variant="link" className="text-accent p-0 h-auto">
-              Fale com o administrador
-            </Button>
-          </p>
+          <div className="space-y-2 text-center text-sm">
+            <p className="text-muted-foreground">
+              Não tem uma conta?{" "}
+              <Button
+                variant="link"
+                className="text-accent p-0 h-auto font-semibold"
+                onClick={() => navigate("/cadastro")}
+                type="button"
+              >
+                Entrar com código de convite
+              </Button>
+            </p>
+            <p className="text-muted-foreground text-xs">
+              Ou fale com o líder do ministério para adicionar você manualmente.
+            </p>
+          </div>
         </div>
       </div>
     </div>

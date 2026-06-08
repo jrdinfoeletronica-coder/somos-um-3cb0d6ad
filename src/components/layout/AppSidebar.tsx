@@ -26,7 +26,6 @@ const adminNavItems = [
   { icon: Home, label: "Dashboard", path: "/dashboard" },
   { icon: Calendar, label: "Escalas", path: "/escalas" },
   { icon: Users, label: "Membros", path: "/membros" },
-  { icon: Mic2, label: "Funções", path: "/funcoes" },
   { icon: Music, label: "Repertório", path: "/repertorio" },
   { icon: Bell, label: "Comunicação", path: "/comunicacao" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },

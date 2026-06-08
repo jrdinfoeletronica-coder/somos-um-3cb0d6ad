@@ -4,100 +4,72 @@ import { ScheduleCard } from "@/components/dashboard/ScheduleCard";
 import { SongCard } from "@/components/dashboard/SongCard";
 import { Calendar, Users, Music, TrendingUp, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
-const mockStats = [
-  {
-    title: "Escalas Este Mês",
-    value: "12",
-    subtitle: "4 próximos eventos",
-    icon: Calendar,
-    variant: "gold" as const,
-  },
-  {
-    title: "Membros Ativos",
-    value: "24",
-    subtitle: "2 novos este mês",
-    icon: Users,
-    variant: "navy" as const,
-  },
-  {
-    title: "Músicas no Repertório",
-    value: "156",
-    subtitle: "8 adicionadas recentemente",
-    icon: Music,
-    variant: "default" as const,
-  },
-  {
-    title: "Taxa de Confirmação",
-    value: "94%",
-    trend: { value: 5, isPositive: true },
-    icon: TrendingUp,
-    variant: "default" as const,
-  },
-];
-
-const mockSchedules = [
-  {
-    date: "29 Dez, Domingo",
-    time: "09:00",
-    event: "Culto da Manhã",
-    location: "Templo Principal",
-    members: [
-      { name: "Maria Silva", role: "Vocal" },
-      { name: "João Santos", role: "Guitarra" },
-      { name: "Ana Costa", role: "Teclado" },
-      { name: "Pedro Lima", role: "Bateria" },
-    ],
-    status: "confirmed" as const,
-  },
-  {
-    date: "31 Dez, Terça",
-    time: "21:00",
-    event: "Virada de Ano",
-    location: "Templo Principal",
-    members: [
-      { name: "Carlos Oliveira", role: "Vocal" },
-      { name: "Fernanda Reis", role: "Backing Vocal" },
-      { name: "Lucas Almeida", role: "Violão" },
-      { name: "Beatriz Souza", role: "Baixo" },
-      { name: "Ricardo Nunes", role: "Bateria" },
-      { name: "Juliana Martins", role: "Teclado" },
-    ],
-    status: "pending" as const,
-  },
-];
-
-const mockSongs = [
-  {
-    title: "Quão Grande É o Meu Deus",
-    artist: "Soraya Moraes",
-    tone: "G",
-    bpm: 68,
-    timesPlayed: 42,
-  },
-  {
-    title: "Oceanos",
-    artist: "Hillsong",
-    tone: "D",
-    bpm: 66,
-    timesPlayed: 38,
-  },
-  {
-    title: "Bondade de Deus",
-    artist: "Isaías Saad",
-    tone: "C",
-    bpm: 72,
-    timesPlayed: 35,
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
+  const { data: members = [] } = useQuery({
+    queryKey: ['members'],
+    queryFn: async () => { const { data } = await supabase.from('members').select('*'); return data || []; }
+  });
+
+  const { data: songs = [] } = useQuery({
+    queryKey: ['songs'],
+    queryFn: async () => { const { data } = await supabase.from('songs').select('*'); return (data || []).map(s => ({...s, tone: s.key, timesPlayed: s.times_played})); }
+  });
+
+  const { data: schedules = [] } = useQuery({
+    queryKey: ['schedules'],
+    queryFn: async () => {
+      const { data } = await supabase.from('schedules').select(`*, schedule_members (member_name, role)`);
+      return (data || []).map((s: any) => ({
+        ...s,
+        members: s.schedule_members?.map((m: any) => ({ name: m.member_name, role: m.role })) || []
+      }));
+    }
+  });
+
+  const stats = [
+    {
+      title: "Escalas Este Mês",
+      value: schedules.length.toString(),
+      subtitle: `${schedules.filter((s:any) => s.status === 'pending').length} próximos eventos`,
+      icon: Calendar,
+      variant: "gold" as const,
+    },
+    {
+      title: "Membros Ativos",
+      value: members.length.toString(),
+      subtitle: `${members.filter((m:any) => m.status === 'active').length} ativos`,
+      icon: Users,
+      variant: "navy" as const,
+    },
+    {
+      title: "Músicas no Repertório",
+      value: songs.length.toString(),
+      subtitle: `${songs.filter((s:any) => s.timesPlayed > 0).length} já tocadas`,
+      icon: Music,
+      variant: "default" as const,
+    },
+    {
+      title: "Taxa de Confirmação",
+      value: "100%",
+      trend: { value: 5, isPositive: true },
+      icon: TrendingUp,
+      variant: "default" as const,
+    },
+  ];
+
   return (
     <DashboardLayout title="Dashboard">
       <div className="space-y-8 animate-fade-in">
         {/* Stats Grid */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {mockStats.map((stat, index) => (
+          {stats.map((stat, index) => (
             <div
               key={stat.title}
               className="animate-slide-up"
@@ -117,12 +89,12 @@ export default function Dashboard() {
                 <Clock className="w-6 h-6 text-accent" />
                 Próximas Escalas
               </h2>
-              <Button variant="soft" size="sm">
+              <Button variant="soft" size="sm" onClick={() => navigate("/escalas")}>
                 Ver Todas
               </Button>
             </div>
             <div className="space-y-4">
-              {mockSchedules.map((schedule, index) => (
+              {schedules.slice(0, 2).map((schedule: any, index: number) => (
                 <div
                   key={index}
                   className="animate-slide-up"
@@ -141,12 +113,12 @@ export default function Dashboard() {
                 <Music className="w-6 h-6 text-accent" />
                 Músicas Recentes
               </h2>
-              <Button variant="soft" size="sm">
+              <Button variant="soft" size="sm" onClick={() => navigate("/repertorio")}>
                 Ver Todas
               </Button>
             </div>
             <div className="space-y-3">
-              {mockSongs.map((song, index) => (
+              {songs.slice(0, 3).map((song: any, index: number) => (
                 <div
                   key={index}
                   className="animate-slide-up"
@@ -165,15 +137,15 @@ export default function Dashboard() {
             Ações Rápidas
           </h2>
           <div className="flex flex-wrap gap-3">
-            <Button variant="gold">
+            <Button variant="gold" onClick={() => navigate("/escalas")}>
               <Calendar className="w-4 h-4 mr-2" />
               Nova Escala
             </Button>
-            <Button variant="navy">
+            <Button variant="navy" onClick={() => navigate("/membros")}>
               <Users className="w-4 h-4 mr-2" />
               Adicionar Membro
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => navigate("/repertorio")}>
               <Music className="w-4 h-4 mr-2" />
               Nova Música
             </Button>
