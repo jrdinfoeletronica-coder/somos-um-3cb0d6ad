@@ -4,7 +4,19 @@ import { ScheduleCard } from "@/components/dashboard/ScheduleCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, Plus, ChevronLeft, ChevronRight, Trash2, Clock, UserPlus } from "lucide-react";
+import { 
+  Calendar, 
+  Plus, 
+  ChevronLeft, 
+  ChevronRight, 
+  Trash2, 
+  UserPlus, 
+  Music,
+  Info,
+  Clock,
+  MapPin,
+  CheckCircle
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +30,7 @@ export default function Escalas() {
 
   // Estados para o Modal de Escala
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"detalhes" | "equipe" | "repertorio">("detalhes");
   const [editingSchedule, setEditingSchedule] = useState<any>(null);
   const [formData, setFormData] = useState({
     date: "",
@@ -27,10 +40,14 @@ export default function Escalas() {
     status: "pending" as "pending" | "confirmed" | "cancelled"
   });
 
-  // Lista de integrantes na escala (no modal)
+  // Equipe
   const [assignedMembers, setAssignedMembers] = useState<{ name: string; role: string }[]>([]);
   const [selectedMemberName, setSelectedMemberName] = useState("");
   const [selectedMemberRole, setSelectedMemberRole] = useState("");
+
+  // Repertório
+  const [assignedSongs, setAssignedSongs] = useState<{ id: string; title: string; artist: string }[]>([]);
+  const [selectedSongId, setSelectedSongId] = useState("");
 
   // Buscar escalas
   const { data: schedules = [], isLoading } = useQuery({
@@ -41,6 +58,13 @@ export default function Escalas() {
         schedule_members (
           member_name,
           role
+        ),
+        schedule_songs (
+          song_id,
+          songs (
+            title,
+            artist
+          )
         )
       `).order('date', { ascending: true });
       if (error) throw error;
@@ -49,16 +73,31 @@ export default function Escalas() {
         members: s.schedule_members?.map((m: any) => ({
           name: m.member_name,
           role: m.role
+        })) || [],
+        songs: s.schedule_songs?.map((songRow: any) => ({
+          id: songRow.song_id,
+          title: songRow.songs?.title,
+          artist: songRow.songs?.artist
         })) || []
       }));
     }
   });
 
-  // Buscar membros cadastrados para selecionar
+  // Buscar membros
   const { data: members = [] } = useQuery({
     queryKey: ['members'],
     queryFn: async () => {
       const { data, error } = await supabase.from('members').select('*');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Buscar músicas
+  const { data: songs = [] } = useQuery({
+    queryKey: ['songs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('songs').select('*');
       if (error) throw error;
       return data || [];
     }
@@ -88,12 +127,9 @@ export default function Escalas() {
           .eq("id", editingSchedule.id);
         if (error) throw error;
 
-        // 2. Deletar membros anteriores
-        const { error: deleteMembersError } = await supabase
-          .from("schedule_members")
-          .delete()
-          .eq("schedule_id", editingSchedule.id);
-        if (deleteMembersError) throw deleteMembersError;
+        // 2. Limpar antigos membros e músicas
+        await supabase.from("schedule_members").delete().eq("schedule_id", editingSchedule.id);
+        await supabase.from("schedule_songs").delete().eq("schedule_id", editingSchedule.id);
       } else {
         // 1. Inserir nova escala
         const { data, error } = await supabase
@@ -105,17 +141,25 @@ export default function Escalas() {
         scheduleId = data.id;
       }
 
-      // 3. Inserir novos membros da escala
+      // 3. Inserir novos membros
       if (assignedMembers.length > 0) {
         const membersPayload = assignedMembers.map((m) => ({
           schedule_id: scheduleId,
           member_name: m.name,
           role: m.role
         }));
-        const { error: insertMembersError } = await supabase
-          .from("schedule_members")
-          .insert(membersPayload);
+        const { error: insertMembersError } = await supabase.from("schedule_members").insert(membersPayload);
         if (insertMembersError) throw insertMembersError;
+      }
+
+      // 4. Inserir novas músicas
+      if (assignedSongs.length > 0) {
+        const songsPayload = assignedSongs.map((s) => ({
+          schedule_id: scheduleId,
+          song_id: s.id
+        }));
+        const { error: insertSongsError } = await supabase.from("schedule_songs").insert(songsPayload);
+        if (insertSongsError) throw insertSongsError;
       }
     },
     onSuccess: () => {
@@ -145,10 +189,7 @@ export default function Escalas() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "confirmed" | "cancelled" | "pending" }) => {
-      const { error } = await supabase
-        .from("schedules")
-        .update({ status })
-        .eq("id", id);
+      const { error } = await supabase.from("schedules").update({ status }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -162,9 +203,12 @@ export default function Escalas() {
 
   const resetForm = () => {
     setEditingSchedule(null);
+    setActiveTab("detalhes");
     setAssignedMembers([]);
     setSelectedMemberName("");
     setSelectedMemberRole("");
+    setAssignedSongs([]);
+    setSelectedSongId("");
     setFormData({
       date: "",
       time: "",
@@ -180,8 +224,10 @@ export default function Escalas() {
   };
 
   const handleOpenEditSchedule = (schedule: any) => {
+    resetForm();
     setEditingSchedule(schedule);
     setAssignedMembers(schedule.members || []);
+    setAssignedSongs(schedule.songs || []);
     setFormData({
       date: schedule.date,
       time: schedule.time,
@@ -198,47 +244,56 @@ export default function Escalas() {
     }
   };
 
-  const handleConfirmStatus = (id: string) => {
-    updateStatusMutation.mutate({ id, status: "confirmed" });
-  };
-
-  const handleDeclineStatus = (id: string) => {
-    updateStatusMutation.mutate({ id, status: "cancelled" });
-  };
-
+  // Funções de Equipe
   const handleAddMemberToSchedule = () => {
-    if (!selectedMemberName) {
-      toast.error("Selecione um integrante.");
+    if (!selectedMemberName || !selectedMemberRole) {
+      toast.error("Selecione o integrante e a função.");
       return;
     }
-    if (!selectedMemberRole) {
-      toast.error("Selecione ou digite a função.");
-      return;
-    }
-
     const alreadyExists = assignedMembers.some(
       (m) => m.name === selectedMemberName && m.role === selectedMemberRole
     );
     if (alreadyExists) {
-      toast.error("Este integrante já está nesta função na escala.");
+      toast.error("Integrante já está nesta função.");
       return;
     }
-
     setAssignedMembers([...assignedMembers, { name: selectedMemberName, role: selectedMemberRole }]);
     setSelectedMemberRole("");
   };
 
-  const handleRemoveMemberFromSchedule = (index: number) => {
+  const handleRemoveMember = (index: number) => {
     setAssignedMembers(assignedMembers.filter((_, i) => i !== index));
   };
 
-  const selectedMemberObj = members.find((m: any) => m.name === selectedMemberName);
-  const selectedMemberRoles = selectedMemberObj?.roles || [];
+  // Funções de Repertório
+  const handleAddSongToSchedule = () => {
+    if (!selectedSongId) {
+      toast.error("Selecione uma música.");
+      return;
+    }
+    const song = songs.find((s: any) => s.id === selectedSongId);
+    if (!song) return;
+
+    if (assignedSongs.some((s) => s.id === song.id)) {
+      toast.error("Esta música já está no repertório.");
+      return;
+    }
+
+    setAssignedSongs([...assignedSongs, { id: song.id, title: song.title, artist: song.artist }]);
+    setSelectedSongId("");
+  };
+
+  const handleRemoveSong = (id: string) => {
+    setAssignedSongs(assignedSongs.filter((s) => s.id !== id));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     saveScheduleMutation.mutate();
   };
+
+  const selectedMemberObj = members.find((m: any) => m.name === selectedMemberName);
+  const selectedMemberRoles = selectedMemberObj?.roles || [];
 
   return (
     <DashboardLayout title="Escalas">
@@ -262,18 +317,6 @@ export default function Escalas() {
                 Calendário
               </Button>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon">
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="font-medium text-foreground min-w-[140px] text-center">
-                {currentMonth}
-              </span>
-              <Button variant="ghost" size="icon">
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
           </div>
 
           <Button variant="gold" onClick={handleOpenNewSchedule}>
@@ -281,46 +324,6 @@ export default function Escalas() {
             Nova Escala
           </Button>
         </div>
-
-        {/* Calendar View Placeholder */}
-        {view === "calendar" && (
-          <div className="card-church p-8">
-            <div className="grid grid-cols-7 gap-2 text-center">
-              {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
-                <div key={day} className="py-2 text-sm font-medium text-muted-foreground">
-                  {day}
-                </div>
-              ))}
-              {Array.from({ length: 35 }, (_, i) => {
-                const day = i - 6 + 1;
-                const isValid = day > 0 && day <= 31;
-                const hasEvent = [1, 8, 15, 22, 25, 29, 31].includes(day);
-                
-                return (
-                  <div
-                    key={i}
-                    className={`aspect-square p-2 rounded-lg transition-colors ${
-                      isValid
-                        ? hasEvent
-                          ? "bg-accent/10 border-2 border-accent cursor-pointer hover:bg-accent/20"
-                          : "hover:bg-secondary cursor-pointer"
-                        : "opacity-30"
-                    }`}
-                  >
-                    {isValid && (
-                      <span className={`text-sm ${hasEvent ? "font-semibold text-accent" : ""}`}>
-                        {day}
-                      </span>
-                    )}
-                    {hasEvent && isValid && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-accent mx-auto mt-1" />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* List View */}
         {isLoading ? (
@@ -336,8 +339,8 @@ export default function Escalas() {
                 <ScheduleCard
                   {...schedule}
                   showActions
-                  onConfirm={() => handleConfirmStatus(schedule.id)}
-                  onDecline={() => handleDeclineStatus(schedule.id)}
+                  onConfirm={() => updateStatusMutation.mutate({ id: schedule.id, status: "confirmed" })}
+                  onDecline={() => updateStatusMutation.mutate({ id: schedule.id, status: "cancelled" })}
                   onEdit={() => handleOpenEditSchedule(schedule)}
                   onDelete={() => handleDeleteSchedule(schedule.id)}
                 />
@@ -359,181 +362,300 @@ export default function Escalas() {
             </Button>
           </div>
         )}
-      </div>
 
-      {/* Modal Nova / Editar Escala */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+        {/* Modal de Escala Avançado */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col p-0">
+            <div className="px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm">
+              <DialogTitle className="flex items-center gap-2 text-xl font-display">
                 <Calendar className="w-5 h-5 text-accent" />
                 {editingSchedule ? "Editar Escala" : "Criar Nova Escala"}
               </DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="schedule-event">Nome do Evento / Culto *</Label>
-                <Input
-                  id="schedule-event"
-                  value={formData.event}
-                  onChange={(e) => setFormData({ ...formData, event: e.target.value })}
-                  placeholder="Ex: Culto de Celebração de Domingo"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="schedule-date">Data *</Label>
-                  <Input
-                    id="schedule-date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="schedule-time">Hora *</Label>
-                  <Input
-                    id="schedule-time"
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="schedule-loc">Local</Label>
-                <Input
-                  id="schedule-loc"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="Ex: Templo Principal"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="schedule-status">Status da Escala</Label>
-                <select
-                  id="schedule-status"
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                >
-                  <option value="pending">Pendente (Aguardando confirmação)</option>
-                  <option value="confirmed">Confirmada</option>
-                  <option value="cancelled">Recusada / Cancelada</option>
-                </select>
-              </div>
-
-              <div className="border-t border-border pt-4 space-y-4">
-                <h4 className="text-sm font-semibold text-foreground flex items-center gap-1">
-                  <UserPlus className="w-4 h-4 text-accent" />
-                  Designar Integrantes
-                </h4>
-
-                {/* Seletor de Integrante e Papel */}
-                <div className="flex flex-col sm:flex-row items-end gap-2 p-3 bg-secondary/15 rounded-lg border border-border">
-                  <div className="flex-1 space-y-1.5 w-full">
-                    <Label className="text-xs">Integrante</Label>
-                    <select
-                      value={selectedMemberName}
-                      onChange={(e) => {
-                        setSelectedMemberName(e.target.value);
-                        setSelectedMemberRole("");
-                      }}
-                      className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
-                    >
-                      <option value="">Selecione...</option>
-                      {members.map((m: any) => (
-                        <option key={m.id} value={m.name}>{m.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex-1 space-y-1.5 w-full">
-                    <Label className="text-xs">Função na Escala</Label>
-                    {selectedMemberRoles.length > 0 ? (
-                      <select
-                        value={selectedMemberRole}
-                        onChange={(e) => setSelectedMemberRole(e.target.value)}
-                        className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
-                      >
-                        <option value="">Selecione...</option>
-                        {selectedMemberRoles.map((r: string) => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <Input
-                        value={selectedMemberRole}
-                        onChange={(e) => setSelectedMemberRole(e.target.value)}
-                        placeholder="Digite a função..."
-                        className="h-9"
-                      />
-                    )}
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="soft"
-                    size="sm"
-                    onClick={handleAddMemberToSchedule}
-                    className="h-9 w-full sm:w-auto"
-                  >
-                    Adicionar
-                  </Button>
-                </div>
-
-                {/* Lista de Integrantes Adicionados */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Membros Designados ({assignedMembers.length})</Label>
-                  {assignedMembers.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[150px] overflow-y-auto p-1">
-                      {assignedMembers.map((m, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between px-3 py-1.5 bg-secondary/40 border border-border rounded-lg"
-                        >
-                          <div className="text-xs">
-                            <p className="font-semibold text-foreground">{m.name}</p>
-                            <p className="text-muted-foreground">{m.role}</p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                            onClick={() => handleRemoveMemberFromSchedule(index)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground italic">Nenhum integrante designado para esta escala ainda.</p>
-                  )}
-                </div>
-              </div>
             </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" variant="gold" disabled={saveScheduleMutation.isPending}>
-                {saveScheduleMutation.isPending ? "Salvando..." : "Salvar Escala"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+            {/* Abas Superiores */}
+            <div className="flex border-b border-border bg-card/30 px-6 pt-2">
+              <button
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "detalhes" 
+                    ? "border-accent text-accent" 
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => setActiveTab("detalhes")}
+              >
+                <Info className="w-4 h-4" /> Detalhes
+              </button>
+              <button
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "equipe" 
+                    ? "border-accent text-accent" 
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => setActiveTab("equipe")}
+              >
+                <UserPlus className="w-4 h-4" /> Equipe
+                {assignedMembers.length > 0 && (
+                  <span className="ml-1 bg-accent/20 text-accent text-[10px] px-1.5 rounded-full">
+                    {assignedMembers.length}
+                  </span>
+                )}
+              </button>
+              <button
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "repertorio" 
+                    ? "border-accent text-accent" 
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => setActiveTab("repertorio")}
+              >
+                <Music className="w-4 h-4" /> Repertório
+                {assignedSongs.length > 0 && (
+                  <span className="ml-1 bg-accent/20 text-accent text-[10px] px-1.5 rounded-full">
+                    {assignedSongs.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              {/* ABA 1: Detalhes */}
+              {activeTab === "detalhes" && (
+                <div className="space-y-5 animate-fade-in">
+                  <div className="space-y-2">
+                    <Label>Nome do Evento / Culto *</Label>
+                    <Input
+                      value={formData.event}
+                      onChange={(e) => setFormData({ ...formData, event: e.target.value })}
+                      placeholder="Ex: Culto de Celebração de Domingo"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Data *</Label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          type="date"
+                          value={formData.date}
+                          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Hora *</Label>
+                      <div className="relative">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          type="time"
+                          value={formData.time}
+                          onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                          className="pl-9 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Localização</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="Ex: Templo Principal"
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Status Inicial</Label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    >
+                      <option value="pending">Pendente (Aguardando confirmação)</option>
+                      <option value="confirmed">Confirmada</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* ABA 2: Equipe */}
+              {activeTab === "equipe" && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="p-4 bg-secondary/20 rounded-xl border border-border space-y-3">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <UserPlus className="w-4 h-4 text-accent" />
+                      Adicionar Integrante
+                    </h4>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="flex-1 space-y-1.5">
+                        <select
+                          value={selectedMemberName}
+                          onChange={(e) => {
+                            setSelectedMemberName(e.target.value);
+                            setSelectedMemberRole("");
+                          }}
+                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                        >
+                          <option value="">1. Selecione quem...</option>
+                          {members.map((m: any) => (
+                            <option key={m.id} value={m.name}>{m.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        {selectedMemberRoles.length > 0 ? (
+                          <select
+                            value={selectedMemberRole}
+                            onChange={(e) => setSelectedMemberRole(e.target.value)}
+                            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                          >
+                            <option value="">2. Selecione a função...</option>
+                            {selectedMemberRoles.map((r: string) => (
+                              <option key={r} value={r}>{r}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <Input
+                            value={selectedMemberRole}
+                            onChange={(e) => setSelectedMemberRole(e.target.value)}
+                            placeholder="2. Digite a função..."
+                            className="h-10"
+                          />
+                        )}
+                      </div>
+                      <Button onClick={handleAddMemberToSchedule} variant="soft" className="h-10 shrink-0">
+                        Adicionar
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-xs text-muted-foreground">Membros Escaldados ({assignedMembers.length})</Label>
+                    {assignedMembers.length === 0 ? (
+                      <div className="text-center p-6 border border-dashed border-border rounded-xl opacity-60">
+                        <UserPlus className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm">Ninguém escalado ainda.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {assignedMembers.map((m, index) => (
+                          <div key={index} className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl shadow-sm group">
+                            <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                              <span className="text-sm font-bold text-accent">{m.name.charAt(0)}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm truncate">{m.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{m.role}</p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleRemoveMember(index)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ABA 3: Repertório */}
+              {activeTab === "repertorio" && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="p-4 bg-secondary/20 rounded-xl border border-border space-y-3">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <Music className="w-4 h-4 text-accent" />
+                      Adicionar Música
+                    </h4>
+                    <div className="flex gap-3">
+                      <select
+                        value={selectedSongId}
+                        onChange={(e) => setSelectedSongId(e.target.value)}
+                        className="flex-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
+                      >
+                        <option value="">Selecione a música no acervo...</option>
+                        {songs.map((s: any) => (
+                          <option key={s.id} value={s.id}>{s.title} - {s.artist}</option>
+                        ))}
+                      </select>
+                      <Button onClick={handleAddSongToSchedule} variant="soft" className="h-10 shrink-0">
+                        Incluir
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-xs text-muted-foreground">Repertório Selecionado ({assignedSongs.length})</Label>
+                    {assignedSongs.length === 0 ? (
+                      <div className="text-center p-6 border border-dashed border-border rounded-xl opacity-60">
+                        <Music className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm">Nenhuma música escolhida.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {assignedSongs.map((s, idx) => (
+                          <div key={s.id} className="flex items-center justify-between p-3 bg-card border border-border rounded-xl shadow-sm">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold text-muted-foreground w-4">{idx + 1}.</span>
+                              <div>
+                                <p className="font-semibold text-sm">{s.title}</p>
+                                <p className="text-xs text-muted-foreground">{s.artist}</p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive"
+                              onClick={() => handleRemoveSong(s.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-border bg-card/50 flex justify-between items-center">
+              <div>
+                {activeTab !== "detalhes" && (
+                  <Button variant="ghost" onClick={() => setActiveTab(activeTab === "repertorio" ? "equipe" : "detalhes")}>
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+                
+                {activeTab !== "repertorio" ? (
+                  <Button variant="gold" onClick={() => setActiveTab(activeTab === "detalhes" ? "equipe" : "repertorio")}>
+                    Próximo <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                ) : (
+                  <Button variant="gold" onClick={handleSubmit} disabled={saveScheduleMutation.isPending}>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    {saveScheduleMutation.isPending ? "Salvando..." : "Finalizar Escala"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </DashboardLayout>
   );
 }
