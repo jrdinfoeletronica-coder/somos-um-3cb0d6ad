@@ -4,7 +4,7 @@ import { SongCard } from "@/components/dashboard/SongCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Music, Plus, Search, ListMusic } from "lucide-react";
+import { Music, Plus, Search, ListMusic, Globe, RefreshCw, Lightbulb } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -13,10 +13,12 @@ import { toast } from "sonner";
 
 export default function Repertorio() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [themeSearchQuery, setThemeSearchQuery] = useState("");
   const [selectedTone, setSelectedTone] = useState<string | null>(null);
   
   // Estados para o Modal de Música
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSearchingWeb, setIsSearchingWeb] = useState(false);
   const [editingSong, setEditingSong] = useState<any>(null);
   const [formData, setFormData] = useState({
     title: "",
@@ -25,11 +27,13 @@ export default function Repertorio() {
     bpm: "",
     youtube_url: "",
     spotify_url: "",
+    cifraclub_url: "",
+    audio_url: "",
     tags: ""
   });
 
   const queryClient = useQueryClient();
-  const tones = ["C", "D", "E", "F", "G", "A", "B"];
+  const tones = ["C", "D", "E", "F", "G", "A", "B", "C#", "F#", "G#"];
 
   const { data: songs = [], isLoading } = useQuery({
     queryKey: ['songs'],
@@ -41,7 +45,9 @@ export default function Repertorio() {
         tone: s.key,
         timesPlayed: s.times_played,
         youtubeUrl: s.youtube_url,
-        spotifyUrl: s.spotify_url
+        spotifyUrl: s.spotify_url,
+        cifraclubUrl: s.cifraclub_url,
+        audioUrl: s.audio_url
       }));
     }
   });
@@ -55,6 +61,8 @@ export default function Repertorio() {
         bpm: formData.bpm ? parseInt(formData.bpm) : null,
         youtube_url: formData.youtube_url.trim() || null,
         spotify_url: formData.spotify_url.trim() || null,
+        cifraclub_url: formData.cifraclub_url.trim() || null,
+        audio_url: formData.audio_url.trim() || null,
         tags: formData.tags ? formData.tags.split(",").map(t => t.trim()).filter(Boolean) : []
       };
 
@@ -109,6 +117,8 @@ export default function Repertorio() {
       bpm: "",
       youtube_url: "",
       spotify_url: "",
+      cifraclub_url: "",
+      audio_url: "",
       tags: ""
     });
   };
@@ -127,6 +137,8 @@ export default function Repertorio() {
       bpm: song.bpm ? song.bpm.toString() : "",
       youtube_url: song.youtube_url || "",
       spotify_url: song.spotify_url || "",
+      cifraclub_url: song.cifraclub_url || "",
+      audio_url: song.audio_url || "",
       tags: song.tags ? song.tags.join(", ") : ""
     });
     setIsDialogOpen(true);
@@ -143,6 +155,58 @@ export default function Repertorio() {
     saveSongMutation.mutate();
   };
 
+  const handleSearchTheme = () => {
+    if (!themeSearchQuery.trim()) {
+      toast.error("Digite um tema primeiro!");
+      return;
+    }
+    const query = encodeURIComponent(`melhores louvores sobre ${themeSearchQuery}`);
+    window.open(`https://www.google.com/search?q=${query}`, "_blank");
+  };
+
+  const handleSmartSearch = async () => {
+    if (!formData.title || !formData.artist) {
+      toast.error("Preencha o Título e o Artista primeiro para buscar!");
+      return;
+    }
+    setIsSearchingWeb(true);
+    
+    try {
+      // 1. Gerar Cifra Club
+      const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+      const artistSlug = slugify(formData.artist);
+      const titleSlug = slugify(formData.title);
+      const generatedCifraUrl = `https://www.cifraclub.com.br/${artistSlug}/${titleSlug}/`;
+      
+      // 2. Gerar YouTube Search
+      const ytQuery = encodeURIComponent(`${formData.artist} ${formData.title}`);
+      const generatedYoutubeUrl = `https://www.youtube.com/results?search_query=${ytQuery}`;
+      
+      // 3. Buscar Áudio no iTunes
+      let newAudioUrl = "";
+      const itunesQuery = encodeURIComponent(`${formData.title} ${formData.artist}`);
+      const res = await fetch(`https://itunes.apple.com/search?term=${itunesQuery}&entity=song&limit=1`);
+      const data = await res.json();
+      if (data.results && data.results.length > 0) {
+        newAudioUrl = data.results[0].previewUrl;
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        cifraclub_url: generatedCifraUrl,
+        youtube_url: generatedYoutubeUrl,
+        audio_url: newAudioUrl || prev.audio_url
+      }));
+      
+      toast.success("Dados da internet preenchidos com sucesso!");
+    } catch (e) {
+      console.error("Erro ao buscar na internet", e);
+      toast.error("Erro ao buscar informações.");
+    } finally {
+      setIsSearchingWeb(false);
+    }
+  };
+
   const filteredSongs = songs.filter((song: any) => {
     const matchesSearch =
       song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -154,6 +218,32 @@ export default function Repertorio() {
   return (
     <DashboardLayout title="Repertório">
       <div className="space-y-6 animate-fade-in">
+        
+        {/* Tema / Inspiração */}
+        <div className="bg-gradient-to-r from-accent/20 to-background p-4 rounded-xl border border-accent/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
+              <Lightbulb className="w-5 h-5 text-accent" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Falta inspiração?</h3>
+              <p className="text-sm text-muted-foreground">Busque sugestões de louvores por tema no Google</p>
+            </div>
+          </div>
+          <div className="flex w-full sm:w-auto gap-2">
+            <Input 
+              placeholder="Ex: Santa Ceia, Gratidão..." 
+              value={themeSearchQuery}
+              onChange={(e) => setThemeSearchQuery(e.target.value)}
+              className="bg-background"
+              onKeyDown={(e) => e.key === 'Enter' && handleSearchTheme()}
+            />
+            <Button variant="outline" onClick={handleSearchTheme} className="shrink-0 border-accent/30 hover:bg-accent/10">
+              <Globe className="w-4 h-4 mr-2" /> Buscar Tema
+            </Button>
+          </div>
+        </div>
+
         {/* Header Actions */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
@@ -216,7 +306,7 @@ export default function Repertorio() {
           </div>
           <div className="card-church p-4 text-center">
             <p className="text-2xl font-display font-bold text-foreground">
-              {songs.filter((s: any) => s.youtubeUrl || s.spotifyUrl).length}
+              {songs.filter((s: any) => s.youtubeUrl || s.spotifyUrl || s.cifraclubUrl).length}
             </p>
             <p className="text-sm text-muted-foreground">Com Links</p>
           </div>
@@ -263,7 +353,7 @@ export default function Repertorio() {
 
       {/* Modal Nova / Editar Música */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -272,7 +362,25 @@ export default function Repertorio() {
               </DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-4 py-4">
+            <div className="space-y-5 py-4">
+              
+              <div className="bg-secondary/30 p-4 rounded-xl border border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold">Busca Inteligente</h4>
+                  <p className="text-xs text-muted-foreground">Preencha Título e Artista, e nós buscamos Cifra, Áudio e Vídeo para você.</p>
+                </div>
+                <Button 
+                  type="button" 
+                  variant="gold" 
+                  size="sm" 
+                  onClick={handleSmartSearch}
+                  disabled={isSearchingWeb || !formData.title || !formData.artist}
+                >
+                  {isSearchingWeb ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Globe className="w-4 h-4 mr-2" />}
+                  Buscar da Internet
+                </Button>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="song-title">Título *</Label>
@@ -298,7 +406,7 @@ export default function Repertorio() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="song-key">Tom / Tom Original</Label>
+                  <Label htmlFor="song-key">Tom Original</Label>
                   <select
                     id="song-key"
                     value={formData.key}
@@ -311,7 +419,7 @@ export default function Repertorio() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="song-bpm">BPM</Label>
+                  <Label htmlFor="song-bpm">BPM (Opcional)</Label>
                   <Input
                     id="song-bpm"
                     type="number"
@@ -323,22 +431,32 @@ export default function Repertorio() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="song-yt">Link do YouTube</Label>
+                <Label htmlFor="song-cifra">Link do Cifra Club</Label>
                 <Input
-                  id="song-yt"
-                  value={formData.youtube_url}
-                  onChange={(e) => setFormData({ ...formData, youtube_url: e.target.value })}
-                  placeholder="https://youtube.com/watch?v=..."
+                  id="song-cifra"
+                  value={formData.cifraclub_url}
+                  onChange={(e) => setFormData({ ...formData, cifraclub_url: e.target.value })}
+                  placeholder="Gerado automaticamente pela busca inteligente"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="song-spot">Link do Spotify</Label>
+                <Label htmlFor="song-audio">Link de Áudio (MP3)</Label>
                 <Input
-                  id="song-spot"
-                  value={formData.spotify_url}
-                  onChange={(e) => setFormData({ ...formData, spotify_url: e.target.value })}
-                  placeholder="https://open.spotify.com/track/..."
+                  id="song-audio"
+                  value={formData.audio_url}
+                  onChange={(e) => setFormData({ ...formData, audio_url: e.target.value })}
+                  placeholder="Buscado no iTunes automaticamente"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="song-yt">Busca no YouTube</Label>
+                <Input
+                  id="song-yt"
+                  value={formData.youtube_url}
+                  onChange={(e) => setFormData({ ...formData, youtube_url: e.target.value })}
+                  placeholder="Gerado automaticamente pela busca"
                 />
               </div>
 

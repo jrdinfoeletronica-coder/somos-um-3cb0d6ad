@@ -1,4 +1,4 @@
-import { Music, ExternalLink, Play, Edit, Trash2 } from "lucide-react";
+import { Music, ExternalLink, Play, Edit, Trash2, FileText, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,8 @@ interface SongCardProps {
   timesPlayed?: number;
   youtubeUrl?: string;
   spotifyUrl?: string;
+  cifraclubUrl?: string;
+  audioUrl?: string;
   variant?: "default" | "compact";
   showActions?: boolean;
   onEdit?: () => void;
@@ -25,6 +27,8 @@ export function SongCard({
   timesPlayed,
   youtubeUrl,
   spotifyUrl,
+  cifraclubUrl,
+  audioUrl,
   variant = "default",
   showActions = false,
   onEdit,
@@ -86,9 +90,23 @@ export function SongCard({
         </div>
       </div>
 
-      {(youtubeUrl || spotifyUrl || showActions) && (
+      {(youtubeUrl || spotifyUrl || cifraclubUrl || audioUrl || showActions) && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-border">
           <div className="flex flex-wrap items-center gap-2">
+            {cifraclubUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-orange-600 border-orange-200 hover:bg-orange-50 font-bold"
+                onClick={() => window.open(cifraclubUrl, "_blank")}
+              >
+                <FileText className="w-4 h-4 mr-1" />
+                Cifra
+              </Button>
+            )}
+            {audioUrl && (
+              <audio controls src={audioUrl} className="h-8 w-40" title="Prévia do iTunes" />
+            )}
             {youtubeUrl && (
               <Button
                 variant="outline"
