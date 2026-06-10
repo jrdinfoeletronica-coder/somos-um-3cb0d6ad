@@ -16,6 +16,11 @@ export default function Repertorio() {
   const [themeSearchQuery, setThemeSearchQuery] = useState("");
   const [selectedTone, setSelectedTone] = useState<string | null>(null);
   
+  // Estados para as Sugestões de Louvor (iTunes/Google)
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  
   // Estados para o Modal de Música
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSearchingWeb, setIsSearchingWeb] = useState(false);
@@ -155,13 +160,64 @@ export default function Repertorio() {
     saveSongMutation.mutate();
   };
 
-  const handleSearchTheme = () => {
+  const importSongMutation = useMutation({
+    mutationFn: async (suggestion: any) => {
+      const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+      const artistSlug = slugify(suggestion.artistName);
+      const titleSlug = slugify(suggestion.trackName);
+      
+      const payload = {
+        title: suggestion.trackName,
+        artist: suggestion.artistName || "Autor Desconhecido",
+        key: "C",
+        bpm: null,
+        youtube_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(suggestion.artistName + ' ' + suggestion.trackName)}`,
+        spotify_url: null,
+        cifraclub_url: `https://www.cifraclub.com.br/${artistSlug}/${titleSlug}/`,
+        audio_url: suggestion.previewUrl || null,
+        tags: themeSearchQuery ? [themeSearchQuery.trim()] : []
+      };
+
+      const { error } = await supabase.from("songs").insert([payload]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["songs"] });
+      toast.success("Música importada com sucesso!");
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao importar música: " + err.message);
+    }
+  });
+
+  const handleImportSuggestion = (suggestion: any) => {
+    importSongMutation.mutate(suggestion);
+  };
+
+  const handleSearchTheme = async () => {
     if (!themeSearchQuery.trim()) {
       toast.error("Digite um tema primeiro!");
       return;
     }
-    const query = encodeURIComponent(`melhores louvores sobre ${themeSearchQuery}`);
-    window.open(`https://www.google.com/search?q=${query}`, "_blank");
+    setIsLoadingSuggestions(true);
+    setIsSuggestionsOpen(true);
+    setSuggestions([]);
+
+    try {
+      const query = encodeURIComponent(`${themeSearchQuery} louvor`);
+      const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=15&country=br`);
+      const data = await res.json();
+      if (data.results) {
+        setSuggestions(data.results);
+      } else {
+        setSuggestions([]);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar sugestões:", err);
+      toast.error("Erro ao carregar sugestões do iTunes.");
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
   };
 
   const handleSmartSearch = async () => {
@@ -227,7 +283,7 @@ export default function Repertorio() {
             </div>
             <div>
               <h3 className="font-semibold text-foreground">Falta inspiração?</h3>
-              <p className="text-sm text-muted-foreground">Busque sugestões de louvores por tema no Google</p>
+              <p className="text-sm text-muted-foreground">Busque sugestões de louvores por tema e importe com 1 clique</p>
             </div>
           </div>
           <div className="flex w-full sm:w-auto gap-2">
@@ -480,6 +536,98 @@ export default function Repertorio() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Sugestões de Louvor */}
+      <Dialog open={isSuggestionsOpen} onOpenChange={setIsSuggestionsOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lightbulb className="w-5 h-5 text-accent" />
+              Sugestões de Louvores para "{themeSearchQuery}"
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="py-4 space-y-4">
+            {isLoadingSuggestions ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                <RefreshCw className="w-10 h-10 animate-spin text-accent" />
+                <p className="text-muted-foreground text-sm">Buscando louvores na internet...</p>
+              </div>
+            ) : suggestions.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Encontramos {suggestions.length} sugestões. Ouça a prévia de áudio e importe direto para o seu repertório:
+                </p>
+                <div className="divide-y divide-border border rounded-lg overflow-hidden bg-card">
+                  {suggestions.map((song, idx) => {
+                    const exists = songs.some(
+                      (s: any) => 
+                        s.title.toLowerCase().trim() === song.trackName.toLowerCase().trim() &&
+                        (s.artist && song.artistName && s.artist.toLowerCase().trim() === song.artistName.toLowerCase().trim())
+                    );
+
+                    return (
+                      <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center gap-3">
+                          {song.artworkUrl100 ? (
+                            <img 
+                              src={song.artworkUrl100} 
+                              alt={song.trackName} 
+                              className="w-12 h-12 rounded-lg object-cover border"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-accent/20 flex items-center justify-center">
+                              <Music className="w-5 h-5 text-accent" />
+                            </div>
+                          )}
+                          <div>
+                            <h4 className="font-semibold text-foreground text-sm sm:text-base">{song.trackName}</h4>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{song.artistName}</p>
+                            <span className="text-[10px] bg-secondary px-2 py-0.5 rounded text-muted-foreground mt-1 inline-block">
+                              {exists ? "Já no Repertório" : "Sugestão da Internet"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-center">
+                          {song.previewUrl && (
+                            <audio src={song.previewUrl} controls className="h-8 w-36 sm:w-40" />
+                          )}
+                          {exists ? (
+                            <Button variant="outline" size="sm" disabled className="h-8">
+                              Já Adicionado
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="gold" 
+                              size="sm" 
+                              className="h-8"
+                              onClick={() => handleImportSuggestion(song)}
+                              disabled={importSongMutation.isPending}
+                            >
+                              {importSongMutation.isPending ? "Importando..." : "Importar"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Nenhuma sugestão encontrada para esse tema.</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Tente buscar por termos mais simples, como "Adoração", "Gratidão" ou "Ceia".</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSuggestionsOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
