@@ -204,14 +204,131 @@ export default function Repertorio() {
     setSuggestions([]);
 
     try {
-      const query = encodeURIComponent(`${themeSearchQuery} louvor`);
-      const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=15&country=br`);
-      const data = await res.json();
-      if (data.results) {
-        setSuggestions(data.results);
-      } else {
-        setSuggestions([]);
+      const themeLower = themeSearchQuery.toLowerCase();
+      
+      // Temas especiais mapeados para louvores MUITO conhecidos
+      const curatedThemes: Record<string, { t: string, a: string }[]> = {
+        "ceia": [
+          { t: "Em Memória de Mim", a: "Koinonya" },
+          { t: "O Pão da Vida", a: "Aline Barros" },
+          { t: "Corpo e Família", a: "Diante do Trono" },
+          { t: "Porque Ele Vive", a: "Harpa Cristã" },
+          { t: "Pelo Sangue", a: "Renascer Praise" },
+          { t: "A Mensagem da Cruz", a: "Harpa Cristã" },
+          { t: "Foi na Cruz", a: "Harpa Cristã" },
+          { t: "O Nosso General", a: "Adhemar de Campos" },
+          { t: "Alvo Mais que a Neve", a: "Harpa Cristã" },
+          { t: "Vencendo Vem Jesus", a: "Harpa Cristã" }
+        ],
+        "batalha": [
+          { t: "Nosso General", a: "Adhemar de Campos" },
+          { t: "A Batalha é do Senhor", a: "Diante do Trono" },
+          { t: "O Escudo", a: "Voz da Verdade" },
+          { t: "Sabor de Mel", a: "Damares" },
+          { t: "Hino da Vitória", a: "Cassiane" },
+          { t: "Ressuscita-me", a: "Aline Barros" },
+          { t: "Faz Um Milagre Em Mim", a: "Regis Danese" },
+          { t: "Grito de Guerra", a: "Marquinhos Gomes" },
+          { t: "Deus de Aliança", a: "Toque no Altar" },
+          { t: "Marca da Promessa", a: "Trazendo a Arca" }
+        ],
+        "gratidão": [
+          { t: "Gratidão", a: "Gabriela Rocha" },
+          { t: "1000 Graus", a: "Renascer Praise" },
+          { t: "Obrigado Jesus", a: "Alda Célia" },
+          { t: "Rendido Estou", a: "Aline Barros" },
+          { t: "Lindo Momento", a: "Julliany Souza" },
+          { t: "Bondade de Deus", a: "Isaías Saad" },
+          { t: "Tu És Bom", a: "Fred Arrais" },
+          { t: "Em Teus Braços", a: "Laura Souguellis" },
+          { t: "Deus é Deus", a: "Delino Marçal" },
+          { t: "Te Agradeço", a: "Diante do Trono" }
+        ],
+        "adoração": [
+          { t: "A Casa É Sua", a: "Casa Worship" },
+          { t: "Me Atraiu", a: "Gabriela Rocha" },
+          { t: "Lugar Secreto", a: "Gabriela Rocha" },
+          { t: "De Dentro Pra Fora", a: "Julia Vitória" },
+          { t: "Pode Morar Aqui", a: "Theo Rubia" },
+          { t: "Eu Tenho Você", a: "Marcelo Markes" },
+          { t: "Todavia Me Alegrarei", a: "Samuel Messias" },
+          { t: "Aquieta Minh'alma", a: "Ministério Zoe" },
+          { t: "Ruja o Leão", a: "Isaías Saad" },
+          { t: "Vem Me Buscar", a: "Jefferson & Suellen" }
+        ],
+        "fé": [
+          { t: "Ressuscita-me", a: "Aline Barros" },
+          { t: "Deus Proverá", a: "Gabriela Gomes" },
+          { t: "Fé", a: "André Valadão" },
+          { t: "Creio Que Tu És a Cura", a: "Gabriela Rocha" },
+          { t: "Deus é Deus", a: "Delino Marçal" },
+          { t: "Milagre", a: "Midian Lima" },
+          { t: "Não Pare", a: "Midian Lima" },
+          { t: "Acredito", a: "Leonardo Gonçalves" },
+          { t: "Caminho no Deserto", a: "Soraya Moraes" },
+          { t: "Tudo é Possível", a: "Aline Barros" }
+        ]
+      };
+
+      let matchedCurated = null;
+      for (const key of Object.keys(curatedThemes)) {
+        if (themeLower.includes(key)) {
+          matchedCurated = curatedThemes[key];
+          break;
+        }
       }
+
+      if (matchedCurated) {
+        // Busca os dados oficiais no iTunes para a lista curada
+        const promises = matchedCurated.map(song => 
+          fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(song.t + ' ' + song.a)}&entity=song&limit=1&country=br`).then(res => res.json())
+        );
+        const results = await Promise.all(promises);
+        const validResults = results.map(d => d.results?.[0]).filter(Boolean);
+        setSuggestions(validResults);
+        return;
+      }
+
+      // Se não for um tema curado, faz busca agressiva no iTunes e filtra 100% por artistas gospel conhecidos
+      const KNOWN_ARTISTS = [
+        "gabriela rocha", "fernandinho", "aline barros", "diante do trono", "casa worship", "morada", "isadora pompeo", "julia vitória", "julia vitoria", "kemuel", "coral kemuel", "soraya moraes", "nívea soares", "nivea soares", "samuel messias", "theo rubia", "isaías saad", "isaias saad", "marcelo markes", "valesca mayssa", "maria marçal", "jefferson & suellen", "bruna karla", "anderson freire", "midian lima", "cassiane", "damares", "thalles roberto", "oficina g3", "preto no branco", "ministério zoe", "ministerio zoe", "ministério koinonya", "vencedores por cristo", "renascer praise", "sérgio lopes", "sergio lopes", "asaph borba", "adhemar de campos", "livres para adorar", "juliano son", "eyshila", "fernanda brum", "luma elpidio", "discopraise", "trazendo a arca", "toque no altar", "fhop music", "fhop", "julliany souza", "léo brandão", "leo brandao", "kemilly santos", "sarah beatriz", "gabriel guedes", "central 3", "lagoinha", "igreja batista da lagoinha", "pedro henrique", "voz da verdade", "eliane fernandes", "shirley carvalhaes", "rozeane ribeiro", "ozéias de paula", "pc baruk", "lucas agustinho"
+      ];
+
+      const q1 = fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(themeSearchQuery + ' gospel')}&entity=song&limit=50&country=br`).then(r => r.json());
+      const q2 = fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(themeSearchQuery + ' louvor')}&entity=song&limit=50&country=br`).then(r => r.json());
+      
+      const [data1, data2] = await Promise.all([q1, q2]);
+      const allResults = [...(data1.results || []), ...(data2.results || [])];
+      
+      // Remove duplicados e filtra rigorosamente
+      const uniqueIds = new Set();
+      const filtered = allResults.filter(r => {
+        if (uniqueIds.has(r.trackId)) return false;
+        uniqueIds.add(r.trackId);
+        
+        const artist = r.artistName?.toLowerCase() || "";
+        return KNOWN_ARTISTS.some(a => artist.includes(a));
+      });
+
+      // Se a filtragem rigorosa retornar pouco, tentamos relaxar o filtro apenas para o gênero gospel
+      if (filtered.length < 5) {
+         const relaxed = allResults.filter(r => {
+           const genre = r.primaryGenreName?.toLowerCase() || "";
+           return genre.includes("gospel") || genre.includes("religi");
+         });
+         const uniqueRelaxed = [];
+         const seen = new Set();
+         for (const r of relaxed) {
+           if (!seen.has(r.trackId)) {
+             seen.add(r.trackId);
+             uniqueRelaxed.push(r);
+           }
+         }
+         setSuggestions(uniqueRelaxed.slice(0, 15));
+      } else {
+         setSuggestions(filtered.slice(0, 15));
+      }
+
     } catch (err) {
       console.error("Erro ao buscar sugestões:", err);
       toast.error("Erro ao carregar sugestões do iTunes.");
