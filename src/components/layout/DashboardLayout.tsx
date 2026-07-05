@@ -66,10 +66,10 @@ export function DashboardLayout({ children, title, isAdmin = true }: DashboardLa
               
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-accent to-[hsl(30_80%_45%)] flex items-center justify-center">
-                  <span className="text-sm font-semibold text-primary">JD</span>
+                  <span className="text-sm font-semibold text-primary">{localStorage.getItem("chat_my_name")?.charAt(0)?.toUpperCase() || "U"}</span>
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-foreground">João Dias</p>
+                  <p className="text-sm font-medium text-foreground">{localStorage.getItem("chat_my_name") || "Usuário"}</p>
                   <p className="text-xs text-muted-foreground">
                     {isAdmin ? "Administrador" : "Membro"}
                   </p>

@@ -33,6 +33,10 @@ export default function Dashboard() {
     }
   });
 
+  const confirmedSchedules = schedules.filter((s:any) => s.status === 'confirmed').length;
+  const totalSchedules = schedules.length;
+  const confirmationRate = totalSchedules > 0 ? Math.round((confirmedSchedules / totalSchedules) * 100) : 100;
+
   const stats = [
     {
       title: "Escalas Este Mês",
@@ -57,8 +61,8 @@ export default function Dashboard() {
     },
     {
       title: "Taxa de Confirmação",
-      value: "100%",
-      trend: { value: 5, isPositive: true },
+      value: `${confirmationRate}%`,
+      subtitle: `${confirmedSchedules} de ${totalSchedules} escalas confirmadas`,
       icon: TrendingUp,
       variant: "default" as const,
     },
