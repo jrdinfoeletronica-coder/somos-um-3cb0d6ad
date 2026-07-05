@@ -108,7 +108,12 @@ export default function Login() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Senha</Label>
-                <Button variant="link" className="text-accent p-0 h-auto text-sm">
+                <Button 
+                  type="button"
+                  variant="link" 
+                  className="text-accent p-0 h-auto text-sm"
+                  onClick={() => toast.info("Recuperação de senha estará disponível em breve.")}
+                >
                   Esqueceu a senha?
                 </Button>
               </div>

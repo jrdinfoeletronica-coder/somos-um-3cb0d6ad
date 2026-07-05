@@ -12,8 +12,9 @@ import Repertorio from "./pages/Repertorio";
 import Configuracoes from "./pages/Configuracoes";
 import CadastroMembro from "./pages/CadastroMembro";
 import Comunicacao from "./pages/Comunicacao";
+import Relatorios from "./pages/Relatorios";
+import Perfil from "./pages/Perfil";
 import NotFound from "./pages/NotFound";
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -32,7 +33,8 @@ const App = () => (
           <Route path="/repertorio" element={<Repertorio />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
           <Route path="/comunicacao" element={<Comunicacao />} />
-          <Route path="/relatorios" element={<NotFound />} />
+          <Route path="/relatorios" element={<Relatorios />} />
+          <Route path="/perfil" element={<Perfil />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

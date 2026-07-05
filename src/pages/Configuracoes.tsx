@@ -189,7 +189,7 @@ export default function Configuracoes() {
                 </div>
               </div>
               <div className="mt-6">
-                <Button variant="gold">Salvar Alterações</Button>
+                <Button variant="gold" onClick={() => toast.success("Configurações gerais salvas com sucesso!")}>Salvar Alterações</Button>
               </div>
             </div>
           </div>
