@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { Settings, Mic2, Plus, Key, Copy, Check, RefreshCw, Link2 } from "lucide-react";
+import { Settings, Mic2, Plus, Key, Copy, Check, Link2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Configuracoes() {
@@ -98,15 +98,7 @@ export default function Configuracoes() {
     saveCodeMutation.mutate();
   };
 
-  const handleRegenerateCode = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let result = "LOUVOR-";
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setCustomCode(result);
-    toast.success("Novo código aleatório gerado! Salve para aplicar.");
-  };
+
 
   const handleCopyCode = () => {
     if (!customCode) return;
@@ -117,11 +109,8 @@ export default function Configuracoes() {
   };
 
   const handleCopyLink = () => {
-    if (inviteData && customCode !== inviteData.code) {
-      toast.warning("Atenção: Você alterou o código mas não salvou! Clique em 'Salvar Configurações' primeiro.");
-      return;
-    }
-    const joinLink = `${window.location.origin}/cadastro?code=${customCode}`;
+    const code = inviteData?.code || customCode;
+    const joinLink = `${window.location.origin}/cadastro?code=${code}`;
     navigator.clipboard.writeText(joinLink);
     setCopiedLink(true);
     toast.success("Link de cadastro copiado!");
@@ -271,40 +260,25 @@ export default function Configuracoes() {
             <div className="card-church p-6">
               <h3 className="font-display text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
                 <Key className="w-5 h-5 text-accent" />
-                Código de Convite para Integrantes
+                Código do Ministério
               </h3>
               <p className="text-sm text-muted-foreground mb-6">
-                Gerencie o código que permite que novos músicos e cantores entrem diretamente no seu ministério de louvor.
+                Este é o código único e permanente do seu ministério. Compartilhe com novos integrantes para que eles possam se cadastrar.
               </p>
 
               <div className="space-y-6 max-w-2xl">
-                {/* Status do Código */}
-                <div className="flex items-center justify-between p-4 bg-secondary/35 rounded-lg border border-border">
-                  <div className="space-y-0.5">
-                    <label className="text-sm font-medium text-foreground">
-                      Permitir novos cadastros
-                    </label>
-                    <p className="text-xs text-muted-foreground">
-                      Quando ativado, qualquer pessoa com o código poderá se cadastrar.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={isCodeActive}
-                    onCheckedChange={setIsCodeActive}
-                  />
-                </div>
 
-                {/* Código de Convite */}
+                {/* Código fixo — somente leitura */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
-                    Código de Acesso
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-accent" />
+                    Código único do ministério
                   </label>
                   <div className="flex gap-2">
                     <Input
-                      value={customCode}
-                      onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
-                      placeholder="Ex: LOUVOR-2026"
-                      className="font-mono tracking-wider font-semibold text-lg uppercase max-w-md"
+                      value={inviteData?.code || (customCode ? customCode : "Carregando...")}
+                      readOnly
+                      className="font-mono tracking-widest font-bold text-xl uppercase max-w-xs bg-accent/5 border-accent/30 text-accent cursor-default select-all"
                     />
                     <Button
                       variant="outline"
@@ -315,29 +289,36 @@ export default function Configuracoes() {
                     >
                       {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={handleRegenerateCode}
-                      title="Gerar código aleatório"
-                      type="button"
-                    >
-                      <RefreshCw className="w-4 h-4 animate-spin-hover" />
-                    </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Insira um código personalizado ou clique em regenerar para gerar um código seguro.
+                    Este código é fixo e identifica seu ministério de forma única. Não pode ser alterado.
                   </p>
                 </div>
 
-                {/* Link de Cadastro */}
+                {/* Status do Código */}
+                <div className="flex items-center justify-between p-4 bg-secondary/35 rounded-lg border border-border">
+                  <div className="space-y-0.5">
+                    <label className="text-sm font-medium text-foreground">
+                      Permitir novos cadastros
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Quando desativado, ninguém consegue entrar mesmo com o código correto.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={isCodeActive}
+                    onCheckedChange={(val) => { setIsCodeActive(val); saveCodeMutation.mutate(); }}
+                  />
+                </div>
+
+                {/* Link de Cadastro Direto */}
                 <div className="space-y-2 pt-2">
                   <label className="text-sm font-medium text-foreground">
                     Link de Cadastro Direto
                   </label>
                   <div className="flex gap-2 max-w-md">
                     <Input
-                      value={`${window.location.origin}/cadastro?code=${customCode}`}
+                      value={`${window.location.origin}/cadastro?code=${inviteData?.code || customCode}`}
                       readOnly
                       className="text-xs text-muted-foreground select-all bg-secondary/30"
                     />
@@ -352,7 +333,7 @@ export default function Configuracoes() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Compartilhe este link com os membros do ministério para que eles possam preencher os dados de cadastro.
+                    Envie este link pelo WhatsApp ou e-mail. Ao abrir, o código já será preenchido automaticamente.
                   </p>
                 </div>
 
@@ -362,19 +343,14 @@ export default function Configuracoes() {
                     Como funciona o cadastro?
                   </h4>
                   <ul className="text-xs text-muted-foreground space-y-2 list-decimal list-inside">
-                    <li>Copie o código de acesso e o link de cadastro direto.</li>
+                    <li>Copie o link de cadastro direto acima.</li>
                     <li>Envie para os novos membros (pelo WhatsApp ou e-mail).</li>
-                    <li>Ao acessar o link, o integrante preenche os dados (Nome, Telefone, E-mail).</li>
-                    <li>Ele escolhe suas funções e insere o código para validar a entrada.</li>
-                    <li>Pronto! Ele será cadastrado automaticamente com status <span className="font-semibold text-foreground">Ativo</span> e aparecerá na lista de Membros.</li>
+                    <li>Ao acessar o link, o código do ministério já vem preenchido automaticamente.</li>
+                    <li>O integrante só precisa preencher nome, telefone e escolher sua função.</li>
+                    <li>Pronto! Ele aparecerá na lista de Membros com status <span className="font-semibold text-foreground">Ativo</span>.</li>
                   </ul>
                 </div>
 
-                <div className="pt-4 flex gap-3">
-                  <Button variant="gold" onClick={handleSaveCode} disabled={saveCodeMutation.isPending}>
-                    {saveCodeMutation.isPending ? "Salvando..." : "Salvar Configurações"}
-                  </Button>
-                </div>
               </div>
             </div>
           </div>
