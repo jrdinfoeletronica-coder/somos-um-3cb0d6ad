@@ -4,6 +4,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ocultar marca d'água (badge) do Lovable injetada pela plataforma */
+[id*="lovable"],
+[class*="lovable-badge"],
+iframe[src*="lovable"],
+div:has(> a[href*="lovable.dev"]) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  z-index: -9999 !important;
+}
+
 @layer base {
   :root {
     /* Church-inspired warm palette */
