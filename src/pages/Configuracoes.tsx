@@ -117,7 +117,7 @@ export default function Configuracoes() {
   };
 
   const handleCopyLink = () => {
-    const joinLink = `${window.location.origin}/cadastro`;
+    const joinLink = `${window.location.origin}/cadastro?code=${customCode}`;
     navigator.clipboard.writeText(joinLink);
     setCopiedLink(true);
     toast.success("Link de cadastro copiado!");
@@ -333,7 +333,7 @@ export default function Configuracoes() {
                   </label>
                   <div className="flex gap-2 max-w-md">
                     <Input
-                      value={`${window.location.origin}/cadastro`}
+                      value={`${window.location.origin}/cadastro?code=${customCode}`}
                       readOnly
                       className="text-xs text-muted-foreground select-all bg-secondary/30"
                     />

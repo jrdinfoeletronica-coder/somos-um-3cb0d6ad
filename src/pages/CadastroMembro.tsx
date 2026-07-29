@@ -70,7 +70,7 @@ export default function CadastroMembro() {
     }
 
     if (!code) {
-      toast.error("O código de convite é obrigatório.");
+      toast.error("O código do ministério é obrigatório.");
       return;
     }
 
@@ -88,7 +88,7 @@ export default function CadastroMembro() {
       if (inviteError) throw inviteError;
 
       if (!inviteData || inviteData.length === 0) {
-        toast.error("Código de convite inválido ou inativo. Solicite ao líder do ministério.");
+        toast.error("Código do ministério inválido ou inativo. Solicite ao líder do ministério.");
         setIsLoading(false);
         return;
       }
@@ -175,7 +175,7 @@ export default function CadastroMembro() {
             Entrar no Ministério
           </h2>
           <p className="text-sm text-muted-foreground mt-2">
-            Insira o código de convite enviado pelo seu líder e preencha seus dados para se cadastrar.
+            Insira o código do ministério enviado pelo seu líder e preencha seus dados para se cadastrar.
           </p>
         </div>
 
@@ -259,7 +259,7 @@ export default function CadastroMembro() {
 
           {/* Código de Convite */}
           <div className="space-y-2 pt-2">
-            <Label htmlFor="inviteCode">Código de Convite *</Label>
+            <Label htmlFor="inviteCode">Código do Ministério *</Label>
             <div className="relative">
               <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
