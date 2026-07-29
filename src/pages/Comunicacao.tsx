@@ -205,7 +205,7 @@ export default function Comunicacao() {
                     {m.name}
                   </option>
                 ))}
-                <option value="Administrador">Administrador</option>
+
               </select>
               <Button type="submit" variant="gold" className="w-full">
                 Entrar no Chat
