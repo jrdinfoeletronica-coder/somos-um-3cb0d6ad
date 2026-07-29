@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,12 +20,33 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login - will be replaced with Supabase auth
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("Login realizado com sucesso!");
-      navigate("/dashboard");
-    }, 1500);
+    const email = formData.email.trim().toLowerCase();
+
+    // Buscar o membro pelo e-mail no banco de dados
+    const { data: members, error } = await supabase
+      .from("members")
+      .select("id, name, roles, status")
+      .ilike("email", email)
+      .eq("status", "active")
+      .limit(1);
+
+    setIsLoading(false);
+
+    if (error || !members || members.length === 0) {
+      toast.error("E-mail não encontrado. Verifique se você está cadastrado no ministério.");
+      return;
+    }
+
+    const member = members[0];
+
+    // Salvar dados do integrante na sessão
+    localStorage.setItem("chat_my_name", member.name);
+    localStorage.setItem("member_id", member.id);
+    localStorage.setItem("member_roles", JSON.stringify(member.roles || []));
+    localStorage.setItem("isAuthenticated", "true");
+
+    toast.success(`Bem-vindo, ${member.name}! 🎵`);
+    navigate("/dashboard");
   };
 
   return (

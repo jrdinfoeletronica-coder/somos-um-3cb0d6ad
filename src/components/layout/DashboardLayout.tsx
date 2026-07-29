@@ -71,7 +71,14 @@ export function DashboardLayout({ children, title, isAdmin = true }: DashboardLa
                 <div className="hidden sm:block">
                   <p className="text-sm font-medium text-foreground">{localStorage.getItem("chat_my_name") || "Usuário"}</p>
                   <p className="text-xs text-muted-foreground">
-                    Equipe de Louvor
+                    {(() => {
+                      try {
+                        const roles = JSON.parse(localStorage.getItem("member_roles") || "[]");
+                        return roles.length > 0 ? roles.slice(0, 2).join(", ") : "Equipe de Louvor";
+                      } catch {
+                        return "Equipe de Louvor";
+                      }
+                    })()}
                   </p>
                 </div>
               </div>
