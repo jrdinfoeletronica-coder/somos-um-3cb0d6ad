@@ -1,0 +1,16 @@
+# Este arquivo cria uma automação no GitLab para "bater" no seu banco de dados
+# do Supabase periodicamente, impedindo que ele seja pausado por inatividade.
+
+keepalive_supabase:
+  image: alpine:latest
+  script:
+    - apk add --no-cache curl
+    - echo "Enviando ping para o Supabase para mante-lo acordado..."
+    - >
+      curl -s -o /dev/null -w "%{http_code}" 
+      -H "apikey: sb_publishable_ujOgrDJiP7ITpMRtfYRfuw_WagffxIl" 
+      -H "Authorization: Bearer sb_publishable_ujOgrDJiP7ITpMRtfYRfuw_WagffxIl" 
+      "https://ibickxigovgcwwsqfpeb.supabase.co/rest/v1/songs?limit=1"
+    - echo " Ping concluido com sucesso!"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
