@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Chaves publicáveis (seguras para o frontend). As variáveis de ambiente têm prioridade.
+const FALLBACK_URL = "https://ibickxigovgcwwsqfpeb.supabase.co";
+const FALLBACK_ANON_KEY = "sb_publishable_ujOgrDJiP7ITpMRtfYRfuw_WagffxIl";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || FALLBACK_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || FALLBACK_ANON_KEY;
 
 // Função para criar um cliente mock seguro contra quebra de encadeamento
 const createMockClient = () => {
