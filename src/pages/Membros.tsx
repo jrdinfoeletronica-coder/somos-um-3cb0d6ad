@@ -40,10 +40,10 @@ export default function Membros() {
     status: "active" as "active" | "inactive"
   });
 
-  const { data: members = [], isLoading } = useQuery({
-    queryKey: ['members'],
+  const { data: members = [], isLoading, error: membersError } = useQuery({
+    queryKey: ["members"],
     queryFn: async () => {
-      const { data, error } = await supabase.from('members').select('*');
+      const { data, error } = await supabase.from("members").select("*").order("name");
       if (error) throw error;
       return data || [];
     }
@@ -202,7 +202,12 @@ export default function Membros() {
 
         {/* Members Grid */}
         {isLoading ? (
-          <div className="text-center py-8">Carregando membros...</div>
+          <div className="text-center py-12 text-muted-foreground">Carregando membros...</div>
+        ) : membersError ? (
+          <div className="card-church p-8 text-center border-red-200">
+            <p className="text-red-500 font-semibold">Erro ao carregar membros</p>
+            <p className="text-sm text-muted-foreground mt-1">{(membersError as any)?.message}</p>
+          </div>
         ) : filteredMembers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredMembers.map((member: any, index: number) => (
