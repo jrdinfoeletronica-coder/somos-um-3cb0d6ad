@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Music, User, Mail, Phone, Key, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,13 @@ export default function CadastroMembro() {
     phone: "",
     inviteCode: initialCode,
   });
+
+  useEffect(() => {
+    const code = searchParams.get("code");
+    if (code) {
+      setFormData(prev => ({ ...prev, inviteCode: code.toUpperCase() }));
+    }
+  }, [searchParams]);
 
   const handleToggleRole = (role: string) => {
     if (selectedRoles.includes(role)) {
