@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Music, User, Mail, Phone, Key, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,9 @@ const AVAILABLE_ROLES = [
 
 export default function CadastroMembro() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialCode = searchParams.get("code") || "";
+  
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
@@ -30,7 +33,7 @@ export default function CadastroMembro() {
     name: "",
     email: "",
     phone: "",
-    inviteCode: "",
+    inviteCode: initialCode,
   });
 
   const handleToggleRole = (role: string) => {
