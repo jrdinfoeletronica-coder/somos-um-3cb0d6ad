@@ -117,6 +117,10 @@ export default function Configuracoes() {
   };
 
   const handleCopyLink = () => {
+    if (inviteData && customCode !== inviteData.code) {
+      toast.warning("Atenção: Você alterou o código mas não salvou! Clique em 'Salvar Configurações' primeiro.");
+      return;
+    }
     const joinLink = `${window.location.origin}/cadastro?code=${customCode}`;
     navigator.clipboard.writeText(joinLink);
     setCopiedLink(true);
