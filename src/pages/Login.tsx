@@ -164,7 +164,7 @@ export default function Login() {
                 onClick={() => navigate("/cadastro")}
                 type="button"
               >
-                Entrar com código de convite
+                Entrar com código do ministério
               </Button>
             </p>
             <p className="text-muted-foreground text-xs">
