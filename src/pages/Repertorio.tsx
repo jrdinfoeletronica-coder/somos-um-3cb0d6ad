@@ -526,8 +526,6 @@ export default function Repertorio() {
                 Nova Música
               </Button>
             )}
-              Adicionar Primeira Música
-            </Button>
           </div>
         )}
       </div>

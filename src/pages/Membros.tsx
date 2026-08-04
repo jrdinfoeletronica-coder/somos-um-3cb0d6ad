@@ -74,6 +74,7 @@ export default function Membros() {
 
   const saveMemberMutation = useMutation({
     mutationFn: async () => {
+      const payload = {
         name: formData.name.trim(),
         email: formData.email.trim() || null,
         phone: formData.phone.trim() || null,
