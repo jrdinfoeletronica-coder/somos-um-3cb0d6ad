@@ -12,7 +12,8 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, title, isAdmin = true }: DashboardLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -25,24 +26,33 @@ export function DashboardLayout({ children, title, isAdmin = true }: DashboardLa
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppSidebar isAdmin={isAdmin} onLogout={handleLogout} />
+    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+      <AppSidebar 
+        isAdmin={isAdmin} 
+        onLogout={handleLogout} 
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        mobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
+      />
       
       <main
         className={cn(
-          "transition-all duration-300 min-h-screen",
-          sidebarOpen ? "ml-64" : "ml-20"
+          "flex-1 transition-all duration-300 min-h-screen flex flex-col w-full max-w-[100vw]",
+          "md:ml-64", 
+          sidebarCollapsed && "md:ml-20",
+          "ml-0" // on mobile, sidebar is a drawer so no margin needed
         )}
       >
         {/* Top Bar */}
         <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border">
-          <div className="flex items-center justify-between h-16 px-6">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between h-16 px-4 md:px-6">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"
-                className="md:hidden"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="md:hidden shrink-0"
+                onClick={() => setMobileMenuOpen(true)}
               >
                 <Menu className="w-5 h-5" />
               </Button>
@@ -87,7 +97,7 @@ export function DashboardLayout({ children, title, isAdmin = true }: DashboardLa
         </header>
 
         {/* Page Content */}
-        <div className="p-6">
+        <div className="p-4 md:p-6 w-full max-w-[100vw] overflow-x-hidden">
           {children}
         </div>
       </main>
