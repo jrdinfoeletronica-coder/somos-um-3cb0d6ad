@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Use environment variables with hard‑coded fallbacks for development and production.
-// The logical OR (||) also covers empty strings.
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://ibickxigovgcwwsqfpeb.supabase.co";
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_ujOgrDJiP7ITpMRtfYRfuw_WagffxIl";
+// Chaves publicáveis (seguras para o frontend). As variáveis de ambiente têm prioridade.
+const FALLBACK_URL = "https://ibickxigovgcwwsqfpeb.supabase.co";
+const FALLBACK_ANON_KEY = "sb_publishable_ujOgrDJiP7ITpMRtfYRfuw_WagffxIl";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || FALLBACK_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || FALLBACK_ANON_KEY;
 
 // If for any reason both values are still falsy, alert the developer.
 if (!supabaseUrl || !supabaseAnonKey) {
