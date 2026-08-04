@@ -8,13 +8,16 @@ interface ScheduleCardProps {
   time: string;
   event: string;
   location?: string;
-  members: { name: string; role: string }[];
+  members: { name: string; role: string; status?: string }[];
   status?: "confirmed" | "pending" | "cancelled";
   onConfirm?: () => void;
   onDecline?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   showActions?: boolean;
+  showMemberActions?: boolean;
+  onConfirmMember?: () => void;
+  onDeclineMember?: () => void;
 }
 
 export function ScheduleCard({
@@ -29,6 +32,9 @@ export function ScheduleCard({
   onEdit,
   onDelete,
   showActions = false,
+  showMemberActions = false,
+  onConfirmMember,
+  onDeclineMember,
 }: ScheduleCardProps) {
   const statusConfig = {
     confirmed: {
@@ -103,7 +109,12 @@ export function ScheduleCard({
                 </span>
               </div>
               <div className="text-xs">
-                <p className="font-medium text-foreground">{member.name}</p>
+                <p className="font-medium text-foreground flex items-center gap-1">
+                  {member.name}
+                  {member.status === "accepted" && <span className="text-green-500">✅</span>}
+                  {member.status === "declined" && <span className="text-red-500">❌</span>}
+                  {(!member.status || member.status === "pending") && <span className="text-amber-500 text-[10px]">⏳</span>}
+                </p>
                 <p className="text-muted-foreground">{member.role}</p>
               </div>
             </div>
@@ -119,18 +130,30 @@ export function ScheduleCard({
       </div>
 
       {/* Actions */}
-      {(showActions || onEdit || onDelete) && (
+      {(showActions || showMemberActions || onEdit || onDelete) && (
         <div className="flex items-center justify-between gap-3 pt-3 border-t border-border mt-2">
-          {showActions && status === "pending" && (
+          {showActions && status === "pending" && onConfirm && onDecline && (
             <div className="flex items-center gap-2 flex-1">
               <Button variant="gold" size="sm" onClick={onConfirm} className="flex-1 h-8">
-                Confirmar
+                Confirmar Evento
               </Button>
               <Button variant="outline" size="sm" onClick={onDecline} className="flex-1 h-8">
-                Recusar
+                Recusar Evento
               </Button>
             </div>
           )}
+          
+          {showMemberActions && (
+            <div className="flex items-center gap-2 flex-1">
+              <Button variant="gold" size="sm" onClick={onConfirmMember} className="flex-1 h-8">
+                Confirmar Presença
+              </Button>
+              <Button variant="outline" size="sm" onClick={onDeclineMember} className="flex-1 h-8">
+                Recusar Presença
+              </Button>
+            </div>
+          )}
+          
           <div className="flex items-center gap-2 ml-auto">
             {onEdit && (
               <Button variant="soft" size="sm" onClick={onEdit} className="h-8">

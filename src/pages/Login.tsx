@@ -38,7 +38,7 @@ export default function Login() {
 
     const { data: members, error: dbError } = await supabase
       .from("members")
-      .select("id, name, roles, status")
+      .select("id, name, roles, status, access_level")
       .ilike("email", email)
       .eq("status", "active")
       .limit(1);
@@ -54,6 +54,7 @@ export default function Login() {
     localStorage.setItem("chat_my_name", member.name);
     localStorage.setItem("member_id", member.id);
     localStorage.setItem("member_roles", JSON.stringify(member.roles || []));
+    localStorage.setItem("userRole", member.access_level || "viewer");
     localStorage.setItem("isAuthenticated", "true");
 
     queryClient.invalidateQueries({ queryKey: ["members"] });

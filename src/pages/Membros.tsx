@@ -37,8 +37,11 @@ export default function Membros() {
     name: "",
     email: "",
     phone: "",
-    status: "active" as "active" | "inactive"
+    status: "active" as "active" | "inactive",
+    access_level: "viewer" as "admin" | "editor" | "viewer"
   });
+
+  const userRole = localStorage.getItem("userRole") || "viewer";
 
   const { data: members = [], isLoading, error: membersError } = useQuery({
     queryKey: ["members"],
@@ -71,12 +74,12 @@ export default function Membros() {
 
   const saveMemberMutation = useMutation({
     mutationFn: async () => {
-      const payload = {
         name: formData.name.trim(),
         email: formData.email.trim() || null,
         phone: formData.phone.trim() || null,
         roles: selectedRoles,
-        status: formData.status
+        status: formData.status,
+        access_level: formData.access_level
       };
 
       if (!payload.name) {
@@ -128,7 +131,8 @@ export default function Membros() {
       name: "",
       email: "",
       phone: "",
-      status: "active"
+      status: "active",
+      access_level: "viewer"
     });
   };
 
@@ -144,7 +148,8 @@ export default function Membros() {
       name: member.name,
       email: member.email || "",
       phone: member.phone || "",
-      status: member.status || "active"
+      status: member.status || "active",
+      access_level: member.access_level || "viewer"
     });
     setIsDialogOpen(true);
   };
@@ -188,10 +193,12 @@ export default function Membros() {
             />
           </div>
 
-          <Button variant="gold" onClick={handleOpenNewMember}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Novo Membro
-          </Button>
+          {userRole === "admin" && (
+            <Button variant="gold" onClick={handleOpenNewMember}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Novo Membro
+            </Button>
+          )}
         </div>
 
         {/* Stats */}
@@ -239,7 +246,7 @@ export default function Membros() {
               >
                 <MemberCard
                   {...member}
-                  showActions
+                  showActions={userRole === "admin"}
                   onEdit={() => handleOpenEditMember(member)}
                   onDelete={() => handleDeleteMember(member.id)}
                   onCopyInvite={() => handleCopyInviteLink(member)}
@@ -311,17 +318,33 @@ export default function Membros() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="member-status">Status</Label>
-                <select
-                  id="member-status"
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as "active" | "inactive" })}
-                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                >
-                  <option value="active">Ativo</option>
-                  <option value="inactive">Inativo</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="member-status">Status</Label>
+                  <select
+                    id="member-status"
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as "active" | "inactive" })}
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    <option value="active">Ativo</option>
+                    <option value="inactive">Inativo</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="member-access">Nível de Acesso</Label>
+                  <select
+                    id="member-access"
+                    value={formData.access_level}
+                    onChange={(e) => setFormData({ ...formData, access_level: e.target.value as "admin" | "editor" | "viewer" })}
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    <option value="admin">Administrador</option>
+                    <option value="editor">Editor</option>
+                    <option value="viewer">Visualizador</option>
+                  </select>
+                </div>
               </div>
 
               {/* Funções do Louvor */}

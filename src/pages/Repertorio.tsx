@@ -15,6 +15,8 @@ export default function Repertorio() {
   const [searchQuery, setSearchQuery] = useState("");
   const [themeSearchQuery, setThemeSearchQuery] = useState("");
   const [selectedTone, setSelectedTone] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const userRole = localStorage.getItem("userRole") || "viewer";
   
   // Estados para as Sugestões de Louvor (iTunes/Google)
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
@@ -453,10 +455,12 @@ export default function Repertorio() {
             </div>
           </div>
 
-          <Button variant="gold" onClick={handleOpenNewSong}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Música
-          </Button>
+          {(userRole === "admin" || userRole === "editor") && (
+            <Button variant="gold" onClick={handleOpenNewSong}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Música
+            </Button>
+          )}
         </div>
 
         {/* Stats */}
@@ -498,7 +502,7 @@ export default function Repertorio() {
               >
                 <SongCard
                   {...song}
-                  showActions
+                  showActions={userRole === "admin"}
                   onEdit={() => handleOpenEditSong(song)}
                   onDelete={() => handleDeleteSong(song.id)}
                 />
@@ -516,8 +520,12 @@ export default function Repertorio() {
                 ? "Tente ajustar seus filtros"
                 : "Comece adicionando músicas ao repertório"}
             </p>
-            <Button variant="gold" onClick={handleOpenNewSong}>
-              <Plus className="w-4 h-4 mr-2" />
+            {(userRole === "admin" || userRole === "editor") && (
+              <Button variant="gold" onClick={handleOpenNewSong}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Música
+              </Button>
+            )}
               Adicionar Primeira Música
             </Button>
           </div>

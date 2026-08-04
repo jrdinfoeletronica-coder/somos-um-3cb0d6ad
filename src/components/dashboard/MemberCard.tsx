@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface MemberCardProps {
+  id?: string;
   name: string;
+  roles?: string[];
   email?: string;
   phone?: string;
-  roles: string[];
   avatar?: string;
   status?: "active" | "inactive";
+  access_level?: "admin" | "editor" | "viewer";
   onEdit?: () => void;
   onDelete?: () => void;
   onCopyInvite?: () => void;
@@ -19,9 +21,10 @@ export function MemberCard({
   name,
   email,
   phone,
-  roles,
+  roles = [],
   avatar,
   status = "active",
+  access_level = "viewer",
   onEdit,
   onDelete,
   onCopyInvite,
@@ -64,7 +67,33 @@ export function MemberCard({
             <h3 className="font-display text-lg font-semibold text-foreground truncate">
               {name}
             </h3>
-            <div className="flex flex-wrap gap-1.5 mt-1">
+
+            {/* Status & Access Level Badges */}
+            <div className="flex flex-wrap gap-2 mt-1">
+              <span
+                className={cn(
+                  "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border",
+                  status === "active"
+                    ? "bg-green-500/10 text-green-600 border-green-500/20"
+                    : "bg-gray-500/10 text-gray-500 border-gray-500/20"
+                )}
+              >
+                {status === "active" ? "Ativo" : "Inativo"}
+              </span>
+
+              {access_level === "admin" && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500/10 text-red-600 border border-red-500/20">
+                  Administrador
+                </span>
+              )}
+              {access_level === "editor" && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                  Editor
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-1.5 mt-2">
               {roles.map((role, index) => (
                 <span
                   key={index}

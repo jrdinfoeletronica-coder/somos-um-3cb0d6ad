@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
-  isAdmin?: boolean;
+  userRole?: string;
   onLogout?: () => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -34,7 +34,15 @@ const adminNavItems = [
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
-const memberNavItems = [
+const editorNavItems = [
+  { icon: Home, label: "Dashboard", path: "/dashboard" },
+  { icon: Calendar, label: "Escalas", path: "/escalas" },
+  { icon: Music, label: "Repertório", path: "/repertorio" },
+  { icon: Users, label: "Membros", path: "/membros" },
+  { icon: UserCircle, label: "Meu Perfil", path: "/perfil" },
+];
+
+const viewerNavItems = [
   { icon: Home, label: "Dashboard", path: "/dashboard" },
   { icon: Calendar, label: "Minhas Escalas", path: "/escalas" },
   { icon: Music, label: "Repertório", path: "/repertorio" },
@@ -42,7 +50,7 @@ const memberNavItems = [
 ];
 
 export function AppSidebar({ 
-  isAdmin = true, 
+  userRole = "viewer", 
   onLogout, 
   collapsed = false, 
   onToggleCollapse, 
@@ -50,7 +58,11 @@ export function AppSidebar({
   onMobileClose 
 }: SidebarProps) {
   const location = useLocation();
-  const navItems = isAdmin ? adminNavItems : memberNavItems;
+  const navItems = userRole === "admin" 
+    ? adminNavItems 
+    : userRole === "editor" 
+      ? editorNavItems 
+      : viewerNavItems;
 
   return (
     <>

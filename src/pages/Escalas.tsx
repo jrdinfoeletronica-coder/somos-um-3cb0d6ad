@@ -27,6 +27,8 @@ export default function Escalas() {
   const [currentMonth, setCurrentMonth] = useState("Junho 2026");
   const [view, setView] = useState<"list" | "calendar">("list");
   const queryClient = useQueryClient();
+  const userRole = localStorage.getItem("userRole") || "viewer";
+  const myName = localStorage.getItem("chat_my_name") || "";
 
   // Estados para o Modal de Escala
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -57,7 +59,8 @@ export default function Escalas() {
         *,
         schedule_members (
           member_name,
-          role
+          role,
+          status
         ),
         schedule_songs (
           song_id,
@@ -72,7 +75,8 @@ export default function Escalas() {
         ...s,
         members: s.schedule_members?.map((m: any) => ({
           name: m.member_name,
-          role: m.role
+          role: m.role,
+          status: m.status
         })) || [],
         songs: s.schedule_songs?.map((songRow: any) => ({
           id: songRow.song_id,
@@ -201,6 +205,24 @@ export default function Escalas() {
     }
   });
 
+  const memberStatusMutation = useMutation({
+    mutationFn: async ({ scheduleId, status }: { scheduleId: string; status: "accepted" | "declined" }) => {
+      const { error } = await supabase
+        .from("schedule_members")
+        .update({ status })
+        .eq("schedule_id", scheduleId)
+        .eq("member_name", myName);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      toast.success("Presença respondida com sucesso!");
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao responder presença: " + err.message);
+    }
+  });
+
   const resetForm = () => {
     setEditingSchedule(null);
     setActiveTab("detalhes");
@@ -300,29 +322,31 @@ export default function Escalas() {
       <div className="space-y-6 animate-fade-in">
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-card rounded-lg border border-border p-1">
-              <Button
-                variant={view === "list" ? "soft" : "ghost"}
-                size="sm"
-                onClick={() => setView("list")}
-              >
-                Lista
-              </Button>
-              <Button
-                variant={view === "calendar" ? "soft" : "ghost"}
-                size="sm"
-                onClick={() => setView("calendar")}
-              >
-                Calendário
-              </Button>
-            </div>
+          <div className="flex items-center gap-4 bg-secondary p-1 rounded-lg">
+            <Button
+              variant={view === "list" ? "soft" : "ghost"}
+              size="sm"
+              onClick={() => setView("list")}
+              className="px-4"
+            >
+              Lista
+            </Button>
+            <Button
+              variant={view === "calendar" ? "soft" : "ghost"}
+              size="sm"
+              onClick={() => setView("calendar")}
+              className="px-4"
+            >
+              Calendário
+            </Button>
           </div>
 
-          <Button variant="gold" onClick={handleOpenNewSchedule}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Escala
-          </Button>
+          {userRole === "admin" && (
+            <Button variant="gold" onClick={handleOpenNewSchedule}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Escala
+            </Button>
+          )}
         </div>
 
         {/* List View */}
@@ -331,18 +355,17 @@ export default function Escalas() {
         ) : view === "list" && schedules.length > 0 ? (
           <div className="space-y-4">
             {schedules.map((schedule: any, index: number) => (
-              <div
-                key={schedule.id || index}
-                className="animate-slide-up"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
+              <div key={schedule.id || index} className="animate-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
                 <ScheduleCard
                   {...schedule}
-                  showActions
-                  onConfirm={() => updateStatusMutation.mutate({ id: schedule.id, status: "confirmed" })}
-                  onDecline={() => updateStatusMutation.mutate({ id: schedule.id, status: "cancelled" })}
-                  onEdit={() => handleOpenEditSchedule(schedule)}
-                  onDelete={() => handleDeleteSchedule(schedule.id)}
+                  showActions={userRole === "admin"}
+                  onEdit={userRole === "admin" ? () => handleOpenEditSchedule(schedule) : undefined}
+                  onDelete={userRole === "admin" ? () => handleDeleteSchedule(schedule.id) : undefined}
+                  onConfirm={userRole === "admin" ? () => updateStatusMutation.mutate({ id: schedule.id, status: "confirmed" }) : undefined}
+                  onDecline={userRole === "admin" ? () => updateStatusMutation.mutate({ id: schedule.id, status: "cancelled" }) : undefined}
+                  showMemberActions={schedule.members?.some((m: any) => m.name === myName && (m.status === "pending" || !m.status))}
+                  onConfirmMember={() => memberStatusMutation.mutate({ scheduleId: schedule.id, status: "accepted" })}
+                  onDeclineMember={() => memberStatusMutation.mutate({ scheduleId: schedule.id, status: "declined" })}
                 />
               </div>
             ))}

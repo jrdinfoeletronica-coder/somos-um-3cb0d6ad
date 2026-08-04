@@ -8,13 +8,13 @@ import { Button } from "@/components/ui/button";
 interface DashboardLayoutProps {
   children: ReactNode;
   title?: string;
-  isAdmin?: boolean;
 }
 
-export function DashboardLayout({ children, title, isAdmin = true }: DashboardLayoutProps) {
+export function DashboardLayout({ children, title }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const userRole = localStorage.getItem("userRole") || "viewer";
 
   const handleLogout = () => {
     // Limpar dados de sessão
@@ -28,7 +28,7 @@ export function DashboardLayout({ children, title, isAdmin = true }: DashboardLa
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
       <AppSidebar 
-        isAdmin={isAdmin} 
+        userRole={userRole} 
         onLogout={handleLogout} 
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
