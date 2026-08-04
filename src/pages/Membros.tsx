@@ -201,6 +201,7 @@ export default function Membros() {
         </div>
 
         {/* Members Grid */}
+        {/* DEBUG */}<p className="text-sm text-muted-foreground my-2">Debug: total members = {members.length}</p>
         {isLoading ? (
           <div className="text-center py-12 text-muted-foreground">Carregando membros...</div>
         ) : membersError ? (

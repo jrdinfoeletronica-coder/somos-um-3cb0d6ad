@@ -18,14 +18,14 @@ const AVAILABLE_ROLES = [
   "Bateria",
   "Percussão",
   "Sonoplastia",
-  "Mídia / Projeção"
+  "Mídia / Projeção",
 ];
 
 export default function CadastroMembro() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialCode = searchParams.get("code") || "";
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
@@ -33,6 +33,8 @@ export default function CadastroMembro() {
     name: "",
     email: "",
     phone: "",
+    password: "",
+    confirmPassword: "",
     inviteCode: initialCode,
   });
 
@@ -45,7 +47,7 @@ export default function CadastroMembro() {
 
   const handleToggleRole = (role: string) => {
     if (selectedRoles.includes(role)) {
-      setSelectedRoles(selectedRoles.filter((r) => r !== role));
+      setSelectedRoles(selectedRoles.filter(r => r !== role));
     } else {
       setSelectedRoles([...selectedRoles, role]);
     }
@@ -53,31 +55,42 @@ export default function CadastroMembro() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const name = formData.name.trim();
     const email = formData.email.trim();
     const phone = formData.phone.trim();
+    const password = formData.password;
+    const confirmPassword = formData.confirmPassword;
     const code = formData.inviteCode.trim().toUpperCase();
 
     if (!name) {
       toast.error("Por favor, preencha seu nome completo.");
       return;
     }
-
+    if (!email) {
+      toast.error("E‑mail é obrigatório.");
+      return;
+    }
+    if (!password) {
+      toast.error("Senha é obrigatória.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("As senhas não coincidem.");
+      return;
+    }
     if (selectedRoles.length === 0) {
       toast.error("Selecione pelo menos uma função no ministério.");
       return;
     }
-
     if (!code) {
       toast.error("O código do ministério é obrigatório.");
       return;
     }
 
     setIsLoading(true);
-
     try {
-      // 1. Verificar se o código de convite existe e está ativo
+      // 1️⃣ Verificar código de convite
       const { data: inviteData, error: inviteError } = await supabase
         .from("invite_codes")
         .select("*")
@@ -86,36 +99,37 @@ export default function CadastroMembro() {
         .limit(1);
 
       if (inviteError) throw inviteError;
-
       if (!inviteData || inviteData.length === 0) {
         toast.error("Código do ministério inválido ou inativo. Solicite ao líder do ministério.");
         setIsLoading(false);
         return;
       }
 
-      // 2. Criar o membro no banco
-      const { error: insertError } = await supabase
-        .from("members")
-        .insert([
-          {
-            name,
-            email: email || null,
-            phone: phone || null,
-            roles: selectedRoles,
-            status: "active"
-          }
-        ]);
+      // 2️⃣ Criar usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      if (authError) throw authError;
 
+      // 3️⃣ Inserir registro na tabela members (perfil)
+      const { error: insertError } = await supabase.from("members").insert([
+        {
+          name,
+          email: email || null,
+          phone: phone || null,
+          roles: selectedRoles,
+          status: "active",
+        },
+      ]);
       if (insertError) throw insertError;
 
       toast.success("Cadastro realizado com sucesso!");
       setIsSuccess(true);
-      
-      // Redireciona após 3 segundos
+
       setTimeout(() => {
         navigate("/login");
       }, 3000);
-
     } catch (err: any) {
       console.error(err);
       toast.error("Ocorreu um erro ao realizar o cadastro: " + err.message);
@@ -131,15 +145,11 @@ export default function CadastroMembro() {
           <div className="w-20 h-20 bg-green-500/10 border border-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
             <CheckCircle2 className="w-10 h-10" />
           </div>
-          <h2 className="font-display text-3xl font-bold text-foreground">
-            Cadastro Concluído!
-          </h2>
+          <h2 className="font-display text-3xl font-bold text-foreground">Cadastro Concluído!</h2>
           <p className="text-muted-foreground">
-            Seja bem-vindo ao ministério de louvor, <span className="font-semibold text-foreground">{formData.name}</span>!
+            Seja bem‑vindo ao ministério de louvor, <span className="font-semibold text-foreground">{formData.name}</span>!
           </p>
-          <p className="text-sm text-accent/80 animate-pulse">
-            Redirecionando para a página de login em instantes...
-          </p>
+          <p className="text-sm text-accent/80 animate-pulse">Redirecionando para a página de login em instantes...</p>
           <div className="pt-4">
             <Button variant="gold" onClick={() => navigate("/login")} className="w-full">
               Ir para o Login Agora
@@ -154,12 +164,7 @@ export default function CadastroMembro() {
     <div className="min-h-screen bg-background flex flex-col justify-center py-12 px-6 lg:px-8">
       {/* Back button */}
       <div className="max-w-xl mx-auto w-full mb-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/login")}
-          className="text-muted-foreground hover:text-foreground"
-        >
+        <Button variant="ghost" size="sm" onClick={() => navigate("/login")} className="text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar para o login
         </Button>
@@ -171,9 +176,7 @@ export default function CadastroMembro() {
           <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-accent to-[hsl(30_80%_45%)] flex items-center justify-center mx-auto mb-4 shadow-gold">
             <Music className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="font-display text-3xl font-bold text-foreground">
-            Entrar no Ministério
-          </h2>
+          <h2 className="font-display text-3xl font-bold text-foreground">Entrar no Ministério</h2>
           <p className="text-sm text-muted-foreground mt-2">
             Insira o código do ministério enviado pelo seu líder e preencha seus dados para se cadastrar.
           </p>
@@ -189,7 +192,7 @@ export default function CadastroMembro() {
                 id="name"
                 placeholder="Ex: Gabriel Silva"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
                 className="pl-10"
                 required
               />
@@ -199,7 +202,7 @@ export default function CadastroMembro() {
           {/* Email e Telefone */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email">E-mail *</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -207,8 +210,9 @@ export default function CadastroMembro() {
                   type="email"
                   placeholder="seu@email.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
                   className="pl-10"
+                  required
                 />
               </div>
             </div>
@@ -220,23 +224,45 @@ export default function CadastroMembro() {
                   id="phone"
                   placeholder="(00) 00000-0000"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
                   className="pl-10"
                 />
               </div>
             </div>
           </div>
 
+          {/* Senha */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha *</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmar Senha *</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={formData.confirmPassword}
+                onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
           {/* Funções/Instrumentos */}
           <div className="space-y-3">
-            <Label className="block text-sm font-medium text-foreground">
-              Suas Funções / Instrumentos *
-            </Label>
-            <p className="text-xs text-muted-foreground">
-              Selecione todos os instrumentos ou funções que você desempenha no louvor:
-            </p>
+            <Label className="block text-sm font-medium text-foreground">Suas Funções / Instrumentos *</Label>
+            <p className="text-xs text-muted-foreground">Selecione todos os instrumentos ou funções que você desempenha no louvor:</p>
             <div className="flex flex-wrap gap-2 pt-1">
-              {AVAILABLE_ROLES.map((role) => {
+              {AVAILABLE_ROLES.map(role => {
                 const isSelected = selectedRoles.includes(role);
                 return (
                   <button
@@ -266,23 +292,16 @@ export default function CadastroMembro() {
                 id="inviteCode"
                 placeholder="Insira o código do ministério (ex: LOUVOR-2026)"
                 value={formData.inviteCode}
-                onChange={(e) => setFormData({ ...formData, inviteCode: e.target.value.toUpperCase() })}
+                onChange={e => setFormData({ ...formData, inviteCode: e.target.value.toUpperCase() })}
                 className="pl-10 uppercase font-semibold font-mono tracking-wider"
                 required
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Este código é gerado pelo administrador do sistema nas Configurações.
-            </p>
+            <p className="text-xs text-muted-foreground">Este código é gerado pelo administrador do sistema nas Configurações.</p>
           </div>
 
           {/* Submit */}
-          <Button
-            type="submit"
-            variant="gold"
-            className="w-full py-6 text-md font-semibold mt-4 transition-transform active:scale-[0.98]"
-            disabled={isLoading}
-          >
+          <Button type="submit" variant="gold" className="w-full py-6 text-md font-semibold mt-4 transition-transform active:scale-[0.98]" disabled={isLoading}>
             {isLoading ? "Validando e Cadastrando..." : "Cadastrar no Ministério"}
           </Button>
         </form>

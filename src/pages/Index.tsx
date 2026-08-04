@@ -81,9 +81,6 @@ export default function Index() {
               Começar Agora
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-            <Button variant="outline" size="xl" onClick={() => navigate("/dashboard")}>
-              Ver Demo
-            </Button>
           </div>
         </div>
       </section>

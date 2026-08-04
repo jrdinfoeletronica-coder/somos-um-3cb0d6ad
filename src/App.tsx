@@ -11,6 +11,7 @@ import Membros from "./pages/Membros";
 import Repertorio from "./pages/Repertorio";
 import Configuracoes from "./pages/Configuracoes";
 import CadastroMembro from "./pages/CadastroMembro";
+import ResetSenha from "./pages/ResetSenha";
 import Comunicacao from "./pages/Comunicacao";
 import Relatorios from "./pages/Relatorios";
 import Perfil from "./pages/Perfil";
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<CadastroMembro />} />
+          <Route path="/reset-senha" element={<ResetSenha />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/escalas" element={<Escalas />} />
           <Route path="/membros" element={<Membros />} />
