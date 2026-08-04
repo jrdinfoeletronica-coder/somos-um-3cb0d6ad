@@ -25,13 +25,15 @@ export default function CadastroMembro() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialCode = searchParams.get("code") || "";
+  const initialEmail = searchParams.get("email") || "";
+  const initialName = searchParams.get("name") || "";
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
+    name: initialName,
+    email: initialEmail,
     phone: "",
     password: "",
     confirmPassword: "",
@@ -112,17 +114,38 @@ export default function CadastroMembro() {
       });
       if (authError) throw authError;
 
-      // 3️⃣ Inserir registro na tabela members (perfil)
-      const { error: insertError } = await supabase.from("members").insert([
-        {
-          name,
-          email: email || null,
-          phone: phone || null,
-          roles: selectedRoles,
-          status: "active",
-        },
-      ]);
-      if (insertError) throw insertError;
+      // 3️⃣ Verificar se o membro já existe na tabela members (perfil)
+      const { data: existingMember } = await supabase
+        .from("members")
+        .select("id")
+        .ilike("email", email)
+        .limit(1);
+
+      if (existingMember && existingMember.length > 0) {
+        // Atualiza o registro existente para manter o ID antigo e não duplicar
+        const { error: updateError } = await supabase
+          .from("members")
+          .update({
+            name,
+            phone: phone || null,
+            roles: selectedRoles,
+            status: "active",
+          })
+          .eq("id", existingMember[0].id);
+        if (updateError) throw updateError;
+      } else {
+        // Insere novo registro se não existir
+        const { error: insertError } = await supabase.from("members").insert([
+          {
+            name,
+            email: email || null,
+            phone: phone || null,
+            roles: selectedRoles,
+            status: "active",
+          },
+        ]);
+        if (insertError) throw insertError;
+      }
 
       toast.success("Cadastro realizado com sucesso!");
       setIsSuccess(true);

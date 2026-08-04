@@ -11,6 +11,7 @@ interface MemberCardProps {
   status?: "active" | "inactive";
   onEdit?: () => void;
   onDelete?: () => void;
+  onCopyInvite?: () => void;
   showActions?: boolean;
 }
 
@@ -23,6 +24,7 @@ export function MemberCard({
   status = "active",
   onEdit,
   onDelete,
+  onCopyInvite,
   showActions = false,
 }: MemberCardProps) {
   const initials = name
@@ -94,7 +96,12 @@ export function MemberCard({
 
       {/* Actions */}
       {showActions && (
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
+        <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
+          {onCopyInvite && email && (
+            <Button variant="outline" size="sm" onClick={onCopyInvite} className="w-full mb-2">
+              Gerar Link de Acesso
+            </Button>
+          )}
           <Button variant="soft" size="sm" onClick={onEdit} className="flex-1">
             Editar
           </Button>

@@ -49,6 +49,26 @@ export default function Membros() {
     }
   });
 
+  const { data: inviteData } = useQuery({
+    queryKey: ["inviteCode"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("invite_codes").select("*").eq("is_active", true).limit(1);
+      if (error) throw error;
+      return data && data.length > 0 ? data[0] : null;
+    }
+  });
+
+  const handleCopyInviteLink = (member: any) => {
+    const code = inviteData?.code || "";
+    const url = new URL(`https://somos-um.lovable.app/cadastro`);
+    if (code) url.searchParams.append("code", code);
+    if (member.email) url.searchParams.append("email", member.email);
+    if (member.name) url.searchParams.append("name", member.name);
+    
+    navigator.clipboard.writeText(url.toString());
+    toast.success(`Link de acesso copiado! Envie para ${member.name}.`);
+  };
+
   const saveMemberMutation = useMutation({
     mutationFn: async () => {
       const payload = {
@@ -222,6 +242,7 @@ export default function Membros() {
                   showActions
                   onEdit={() => handleOpenEditMember(member)}
                   onDelete={() => handleDeleteMember(member.id)}
+                  onCopyInvite={() => handleCopyInviteLink(member)}
                 />
               </div>
             ))}
