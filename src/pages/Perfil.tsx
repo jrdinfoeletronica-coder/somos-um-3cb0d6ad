@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { v4 as uuidv4 } from "uuid";
+
 
 export default function Perfil() {
   const queryClient = useQueryClient();
@@ -74,7 +74,7 @@ export default function Perfil() {
       setUploading(true);
       
       const fileExt = file.name.split(".").pop();
-      const fileName = `${memberId}-${uuidv4()}.${fileExt}`;
+      const fileName = `${memberId}-${crypto.randomUUID()}.${fileExt}`;
       const filePath = `${fileName}`;
 
       // 1. Faz o upload para o bucket 'avatars'
