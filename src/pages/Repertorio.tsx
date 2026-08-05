@@ -24,7 +24,12 @@ export default function Repertorio() {
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-  
+
+  // Estados para a Busca Inteligente (Resultados)
+  const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isLoadingSearchResults, setIsLoadingSearchResults] = useState(false);
+
   // Estados para o Modal de Música
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSearchingWeb, setIsSearchingWeb] = useState(false);
@@ -350,49 +355,61 @@ export default function Repertorio() {
       return;
     }
     setIsSearchingWeb(true);
+    setIsLoadingSearchResults(true);
+    setSearchResults([]);
+    setIsSearchResultsOpen(true);
     
     try {
-      // Busca tom no banco local
-      const foundKey = lookupWorshipKey(formData.title, formData.artist);
-      const detectedTone = foundKey || formData.key || "C";
-
-      const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
-      const ytQuery = encodeURIComponent(`${formData.artist} ${formData.title}`);
-      const generatedYoutubeUrl = `https://duckduckgo.com/?q=!ducky+site%3Ayoutube.com+${ytQuery}`;
-      const generatedCifraUrl = `https://www.cifraclub.com.br/${slugify(formData.artist)}/${slugify(formData.title)}/`;
-      
-      // Buscar Audio no iTunes
-      let newAudioUrl = "";
-      try {
-        const iRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(formData.artist + ' ' + formData.title)}&entity=song&limit=1&country=br`);
-        const iData = await iRes.json();
-        if (iData.results && iData.results.length > 0) {
-          newAudioUrl = iData.results[0].previewUrl || "";
-        }
-      } catch (e) {
-        console.error(e);
-      }
-      
-      setFormData(prev => ({
-        ...prev,
-        key: detectedTone,
-        cifraclub_url: generatedCifraUrl,
-        youtube_url: generatedYoutubeUrl,
-        audio_url: newAudioUrl || prev.audio_url
-      }));
-      
-      if (foundKey) {
-        toast.success(`Tom encontrado: ${foundKey} — Links preenchidos!`);
+      // Buscar 10 resultados no iTunes
+      const iRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(formData.artist + ' ' + formData.title)}&entity=song&limit=10&country=br`);
+      const iData = await iRes.json();
+      if (iData.results && iData.results.length > 0) {
+        setSearchResults(iData.results);
       } else {
-        toast.success("Links preenchidos! Tom não encontrado no banco — verifique manualmente.");
+        toast.error("Nenhuma música encontrada com essa descrição.");
+        setIsSearchResultsOpen(false);
       }
     } catch (e) {
       console.error("Erro ao buscar na internet", e);
       toast.error("Erro ao buscar informacoes.");
+      setIsSearchResultsOpen(false);
     } finally {
       setIsSearchingWeb(false);
+      setIsLoadingSearchResults(false);
     }
   };
+
+  const handleSelectSearchResult = (result: any) => {
+    const trackName = result.trackName;
+    const artistName = result.artistName || "Autor Desconhecido";
+    
+    // Busca tom no banco local
+    const foundKey = lookupWorshipKey(trackName, artistName);
+    const detectedTone = foundKey || formData.key || "C";
+
+    const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+    const ytQuery = encodeURIComponent(`${artistName} ${trackName}`);
+    const generatedYoutubeUrl = `https://duckduckgo.com/?q=!ducky+site%3Ayoutube.com+${ytQuery}`;
+    const generatedCifraUrl = `https://www.cifraclub.com.br/${slugify(artistName)}/${slugify(trackName)}/`;
+    
+    setFormData(prev => ({
+      ...prev,
+      title: trackName,
+      artist: artistName,
+      key: detectedTone,
+      cifraclub_url: generatedCifraUrl,
+      youtube_url: generatedYoutubeUrl,
+      audio_url: result.previewUrl || prev.audio_url
+    }));
+    
+    if (foundKey) {
+      toast.success(`Versão escolhida! Tom: ${foundKey} — Links preenchidos.`);
+    } else {
+      toast.success("Versão escolhida! Tom não encontrado, verifique manualmente.");
+    }
+    setIsSearchResultsOpen(false);
+  };
+
 
   const filteredSongs = songs.filter((song: any) => {
     const matchesSearch =
@@ -769,6 +786,76 @@ export default function Repertorio() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Resultados da Busca Inteligente */}
+      <Dialog open={isSearchResultsOpen} onOpenChange={setIsSearchResultsOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Globe className="w-5 h-5 text-accent" />
+              Resultados da Busca
+            </DialogTitle>
+            <DialogDescription>
+              Selecione a versão correta para preencher os links automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 space-y-4">
+            {isLoadingSearchResults ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                <RefreshCw className="w-10 h-10 animate-spin text-accent" />
+                <p className="text-muted-foreground text-sm">Buscando na internet...</p>
+              </div>
+            ) : searchResults.length > 0 ? (
+              <div className="space-y-3">
+                <div className="divide-y divide-border border rounded-lg overflow-hidden bg-card">
+                  {searchResults.map((result, idx) => (
+                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        {result.artworkUrl100 ? (
+                          <img 
+                            src={result.artworkUrl100} 
+                            alt={result.trackName} 
+                            className="w-12 h-12 rounded-lg object-cover border"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-accent/20 flex items-center justify-center">
+                            <Music className="w-5 h-5 text-accent" />
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-semibold text-foreground text-sm sm:text-base">{result.trackName}</h4>
+                          <p className="text-xs sm:text-sm text-muted-foreground">{result.artistName}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-center">
+                        {result.previewUrl && (
+                          <audio src={result.previewUrl} controls className="h-8 w-36 sm:w-40" />
+                        )}
+                        <Button 
+                          variant="gold" 
+                          size="sm" 
+                          className="h-8"
+                          onClick={() => handleSelectSearchResult(result)}
+                        >
+                          Selecionar
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSearchResultsOpen(false)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
+
