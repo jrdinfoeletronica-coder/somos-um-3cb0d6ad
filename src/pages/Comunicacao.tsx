@@ -98,32 +98,42 @@ export default function Comunicacao() {
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Função para buscar mensagens (usada no fetch inicial e no polling)
+  const fetchMessages = async () => {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .order("created_at", { ascending: true });
+    if (!error && data) setAllMessages(data);
+  };
+
   useEffect(() => {
     if (!myName) return;
 
-    const fetchMessages = async () => {
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*")
-        .order("created_at", { ascending: true });
-      if (!error && data) setAllMessages(data);
-    };
-
     fetchMessages();
 
+    // Realtime (funciona se habilitado no Supabase)
     const channel = supabase
-      .channel("messages-channel")
+      .channel("messages-channel-" + Date.now())
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
-          setAllMessages((prev) => [...prev, payload.new as Message]);
+          setAllMessages((prev) => {
+            // Evitar duplicatas
+            if (prev.find((m) => m.id === (payload.new as Message).id)) return prev;
+            return [...prev, payload.new as Message];
+          });
         }
       )
       .subscribe();
 
+    // Polling a cada 3 segundos como fallback (garante atualização mesmo sem Realtime)
+    const interval = setInterval(fetchMessages, 3000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [myName]);
 
@@ -163,17 +173,32 @@ export default function Comunicacao() {
     const content = newMessage.trim();
     setNewMessage("");
 
-    const { error } = await supabase.from("messages").insert([
+    // Atualiza a tela imediatamente (optimistic update)
+    const tempMsg: Message = {
+      id: "temp-" + Date.now(),
+      sender_name: myName,
+      content,
+      conversation_id: activeConversation.id,
+      created_at: new Date().toISOString(),
+    };
+    setAllMessages((prev) => [...prev, tempMsg]);
+
+    const { data: inserted, error } = await supabase.from("messages").insert([
       {
         sender_name: myName,
         content,
         conversation_id: activeConversation.id,
       },
-    ]);
+    ]).select().single();
 
     if (error) {
       toast.error("Erro ao enviar. Verifique a configuração do Supabase.");
+      // Remove a mensagem temporária se falhou
+      setAllMessages((prev) => prev.filter((m) => m.id !== tempMsg.id));
       setNewMessage(content);
+    } else if (inserted) {
+      // Substitui a mensagem temporária pela real
+      setAllMessages((prev) => prev.map((m) => m.id === tempMsg.id ? inserted : m));
     }
 
     setSending(false);
