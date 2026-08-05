@@ -489,6 +489,9 @@ export default function Comunicacao() {
                   placeholder="Digite uma mensagem..."
                   className="flex-1 rounded-full bg-secondary/30 border-secondary focus:border-accent"
                   autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
