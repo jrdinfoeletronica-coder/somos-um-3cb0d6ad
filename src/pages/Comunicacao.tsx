@@ -105,7 +105,7 @@ export default function Comunicacao() {
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Função para buscar mensagens (usada no fetch inicial e no polling)
+  // Função para buscar mensagens
   const fetchMessages = async () => {
     const { data, error } = await supabase
       .from("messages")
@@ -119,28 +119,41 @@ export default function Comunicacao() {
 
     fetchMessages();
 
-    // Realtime (funciona se habilitado no Supabase)
+    let pollingInterval: ReturnType<typeof setInterval> | null = null;
+
     const channel = supabase
-      .channel("messages-channel-" + Date.now())
+      .channel("messages-realtime-" + Date.now())
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
           setAllMessages((prev) => {
-            // Evitar duplicatas
             if (prev.find((m) => m.id === (payload.new as Message).id)) return prev;
             return [...prev, payload.new as Message];
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          // Realtime ativo: para o polling se estava rodando
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+          }
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          // Realtime falhou: ativa polling a cada 2s como fallback
+          if (!pollingInterval) {
+            pollingInterval = setInterval(fetchMessages, 2000);
+          }
+        }
+      });
 
-    // Polling a cada 3 segundos como fallback (garante atualização mesmo sem Realtime)
-    const interval = setInterval(fetchMessages, 3000);
+    // Inicia polling enquanto aguarda conexão do realtime (primeiros 5s)
+    pollingInterval = setInterval(fetchMessages, 2000);
 
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(interval);
+      if (pollingInterval) clearInterval(pollingInterval);
     };
   }, [myName]);
 
