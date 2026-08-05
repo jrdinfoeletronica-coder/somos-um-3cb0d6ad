@@ -39,7 +39,6 @@ export default function Repertorio() {
     tags: ""
   });
 
-  const queryClient = useQueryClient();
   const tones = ["C", "D", "E", "F", "G", "A", "B", "C#", "F#", "G#"];
 
   const { data: songs = [], isLoading } = useQuery({
@@ -526,8 +525,6 @@ export default function Repertorio() {
                 Nova Música
               </Button>
             )}
-              Adicionar Primeira Música
-            </Button>
           </div>
         )}
       </div>
