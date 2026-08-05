@@ -18,13 +18,14 @@ import {
   MapPin,
   CheckCircle,
   Wand2,
-  Settings2
+  Settings2,
+  ArrowRightLeft
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { getTransposeHint } from "@/lib/transpose";
 
 export default function Escalas() {
   const [currentMonth, setCurrentMonth] = useState("Junho 2026");
@@ -934,25 +935,65 @@ export default function Escalas() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {assignedSongs.map((s, idx) => (
-                          <div key={s.id} className="flex items-center justify-between p-3 bg-card border border-border rounded-xl shadow-sm">
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs font-bold text-muted-foreground w-4">{idx + 1}.</span>
-                              <div>
-                                <p className="font-semibold text-sm">{s.title}</p>
-                                <p className="text-xs text-muted-foreground">{s.artist}</p>
+                        {assignedSongs.map((s, idx) => {
+                          // Busca a música completa para ter a tonalidade
+                          const fullSong = songs.find((song: any) => song.id === s.id);
+                          const songKey = fullSong?.key;
+
+                          // Cantores escalados (vocais)
+                          const VOCAL_ROLES = ["vocal", "vocalista", "cantor", "cantora", "ministro", "ministrante", "lider", "líder", "worship"];
+                          const vocalists = assignedMembers.filter((m) =>
+                            VOCAL_ROLES.some(r => m.role?.toLowerCase().includes(r))
+                          );
+
+                          // Gera lembretes para cada cantor
+                          const hints = vocalists.flatMap((m) => {
+                            const memberData = members.find((mb: any) => mb.name?.toLowerCase().trim() === m.name?.toLowerCase().trim());
+                            const memberKey = memberData?.preferred_key;
+                            if (!songKey || !memberKey) return [];
+                            const hint = getTransposeHint(songKey, m.name, memberKey);
+                            return hint ? [hint] : [];
+                          });
+
+                          return (
+                            <div key={s.id} className="p-3 bg-card border border-border rounded-xl shadow-sm space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xs font-bold text-muted-foreground w-4">{idx + 1}.</span>
+                                  <div>
+                                    <p className="font-semibold text-sm">{s.title}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {s.artist}
+                                      {songKey && (
+                                        <span className="ml-2 px-1.5 py-0.5 bg-accent/10 text-accent rounded font-bold text-[10px]">
+                                          Tom: {songKey}
+                                        </span>
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={() => handleRemoveSong(s.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
                               </div>
+                              {hints.length > 0 && (
+                                <div className="space-y-1">
+                                  {hints.map((hint, hi) => (
+                                    <div key={hi} className="flex items-center gap-2 text-[11px] bg-amber-500/10 border border-amber-400/30 text-amber-700 dark:text-amber-300 rounded-lg px-2 py-1">
+                                      <ArrowRightLeft className="w-3 h-3 shrink-0" />
+                                      <span className="font-medium">{hint}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive"
-                              onClick={() => handleRemoveSong(s.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
