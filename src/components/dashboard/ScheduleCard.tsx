@@ -16,6 +16,7 @@ interface ScheduleCardProps {
   onDelete?: () => void;
   showActions?: boolean;
   showMemberActions?: boolean;
+  memberStatus?: string | null;
   onConfirmMember?: () => void;
   onDeclineMember?: () => void;
 }
@@ -33,6 +34,7 @@ export function ScheduleCard({
   onDelete,
   showActions = false,
   showMemberActions = false,
+  memberStatus = null,
   onConfirmMember,
   onDeclineMember,
 }: ScheduleCardProps) {
@@ -146,11 +148,23 @@ export function ScheduleCard({
           {showMemberActions && (
             <div className="flex items-center gap-2 flex-1">
               <Button variant="gold" size="sm" onClick={onConfirmMember} className="flex-1 h-8">
-                Confirmar Presença
+                ✅ Confirmar Presença
               </Button>
               <Button variant="outline" size="sm" onClick={onDeclineMember} className="flex-1 h-8">
-                Recusar Presença
+                ❌ Recusar Presença
               </Button>
+            </div>
+          )}
+
+          {/* Mostra status atual se já respondeu */}
+          {!showMemberActions && memberStatus === "accepted" && (
+            <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
+              <span>✅ Você confirmou presença nesta escala</span>
+            </div>
+          )}
+          {!showMemberActions && memberStatus === "declined" && (
+            <div className="flex items-center gap-2 text-sm text-red-500 font-medium">
+              <span>❌ Você recusou esta escala</span>
             </div>
           )}
           

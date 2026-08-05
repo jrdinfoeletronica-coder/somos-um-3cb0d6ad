@@ -29,6 +29,23 @@ export default function Escalas() {
   const queryClient = useQueryClient();
   const userRole = localStorage.getItem("userRole") || "viewer";
   const myName = localStorage.getItem("chat_my_name") || "";
+  const myMemberId = localStorage.getItem("member_id") || "";
+
+  // Verifica se o membro logado está escalado (por nome, case-insensitive)
+  const isMyMemberInSchedule = (schedule: any): boolean => {
+    if (!schedule.members || schedule.members.length === 0) return false;
+    return schedule.members.some(
+      (m: any) => m.name?.toLowerCase().trim() === myName?.toLowerCase().trim()
+    );
+  };
+
+  const getMyMemberStatus = (schedule: any): string | null => {
+    if (!schedule.members) return null;
+    const me = schedule.members.find(
+      (m: any) => m.name?.toLowerCase().trim() === myName?.toLowerCase().trim()
+    );
+    return me?.status || null;
+  };
 
   // Estados para o Modal de Escala
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -363,7 +380,11 @@ export default function Escalas() {
                   onDelete={userRole === "admin" ? () => handleDeleteSchedule(schedule.id) : undefined}
                   onConfirm={userRole === "admin" ? () => updateStatusMutation.mutate({ id: schedule.id, status: "confirmed" }) : undefined}
                   onDecline={userRole === "admin" ? () => updateStatusMutation.mutate({ id: schedule.id, status: "cancelled" }) : undefined}
-                  showMemberActions={schedule.members?.some((m: any) => m.name === myName && (m.status === "pending" || !m.status))}
+                  showMemberActions={
+                    isMyMemberInSchedule(schedule) &&
+                    (getMyMemberStatus(schedule) === "pending" || getMyMemberStatus(schedule) === null)
+                  }
+                  memberStatus={getMyMemberStatus(schedule)}
                   onConfirmMember={() => memberStatusMutation.mutate({ scheduleId: schedule.id, status: "accepted" })}
                   onDeclineMember={() => memberStatusMutation.mutate({ scheduleId: schedule.id, status: "declined" })}
                 />
