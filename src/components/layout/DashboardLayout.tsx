@@ -10,6 +10,8 @@ interface DashboardLayoutProps {
   title?: string;
 }
 
+import { NotificationBanner } from "@/components/ui/NotificationBanner";
+
 export function DashboardLayout({ children, title }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -44,6 +46,8 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
           "ml-0" // on mobile, sidebar is a drawer so no margin needed
         )}
       >
+        <NotificationBanner />
+        
         {/* Top Bar */}
         <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border">
           <div className="flex items-center justify-between h-16 px-4 md:px-6">
