@@ -174,9 +174,12 @@ export default function Membros() {
     saveMemberMutation.mutate();
   };
 
+  const currentMemberId = localStorage.getItem("member_id");
+
   const filteredMembers = members.filter((member: any) =>
-    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (member.roles && member.roles.some((role: string) => role.toLowerCase().includes(searchQuery.toLowerCase())))
+    member.id !== currentMemberId &&
+    (member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (member.roles && member.roles.some((role: string) => role.toLowerCase().includes(searchQuery.toLowerCase()))))
   );
 
   return (
