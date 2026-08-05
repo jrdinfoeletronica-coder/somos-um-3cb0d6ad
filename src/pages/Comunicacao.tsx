@@ -59,6 +59,13 @@ function groupMessagesByDay(messages: Message[]) {
   return groups;
 }
 
+// Gera um ID de conversa privada igual para os dois lados
+// Ex: Admin + João -> sempre "dm:Admin__João" (ordem alfabética)
+function getDMConversationId(name1: string, name2: string) {
+  const sorted = [name1, name2].sort();
+  return `dm:${sorted[0]}__${sorted[1]}`;
+}
+
 export default function Comunicacao() {
   const [myName, setMyName] = useState<string>(
     () => localStorage.getItem("chat_my_name") || ""
@@ -88,7 +95,7 @@ export default function Comunicacao() {
     ...members
       .filter((m: any) => m.name !== myName)
       .map((m: any) => ({
-        id: `member:${m.name}`,
+        id: getDMConversationId(myName, m.name),
         name: m.name,
         isGroup: false,
       })),
