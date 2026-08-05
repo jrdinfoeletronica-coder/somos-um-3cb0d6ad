@@ -167,14 +167,15 @@ export default function Repertorio() {
       const artistSlug = slugify(suggestion.artistName);
       const titleSlug = slugify(suggestion.trackName);
       
+      const ytQuery = encodeURIComponent(`${suggestion.artistName} ${suggestion.trackName}`);
       const payload = {
         title: suggestion.trackName,
         artist: suggestion.artistName || "Autor Desconhecido",
         key: "C",
         bpm: null,
-        youtube_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(suggestion.artistName + ' ' + suggestion.trackName)}`,
+        youtube_url: `https://duckduckgo.com/?q=!ducky+site%3Ayoutube.com+${ytQuery}`,
         spotify_url: null,
-        cifraclub_url: `https://www.cifraclub.com.br/${artistSlug}/${titleSlug}/`,
+        cifraclub_url: `https://duckduckgo.com/?q=!ducky+site%3Acifraclub.com.br+${ytQuery}`,
         audio_url: suggestion.previewUrl || null,
         tags: themeSearchQuery ? [themeSearchQuery.trim()] : []
       };
@@ -348,13 +349,9 @@ export default function Repertorio() {
     try {
       // 1. Gerar Cifra Club
       const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
-      const artistSlug = slugify(formData.artist);
-      const titleSlug = slugify(formData.title);
-      const generatedCifraUrl = `https://www.cifraclub.com.br/${artistSlug}/${titleSlug}/`;
-      
-      // 2. Gerar YouTube Search
       const ytQuery = encodeURIComponent(`${formData.artist} ${formData.title}`);
-      const generatedYoutubeUrl = `https://www.youtube.com/results?search_query=${ytQuery}`;
+      const generatedYoutubeUrl = `https://duckduckgo.com/?q=!ducky+site%3Ayoutube.com+${ytQuery}`;
+      const generatedCifraUrl = `https://duckduckgo.com/?q=!ducky+site%3Acifraclub.com.br+${ytQuery}`;
       
       // 3. Buscar Áudio no iTunes
       let newAudioUrl = "";
