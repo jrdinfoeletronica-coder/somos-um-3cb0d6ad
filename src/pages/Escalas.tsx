@@ -75,10 +75,23 @@ export default function Escalas() {
   const [assignedSongs, setAssignedSongs] = useState<{ id: string; title: string; artist: string }[]>([]);
   const [selectedSongId, setSelectedSongId] = useState("");
 
-  // Buscar escalas
+  // Buscar escalas e limpar escalas antigas automaticamente
   const { data: schedules = [], isLoading } = useQuery({
     queryKey: ['schedules'],
     queryFn: async () => {
+      // 1. Limpeza automática do mês passado
+      const today = new Date();
+      // YYYY-MM-01
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+      
+      try {
+        // Deleta todas as escalas onde a data é menor que o 1º dia do mês atual
+        await supabase.from('schedules').delete().lt('date', firstDayOfMonth);
+      } catch (e) {
+        console.error("Erro ao limpar escalas antigas:", e);
+      }
+
+      // 2. Busca as escalas atuais
       const { data, error } = await supabase.from('schedules').select(`
         *,
         schedule_members (

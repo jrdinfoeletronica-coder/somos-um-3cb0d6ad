@@ -369,25 +369,29 @@ export default function Perfil() {
                   </p>
                 ) : (
                   unavailabilities.map((u: any) => {
-                    // Extrai apenas a parte da data e formata (ex: 20/08/2026)
-                    const dateStr = typeof u.date === 'string' ? u.date.split('T')[0] : '';
+                    // Tenta encontrar a coluna da data (date, data, dia, etc)
+                    const rawDate = u.date || u.data || u.dia || '';
+                    const dateStr = typeof rawDate === 'string' ? rawDate.split('T')[0] : '';
                     const dateParts = dateStr.split('-');
                     const formattedDate = dateParts.length === 3 
                       ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` 
-                      : u.date;
+                      : (rawDate || JSON.stringify(u));
                       
                     return (
-                      <div key={u.id} className="flex items-center justify-between bg-destructive/10 text-destructive-foreground p-3 rounded-lg border border-destructive/20">
-                        <span className="font-medium text-sm">{formattedDate}</span>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="w-8 h-8 text-destructive hover:bg-destructive/20 hover:text-destructive"
-                          onClick={() => deleteUnavailabilityMutation.mutate(u.id)}
-                          disabled={deleteUnavailabilityMutation.isPending}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <div key={u.id} className="flex flex-col gap-1 bg-destructive/10 text-destructive-foreground p-3 rounded-lg border border-destructive/20">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">Data: {formattedDate}</span>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="w-8 h-8 text-destructive hover:bg-destructive/20 hover:text-destructive"
+                            onClick={() => deleteUnavailabilityMutation.mutate(u.id)}
+                            disabled={deleteUnavailabilityMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <span className="text-[10px] opacity-50 font-mono">DEBUG: {JSON.stringify(u)}</span>
                       </div>
                     );
                   })
