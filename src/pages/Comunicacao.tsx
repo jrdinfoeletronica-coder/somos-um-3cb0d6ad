@@ -133,23 +133,10 @@ export default function Comunicacao() {
           });
         }
       )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          // Realtime ativo: para o polling se estava rodando
-          if (pollingInterval) {
-            clearInterval(pollingInterval);
-            pollingInterval = null;
-          }
-        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-          // Realtime falhou: ativa polling a cada 2s como fallback
-          if (!pollingInterval) {
-            pollingInterval = setInterval(fetchMessages, 2000);
-          }
-        }
-      });
+      .subscribe();
 
-    // Inicia polling enquanto aguarda conexão do realtime (primeiros 5s)
-    pollingInterval = setInterval(fetchMessages, 2000);
+    // Polling contínuo e ininterrupto a cada 5 segundos como garantia absoluta
+    pollingInterval = setInterval(fetchMessages, 5000);
 
     return () => {
       supabase.removeChannel(channel);
