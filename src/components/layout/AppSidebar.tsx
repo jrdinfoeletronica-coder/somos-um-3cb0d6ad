@@ -32,6 +32,7 @@ const adminNavItems = [
   { icon: Bell, label: "Comunicação", path: "/comunicacao" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
+  { icon: UserCircle, label: "Meu Perfil", path: "/perfil" },
 ];
 
 const editorNavItems = [
