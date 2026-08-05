@@ -518,14 +518,20 @@ export default function Comunicacao() {
                 className="flex items-center gap-2 px-3 md:px-4 py-3 border-t border-border bg-card shrink-0"
               >
                 <Input
+                  type="text"
+                  name="chat_message"
+                  id="chat_message"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Digite uma mensagem..."
                   className="flex-1 rounded-full bg-secondary/30 border-secondary focus:border-accent"
                   autoComplete="off"
                   autoCorrect="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
+                  autoCapitalize="off"
+                  spellCheck="false"
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
