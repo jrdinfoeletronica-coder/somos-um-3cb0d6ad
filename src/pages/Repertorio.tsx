@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { lookupWorshipKey } from "@/lib/worshipKeys";
 
 export default function Repertorio() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -163,27 +164,14 @@ export default function Repertorio() {
 
   const importSongMutation = useMutation({
     mutationFn: async (suggestion: any) => {
-      const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
-      const artistSlug = slugify(suggestion.artistName);
-      const titleSlug = slugify(suggestion.trackName);
-      const ccUrl = `https://www.cifraclub.com.br/${artistSlug}/${titleSlug}/`;
-      
-      let detectedTone = "C";
-      try {
-        const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(ccUrl)}`;
-        const res = await fetch(proxyUrl);
-        if (res.ok) {
-          const html = await res.text();
-          const tomMatch = html.match(/id="cifra_tom"[^>]*><a[^>]*>([^<]+)<\/a>/i) || html.match(/Tom:\s*<a[^>]*>([^<]+)<\/a>/i);
-          if (tomMatch && tomMatch[1]) {
-            detectedTone = tomMatch[1].trim();
-          }
-        }
-      } catch (e) {
-        console.error("Falha ao raspar tom:", e);
-      }
-      
+      // Busca no banco local de tonalidades
+      const foundKey = lookupWorshipKey(suggestion.trackName, suggestion.artistName);
+      const detectedTone = foundKey || "C";
+
       const ytQuery = encodeURIComponent(`${suggestion.artistName} ${suggestion.trackName}`);
+      const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+      const ccUrl = `https://www.cifraclub.com.br/${slugify(suggestion.artistName)}/${slugify(suggestion.trackName)}/`;
+
       const payload = {
         title: suggestion.trackName,
         artist: suggestion.artistName || "Autor Desconhecido",
@@ -191,7 +179,7 @@ export default function Repertorio() {
         bpm: null,
         youtube_url: `https://duckduckgo.com/?q=!ducky+site%3Ayoutube.com+${ytQuery}`,
         spotify_url: null,
-        cifraclub_url: `https://duckduckgo.com/?q=!ducky+site%3Acifraclub.com.br+${ytQuery}`,
+        cifraclub_url: ccUrl,
         audio_url: suggestion.previewUrl || null,
         tags: themeSearchQuery ? [themeSearchQuery.trim()] : []
       };
@@ -363,31 +351,16 @@ export default function Repertorio() {
     setIsSearchingWeb(true);
     
     try {
-      const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
-      const artistSlug = slugify(formData.artist);
-      const titleSlug = slugify(formData.title);
-      const ccUrl = `https://www.cifraclub.com.br/${artistSlug}/${titleSlug}/`;
-      
-      let detectedTone = formData.key || "C";
-      try {
-        const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(ccUrl)}`;
-        const res = await fetch(proxyUrl);
-        if (res.ok) {
-          const html = await res.text();
-          const tomMatch = html.match(/id="cifra_tom"[^>]*><a[^>]*>([^<]+)<\/a>/i) || html.match(/Tom:\s*<a[^>]*>([^<]+)<\/a>/i);
-          if (tomMatch && tomMatch[1]) {
-            detectedTone = tomMatch[1].trim();
-          }
-        }
-      } catch (e) {
-        console.error("Falha ao raspar tom no autogen:", e);
-      }
+      // Busca tom no banco local
+      const foundKey = lookupWorshipKey(formData.title, formData.artist);
+      const detectedTone = foundKey || formData.key || "C";
 
+      const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
       const ytQuery = encodeURIComponent(`${formData.artist} ${formData.title}`);
       const generatedYoutubeUrl = `https://duckduckgo.com/?q=!ducky+site%3Ayoutube.com+${ytQuery}`;
-      const generatedCifraUrl = ccUrl;
+      const generatedCifraUrl = `https://www.cifraclub.com.br/${slugify(formData.artist)}/${slugify(formData.title)}/`;
       
-      // 3. Buscar Áudio no iTunes
+      // Buscar Audio no iTunes
       let newAudioUrl = "";
       try {
         const iRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(formData.artist + ' ' + formData.title)}&entity=song&limit=1&country=br`);
@@ -407,10 +380,14 @@ export default function Repertorio() {
         audio_url: newAudioUrl || prev.audio_url
       }));
       
-      toast.success("Dados da internet preenchidos com sucesso!");
+      if (foundKey) {
+        toast.success(`Tom encontrado: ${foundKey} — Links preenchidos!`);
+      } else {
+        toast.success("Links preenchidos! Tom não encontrado no banco — verifique manualmente.");
+      }
     } catch (e) {
       console.error("Erro ao buscar na internet", e);
-      toast.error("Erro ao buscar informações.");
+      toast.error("Erro ao buscar informacoes.");
     } finally {
       setIsSearchingWeb(false);
     }
