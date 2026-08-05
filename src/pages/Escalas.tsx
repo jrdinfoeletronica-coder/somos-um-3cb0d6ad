@@ -64,6 +64,7 @@ export default function Escalas() {
   // Auto Generate State
   const [autoGenWeeks, setAutoGenWeeks] = useState(4);
   const [autoGenAssign, setAutoGenAssign] = useState(true);
+  const [unavailabilityStrategy, setUnavailabilityStrategy] = useState("whole_week"); // "whole_week" | "only_day"
 
   // Equipe
   const [assignedMembers, setAssignedMembers] = useState<{ name: string; role: string }[]>([]);
@@ -137,6 +138,19 @@ export default function Escalas() {
       // Usamos maybeSingle/select pra não estourar erro feio se a tabela não existir ainda
       const { data, error } = await supabase.from('schedule_templates').select('*').eq('is_active', true);
       if (error) return []; // Retorna vazio se tabela não existir
+      return data || [];
+    }
+  });
+
+  // Buscar indisponibilidades
+  const { data: unavailabilities = [] } = useQuery({
+    queryKey: ['member_unavailability'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('member_unavailability').select('*');
+      if (error) {
+        console.error("Tabela member_unavailability pode não existir ainda", error);
+        return [];
+      }
       return data || [];
     }
   });
@@ -307,123 +321,202 @@ export default function Escalas() {
         throw new Error("Nenhum modelo (template) encontrado. Execute o SQL de configuração primeiro.");
       }
 
-      // Lógica simplificada para geração: 
-      // 1. Achar os dias das próximas N semanas
-      // 2. Criar escalas baseadas nos templates
-      // Nota: numa aplicação real, o cálculo exato do 3º domingo exige math de datas (date-fns).
-      // Vamos criar um payload genérico para demonstrar:
-      
+      // Lógica de geração agrupada por semana (Seg-Dom)
       const newSchedules = [];
       const today = new Date();
+      // Ajusta para a próxima segunda-feira como inicio (ou usar a data atual e ir iterando)
       
-      // Itera pelas próximas N semanas (7 dias * N)
-      for (let i = 1; i <= autoGenWeeks * 7; i++) {
-        const currentDate = new Date(today);
-        currentDate.setDate(today.getDate() + i);
+      const weeksToGenerate = [];
+      
+      // Itera pelas próximas N semanas (agrupando dias)
+      for (let w = 0; w < autoGenWeeks; w++) {
+        const weekSchedules = [];
         
-        const dayOfWeek = currentDate.getDay(); // 0-Dom, 1-Seg...
-        const dayOfMonth = currentDate.getDate();
-        const nthWeek = Math.ceil(dayOfMonth / 7); // 1, 2, 3, 4, 5
-        
-        // Verifica se existe template para este dia
-        for (const t of templates) {
-          let shouldCreate = false;
+        for (let d = 1; d <= 7; d++) {
+          const currentDate = new Date(today);
+          currentDate.setDate(today.getDate() + (w * 7) + d);
           
-          if (t.is_special_monthly) {
-            // Regra especial mensal (ex: Santa Ceia no 3º domingo)
-            if (dayOfWeek === t.day_of_week && nthWeek === t.nth_week) {
-              shouldCreate = true;
-            }
-          } else {
-            // Regra normal (toda semana), MAS não criar se for o dia da regra especial!
-            // Ex: Todo domingo, mas não no 3º
-            const isConflict = templates.some(st => 
-              st.is_special_monthly && 
-              st.day_of_week === dayOfWeek && 
-              nthWeek === st.nth_week
-            );
+          const dayOfWeek = currentDate.getDay(); // 0-Dom, 1-Seg...
+          const dayOfMonth = currentDate.getDate();
+          const nthWeek = Math.ceil(dayOfMonth / 7);
+          
+          let selectedTemplate = null;
+          
+          // Verifica se existe template para este dia
+          for (const t of templates) {
+            let shouldCreate = false;
             
-            if (dayOfWeek === t.day_of_week && !isConflict) {
-              shouldCreate = true;
+            if (t.is_special_monthly) {
+              if (dayOfWeek === t.day_of_week && nthWeek === t.nth_week) {
+                shouldCreate = true;
+              }
+            } else {
+              const isConflict = templates.some(st => 
+                st.is_special_monthly && 
+                st.day_of_week === dayOfWeek && 
+                nthWeek === st.nth_week
+              );
+              
+              if (dayOfWeek === t.day_of_week && !isConflict) {
+                shouldCreate = true;
+              }
+            }
+
+            if (shouldCreate) {
+              selectedTemplate = t;
+              break;
             }
           }
 
-          if (shouldCreate) {
+          if (selectedTemplate) {
             const formattedDate = currentDate.toISOString().split('T')[0];
-            
-            // Só pra garantir que já não existe escala nessa data/evento
             const alreadyExists = schedules.some((s: any) => 
-              s.date === formattedDate && s.event === t.event_name
+              s.date === formattedDate && s.event === selectedTemplate.event_name
             );
             
             if (!alreadyExists) {
-              newSchedules.push({
+              weekSchedules.push({
                 date: formattedDate,
-                time: t.time,
-                event: t.event_name,
-                location: t.location || "Templo Principal",
+                time: selectedTemplate.time,
+                event: selectedTemplate.event_name,
+                location: selectedTemplate.location || "Templo Principal",
                 status: "pending",
-                _template_ref: t // Guardar ref para usar no insert members
+                _template_ref: selectedTemplate,
+                _date_obj: currentDate
               });
             }
           }
         }
+        
+        if (weekSchedules.length > 0) {
+          weeksToGenerate.push(weekSchedules);
+        }
       }
 
-      if (newSchedules.length === 0) {
-        throw new Error("Não há novas datas para gerar (talvez já estejam criadas).");
-      }
+      let totalInserted = 0;
 
-      // Inserir as escalas
-      for (const sched of newSchedules) {
-        const templateRef = sched._template_ref;
-        delete sched._template_ref;
-        
-        const { data: insertedSched, error: insertError } = await supabase
-          .from("schedules")
-          .insert([sched])
-          .select()
-          .single();
-          
-        if (insertError) throw insertError;
-        
-        // Atribuir Membros Automaticamente
-        if (autoGenAssign && templateRef.role_requirements) {
-          const reqs = Array.isArray(templateRef.role_requirements) 
-            ? templateRef.role_requirements 
-            : typeof templateRef.role_requirements === 'string' 
-              ? JSON.parse(templateRef.role_requirements) : [];
-              
-          const membersToInsert = [];
-          
-          // Pra cada função requerida
-          for (const req of reqs) {
-            // Pega membros que tocam essa função
-            const availableMembers = members.filter((m: any) => 
-              m.roles && m.roles.includes(req.role) && m.status === 'active'
+      // Processa semana por semana para manter a "Equipe da Semana"
+      for (const week of weeksToGenerate) {
+        // 1. Determina as funções necessárias da semana (união das necessidades)
+        const weeklyRoles = new Map();
+        for (const sched of week) {
+          const reqs = typeof sched._template_ref.role_requirements === 'string' 
+            ? JSON.parse(sched._template_ref.role_requirements) 
+            : sched._template_ref.role_requirements || [];
+            
+          for (const r of reqs) {
+            if (!weeklyRoles.has(r.role) || weeklyRoles.get(r.role) < r.count) {
+              weeklyRoles.set(r.role, r.count);
+            }
+          }
+        }
+
+        // 2. Sorteia a equipe base da semana
+        const weekTeam: { role: string; member: any }[] = [];
+        const usedMemberIds = new Set(); // Previne que o membro faça duas funções na mesma semana
+
+        if (autoGenAssign) {
+          for (const [role, count] of weeklyRoles.entries()) {
+            // Busca membros ativos para a função
+            let available = members.filter((m: any) => 
+              m.roles && m.roles.includes(role) && m.status === 'active' && !usedMemberIds.has(m.id)
             );
             
-            // Se tem membro, pega N membros (simulando Round Robin pegando aleatório/primeiros por simplificação)
-            // Ideal seria ordernar pelo count de `times_played`
-            const selected = availableMembers.slice(0, req.count || 1);
-            
-            for (const sel of selected) {
-              membersToInsert.push({
-                schedule_id: insertedSched.id,
-                member_name: sel.name,
-                role: req.role,
-                status: 'pending'
+            // Filtro de indisponibilidade (whole_week strategy)
+            if (unavailabilityStrategy === "whole_week") {
+              available = available.filter((m: any) => {
+                // Se estiver indisponível em QUALQUER dia de culto dessa semana, cai fora
+                for (const sched of week) {
+                  const isUnavail = unavailabilities.some((u: any) => 
+                    u.member_id === m.id && u.date === sched.date
+                  );
+                  if (isUnavail) return false;
+                }
+                return true;
               });
             }
+
+            // Idealmente: ordenar randômico ou por "quem tocou menos recentemente"
+            // Por simplicidade: embaralha
+            available = available.sort(() => 0.5 - Math.random());
+            
+            const selected = available.slice(0, count);
+            for (const s of selected) {
+              weekTeam.push({ role, member: s });
+              usedMemberIds.add(s.id);
+            }
           }
+        }
+
+        // 3. Insere os cultos e atribui a equipe
+        for (const sched of week) {
+          const templateRef = sched._template_ref;
+          delete sched._template_ref;
+          delete sched._date_obj;
           
-          if (membersToInsert.length > 0) {
-            await supabase.from("schedule_members").insert(membersToInsert);
+          const { data: insertedSched, error: insertError } = await supabase
+            .from("schedules")
+            .insert([sched])
+            .select()
+            .single();
+            
+          if (insertError) throw insertError;
+          totalInserted++;
+          
+          // Atribui os membros para ESTE dia específico
+          if (autoGenAssign && templateRef.role_requirements) {
+            const dayReqs = typeof templateRef.role_requirements === 'string' 
+              ? JSON.parse(templateRef.role_requirements) 
+              : templateRef.role_requirements || [];
+              
+            const membersToInsert = [];
+            
+            for (const req of dayReqs) {
+              // Pega o membro da weekTeam pra esta função
+              const teamMembersForRole = weekTeam.filter(wt => wt.role === req.role);
+              
+              for (let i = 0; i < Math.min(req.count, teamMembersForRole.length); i++) {
+                let memberToAssign = teamMembersForRole[i].member;
+                
+                // Filtro de indisponibilidade (only_day strategy)
+                const isUnavail = unavailabilities.some((u: any) => 
+                  u.member_id === memberToAssign.id && u.date === sched.date
+                );
+                
+                if (isUnavail && unavailabilityStrategy === "only_day") {
+                  // Substitui apenas pro dia
+                  const substitute = members.find((m: any) => 
+                    m.roles && m.roles.includes(req.role) && 
+                    m.status === 'active' && 
+                    m.id !== memberToAssign.id &&
+                    !unavailabilities.some((u: any) => u.member_id === m.id && u.date === sched.date)
+                  );
+                  if (substitute) memberToAssign = substitute;
+                }
+                
+                // Se o memberToAssign ainda for inválido/indisponível aqui (porque não achou substituto), ele vai ficar vazio ou ser inserido com aviso, mas vamos inserir pra manter a vaga preenchida e o líder resolver
+                
+                membersToInsert.push({
+                  schedule_id: insertedSched.id,
+                  member_name: memberToAssign.name,
+                  role: req.role,
+                  status: 'pending'
+                });
+              }
+            }
+            
+            if (membersToInsert.length > 0) {
+              await supabase.from("schedule_members").insert(membersToInsert);
+            }
           }
         }
       }
+
+      if (totalInserted === 0) {
+        throw new Error("Não há novas datas para gerar (talvez já estejam criadas).");
+      }
       
-      return newSchedules.length;
+      return totalInserted;
     },
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ["schedules"] });
@@ -895,17 +988,35 @@ export default function Escalas() {
                   </select>
                 </div>
 
-                <div className="flex items-center gap-3 bg-secondary/20 p-3 rounded-lg border border-border">
-                  <input 
-                    type="checkbox" 
-                    id="auto-assign"
-                    checked={autoGenAssign}
-                    onChange={(e) => setAutoGenAssign(e.target.checked)}
-                    className="w-4 h-4 rounded text-accent focus:ring-accent"
-                  />
-                  <Label htmlFor="auto-assign" className="cursor-pointer">
-                    Sortear e atribuir membros automaticamente nas escalas criadas
-                  </Label>
+                <div className="flex flex-col gap-4 bg-secondary/20 p-4 rounded-lg border border-border">
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      id="auto-assign"
+                      checked={autoGenAssign}
+                      onChange={(e) => setAutoGenAssign(e.target.checked)}
+                      className="w-4 h-4 rounded text-accent focus:ring-accent"
+                    />
+                    <Label htmlFor="auto-assign" className="cursor-pointer font-semibold">
+                      Sortear e atribuir equipe para a semana inteira
+                    </Label>
+                  </div>
+                  
+                  {autoGenAssign && (
+                    <div className="pl-7 space-y-2">
+                      <Label className="text-muted-foreground text-xs uppercase tracking-wider">
+                        O que fazer se o membro sorteado avisou que está indisponível em um dos dias?
+                      </Label>
+                      <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={unavailabilityStrategy}
+                        onChange={(e) => setUnavailabilityStrategy(e.target.value)}
+                      >
+                        <option value="whole_week">Opção A: Tirar o membro da semana toda (Escalar outro na semana)</option>
+                        <option value="only_day">Opção B: Escalar um Substituto apenas naquele dia específico</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

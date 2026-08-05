@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { UserCircle, Camera, Loader2, Save } from "lucide-react";
+import { UserCircle, Camera, Loader2, Save, CalendarOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,28 @@ export default function Perfil() {
   });
 
   const [uploading, setUploading] = useState(false);
+  const [newUnavailability, setNewUnavailability] = useState("");
+
+  // Busca indisponibilidades
+  const { data: unavailabilities = [], isLoading: isLoadingUnavailabilities } = useQuery({
+    queryKey: ["unavailabilities", memberId],
+    queryFn: async () => {
+      if (!memberId) return [];
+      const { data, error } = await supabase
+        .from("member_unavailability")
+        .select("*")
+        .eq("member_id", memberId)
+        .order("date", { ascending: true });
+      
+      if (error) {
+        // Ignora erro se a tabela não existir ainda
+        console.error(error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!memberId,
+  });
 
   // Busca os dados do membro logado
   const { data: member, isLoading } = useQuery({
@@ -152,6 +174,41 @@ export default function Perfil() {
     saveProfileMutation.mutate();
   };
 
+  const addUnavailabilityMutation = useMutation({
+    mutationFn: async (dateStr: string) => {
+      if (!memberId || !dateStr) throw new Error("Data inválida");
+      const { error } = await supabase
+        .from("member_unavailability")
+        .insert([{ member_id: memberId, date: dateStr }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["unavailabilities", memberId] });
+      toast.success("Data de indisponibilidade adicionada.");
+      setNewUnavailability("");
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao adicionar data (talvez já exista): " + err.message);
+    }
+  });
+
+  const deleteUnavailabilityMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("member_unavailability")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["unavailabilities", memberId] });
+      toast.success("Data removida.");
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao remover data: " + err.message);
+    }
+  });
+
   if (!memberId) {
     return (
       <DashboardLayout title="Meu Perfil">
@@ -279,6 +336,63 @@ export default function Perfil() {
                 </Button>
               </div>
             </form>
+
+            <div className="pt-8 border-t border-border">
+              <h3 className="text-lg font-bold font-display flex items-center gap-2 mb-4 text-foreground">
+                <CalendarOff className="w-5 h-5 text-destructive" />
+                Minhas Indisponibilidades
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Selecione as datas em que você não poderá participar de cultos ou escalas. O gerador automático irá evitar colocar seu nome nestes dias.
+              </p>
+              
+              <div className="flex gap-2 mb-6">
+                <Input 
+                  type="date"
+                  value={newUnavailability}
+                  onChange={(e) => setNewUnavailability(e.target.value)}
+                  className="bg-secondary/20 max-w-[200px]"
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={() => newUnavailability && addUnavailabilityMutation.mutate(newUnavailability)}
+                  disabled={!newUnavailability || addUnavailabilityMutation.isPending}
+                >
+                  Adicionar
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {unavailabilities.length === 0 && !isLoadingUnavailabilities ? (
+                  <p className="text-sm text-muted-foreground col-span-full">
+                    Nenhuma data de indisponibilidade cadastrada.
+                  </p>
+                ) : (
+                  unavailabilities.map((u: any) => {
+                    // formata a data para exibir bonito (ex: 20/08/2026)
+                    const dateParts = u.date.split('-');
+                    const formattedDate = dateParts.length === 3 
+                      ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` 
+                      : u.date;
+                      
+                    return (
+                      <div key={u.id} className="flex items-center justify-between bg-destructive/10 text-destructive-foreground p-3 rounded-lg border border-destructive/20">
+                        <span className="font-medium text-sm">{formattedDate}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="w-8 h-8 text-destructive hover:bg-destructive/20 hover:text-destructive"
+                          onClick={() => deleteUnavailabilityMutation.mutate(u.id)}
+                          disabled={deleteUnavailabilityMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
