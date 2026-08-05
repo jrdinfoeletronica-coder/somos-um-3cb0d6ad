@@ -651,25 +651,29 @@ export default function Repertorio() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="song-tags">Tags (separadas por vírgula)</Label>
-                <Input
-                  id="song-tags"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  placeholder="Adoração, Celebração, Rápida"
-                />
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="song-tags">Tags (separadas por vírgula)</Label>
+                  <Input
+                    id="song-tags"
+                    value={formData.tags}
+                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                    placeholder="Adoração, Celebração, Rápida"
+                  />
+                </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" variant="gold" disabled={saveSongMutation.isPending}>
-                {saveSongMutation.isPending ? "Salvando..." : "Salvar Música"}
-              </Button>
-            </DialogFooter>
+                {/* Tons Específicos por Cantor */}
+                {editingSong && <MemberSongKeys songId={editingSong.id} />}
+
+              </div>
+
+              <DialogFooter className="bg-secondary/20 p-4 border-t border-border -mx-6 -mb-6 mt-6">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="gold" disabled={saveSongMutation.isPending}>
+                  {saveSongMutation.isPending ? "Salvando..." : "Salvar Música"}
+                </Button>
+              </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
