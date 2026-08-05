@@ -589,6 +589,75 @@ export default function Repertorio() {
                 </Button>
               </div>
 
+              {/* Resultados da Busca Inteligente (inline, dentro do modal) */}
+              {isSearchResultsOpen && (
+                <div className="rounded-xl border-2 border-accent/40 bg-accent/5 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 bg-accent/10 border-b border-accent/20">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-accent" />
+                      Selecione a versão correta
+                    </h4>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-7 text-xs" 
+                      onClick={() => setIsSearchResultsOpen(false)}
+                    >
+                      Fechar
+                    </Button>
+                  </div>
+                  {isLoadingSearchResults ? (
+                    <div className="flex flex-col items-center justify-center py-8 space-y-2">
+                      <RefreshCw className="w-8 h-8 animate-spin text-accent" />
+                      <p className="text-muted-foreground text-xs">Buscando...</p>
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <div className="divide-y divide-border max-h-[300px] overflow-y-auto">
+                      {searchResults.map((result, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 gap-3 hover:bg-accent/5 transition-colors">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {result.artworkUrl100 ? (
+                              <img 
+                                src={result.artworkUrl100} 
+                                alt={result.trackName} 
+                                className="w-10 h-10 rounded-lg object-cover border shrink-0"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
+                                <Music className="w-4 h-4 text-accent" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm truncate">{result.trackName}</p>
+                              <p className="text-xs text-muted-foreground truncate">{result.artistName}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {result.previewUrl && (
+                              <audio src={result.previewUrl} controls className="h-7 w-32" />
+                            )}
+                            <Button 
+                              type="button"
+                              variant="gold" 
+                              size="sm" 
+                              className="h-7 text-xs"
+                              onClick={() => handleSelectSearchResult(result)}
+                            >
+                              Selecionar
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="text-sm text-muted-foreground">Nenhum resultado encontrado.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="song-title">Título *</Label>
@@ -787,74 +856,6 @@ export default function Repertorio() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Resultados da Busca Inteligente */}
-      <Dialog open={isSearchResultsOpen} onOpenChange={setIsSearchResultsOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Globe className="w-5 h-5 text-accent" />
-              Resultados da Busca
-            </DialogTitle>
-            <DialogDescription>
-              Selecione a versão correta para preencher os links automaticamente.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-4 space-y-4">
-            {isLoadingSearchResults ? (
-              <div className="flex flex-col items-center justify-center py-12 space-y-3">
-                <RefreshCw className="w-10 h-10 animate-spin text-accent" />
-                <p className="text-muted-foreground text-sm">Buscando na internet...</p>
-              </div>
-            ) : searchResults.length > 0 ? (
-              <div className="space-y-3">
-                <div className="divide-y divide-border border rounded-lg overflow-hidden bg-card">
-                  {searchResults.map((result, idx) => (
-                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center gap-3">
-                        {result.artworkUrl100 ? (
-                          <img 
-                            src={result.artworkUrl100} 
-                            alt={result.trackName} 
-                            className="w-12 h-12 rounded-lg object-cover border"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-lg bg-accent/20 flex items-center justify-center">
-                            <Music className="w-5 h-5 text-accent" />
-                          </div>
-                        )}
-                        <div>
-                          <h4 className="font-semibold text-foreground text-sm sm:text-base">{result.trackName}</h4>
-                          <p className="text-xs sm:text-sm text-muted-foreground">{result.artistName}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 self-end sm:self-center">
-                        {result.previewUrl && (
-                          <audio src={result.previewUrl} controls className="h-8 w-36 sm:w-40" />
-                        )}
-                        <Button 
-                          variant="gold" 
-                          size="sm" 
-                          className="h-8"
-                          onClick={() => handleSelectSearchResult(result)}
-                        >
-                          Selecionar
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsSearchResultsOpen(false)}>
-              Cancelar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </DashboardLayout>
   );
 }
