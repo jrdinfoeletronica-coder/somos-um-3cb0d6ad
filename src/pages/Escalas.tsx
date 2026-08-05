@@ -427,9 +427,11 @@ export default function Escalas() {
               available = available.filter((m: any) => {
                 // Se estiver indisponível em QUALQUER dia de culto dessa semana, cai fora
                 for (const sched of week) {
-                  const isUnavail = unavailabilities.some((u: any) => 
-                    u.member_id === m.id && u.date === sched.date
-                  );
+                  const isUnavail = unavailabilities.some((u: any) => {
+                    const uDate = typeof u.date === 'string' ? u.date.split('T')[0] : '';
+                    const sDate = typeof sched.date === 'string' ? sched.date.split('T')[0] : '';
+                    return u.member_id === m.id && uDate === sDate;
+                  });
                   if (isUnavail) return false;
                 }
                 return true;
@@ -479,18 +481,25 @@ export default function Escalas() {
                 let memberToAssign = teamMembersForRole[i].member;
                 
                 // Filtro de indisponibilidade (only_day strategy)
-                const isUnavail = unavailabilities.some((u: any) => 
-                  u.member_id === memberToAssign.id && u.date === sched.date
-                );
+                const isUnavail = unavailabilities.some((u: any) => {
+                  const uDate = typeof u.date === 'string' ? u.date.split('T')[0] : '';
+                  const sDate = typeof sched.date === 'string' ? sched.date.split('T')[0] : '';
+                  return u.member_id === memberToAssign.id && uDate === sDate;
+                });
                 
                 if (isUnavail && unavailabilityStrategy === "only_day") {
                   // Substitui apenas pro dia
-                  const substitute = members.find((m: any) => 
-                    m.roles && m.roles.includes(req.role) && 
-                    m.status === 'active' && 
-                    m.id !== memberToAssign.id &&
-                    !unavailabilities.some((u: any) => u.member_id === m.id && u.date === sched.date)
-                  );
+                  const substitute = members.find((m: any) => {
+                    if (!m.roles || !m.roles.includes(req.role) || m.status !== 'active' || m.id === memberToAssign.id) return false;
+                    
+                    const subUnavail = unavailabilities.some((u: any) => {
+                      const uDate = typeof u.date === 'string' ? u.date.split('T')[0] : '';
+                      const sDate = typeof sched.date === 'string' ? sched.date.split('T')[0] : '';
+                      return u.member_id === m.id && uDate === sDate;
+                    });
+                    
+                    return !subUnavail;
+                  });
                   if (substitute) memberToAssign = substitute;
                 }
                 

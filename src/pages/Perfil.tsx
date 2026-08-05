@@ -369,8 +369,9 @@ export default function Perfil() {
                   </p>
                 ) : (
                   unavailabilities.map((u: any) => {
-                    // formata a data para exibir bonito (ex: 20/08/2026)
-                    const dateParts = u.date.split('-');
+                    // Extrai apenas a parte da data e formata (ex: 20/08/2026)
+                    const dateStr = typeof u.date === 'string' ? u.date.split('T')[0] : '';
+                    const dateParts = dateStr.split('-');
                     const formattedDate = dateParts.length === 3 
                       ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` 
                       : u.date;
