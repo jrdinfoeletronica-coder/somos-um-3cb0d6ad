@@ -85,11 +85,13 @@ export default function Comunicacao() {
 
   const conversations: Conversation[] = [
     { id: "group", name: "Geral do Ministério", isGroup: true },
-    ...members.map((m: any) => ({
-      id: `member:${m.name}`,
-      name: m.name,
-      isGroup: false,
-    })),
+    ...members
+      .filter((m: any) => m.name !== myName)
+      .map((m: any) => ({
+        id: `member:${m.name}`,
+        name: m.name,
+        isGroup: false,
+      })),
   ];
 
   const filteredConversations = conversations.filter((c) =>
