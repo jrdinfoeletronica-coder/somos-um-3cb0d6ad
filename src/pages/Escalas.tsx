@@ -15,7 +15,9 @@ import {
   Info,
   Clock,
   MapPin,
-  CheckCircle
+  CheckCircle,
+  Wand2,
+  Settings2
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
@@ -47,8 +49,8 @@ export default function Escalas() {
     return me?.status || null;
   };
 
-  // Estados para o Modal de Escala
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAutoGenerateOpen, setIsAutoGenerateOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"detalhes" | "equipe" | "repertorio">("detalhes");
   const [editingSchedule, setEditingSchedule] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -58,6 +60,10 @@ export default function Escalas() {
     location: "",
     status: "pending" as "pending" | "confirmed" | "cancelled"
   });
+
+  // Auto Generate State
+  const [autoGenWeeks, setAutoGenWeeks] = useState(4);
+  const [autoGenAssign, setAutoGenAssign] = useState(true);
 
   // Equipe
   const [assignedMembers, setAssignedMembers] = useState<{ name: string; role: string }[]>([]);
@@ -120,6 +126,17 @@ export default function Escalas() {
     queryFn: async () => {
       const { data, error } = await supabase.from('songs').select('*');
       if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Buscar templates
+  const { data: templates = [] } = useQuery({
+    queryKey: ['schedule_templates'],
+    queryFn: async () => {
+      // Usamos maybeSingle/select pra não estourar erro feio se a tabela não existir ainda
+      const { data, error } = await supabase.from('schedule_templates').select('*').eq('is_active', true);
+      if (error) return []; // Retorna vazio se tabela não existir
       return data || [];
     }
   });
@@ -283,6 +300,141 @@ export default function Escalas() {
     }
   };
 
+  // Funções de Geração Automática
+  const autoGenerateMutation = useMutation({
+    mutationFn: async () => {
+      if (templates.length === 0) {
+        throw new Error("Nenhum modelo (template) encontrado. Execute o SQL de configuração primeiro.");
+      }
+
+      // Lógica simplificada para geração: 
+      // 1. Achar os dias das próximas N semanas
+      // 2. Criar escalas baseadas nos templates
+      // Nota: numa aplicação real, o cálculo exato do 3º domingo exige math de datas (date-fns).
+      // Vamos criar um payload genérico para demonstrar:
+      
+      const newSchedules = [];
+      const today = new Date();
+      
+      // Itera pelas próximas N semanas (7 dias * N)
+      for (let i = 1; i <= autoGenWeeks * 7; i++) {
+        const currentDate = new Date(today);
+        currentDate.setDate(today.getDate() + i);
+        
+        const dayOfWeek = currentDate.getDay(); // 0-Dom, 1-Seg...
+        const dayOfMonth = currentDate.getDate();
+        const nthWeek = Math.ceil(dayOfMonth / 7); // 1, 2, 3, 4, 5
+        
+        // Verifica se existe template para este dia
+        for (const t of templates) {
+          let shouldCreate = false;
+          
+          if (t.is_special_monthly) {
+            // Regra especial mensal (ex: Santa Ceia no 3º domingo)
+            if (dayOfWeek === t.day_of_week && nthWeek === t.nth_week) {
+              shouldCreate = true;
+            }
+          } else {
+            // Regra normal (toda semana), MAS não criar se for o dia da regra especial!
+            // Ex: Todo domingo, mas não no 3º
+            const isConflict = templates.some(st => 
+              st.is_special_monthly && 
+              st.day_of_week === dayOfWeek && 
+              nthWeek === st.nth_week
+            );
+            
+            if (dayOfWeek === t.day_of_week && !isConflict) {
+              shouldCreate = true;
+            }
+          }
+
+          if (shouldCreate) {
+            const formattedDate = currentDate.toISOString().split('T')[0];
+            
+            // Só pra garantir que já não existe escala nessa data/evento
+            const alreadyExists = schedules.some((s: any) => 
+              s.date === formattedDate && s.event === t.event_name
+            );
+            
+            if (!alreadyExists) {
+              newSchedules.push({
+                date: formattedDate,
+                time: t.time,
+                event: t.event_name,
+                location: t.location || "Templo Principal",
+                status: "pending",
+                _template_ref: t // Guardar ref para usar no insert members
+              });
+            }
+          }
+        }
+      }
+
+      if (newSchedules.length === 0) {
+        throw new Error("Não há novas datas para gerar (talvez já estejam criadas).");
+      }
+
+      // Inserir as escalas
+      for (const sched of newSchedules) {
+        const templateRef = sched._template_ref;
+        delete sched._template_ref;
+        
+        const { data: insertedSched, error: insertError } = await supabase
+          .from("schedules")
+          .insert([sched])
+          .select()
+          .single();
+          
+        if (insertError) throw insertError;
+        
+        // Atribuir Membros Automaticamente
+        if (autoGenAssign && templateRef.role_requirements) {
+          const reqs = Array.isArray(templateRef.role_requirements) 
+            ? templateRef.role_requirements 
+            : typeof templateRef.role_requirements === 'string' 
+              ? JSON.parse(templateRef.role_requirements) : [];
+              
+          const membersToInsert = [];
+          
+          // Pra cada função requerida
+          for (const req of reqs) {
+            // Pega membros que tocam essa função
+            const availableMembers = members.filter((m: any) => 
+              m.roles && m.roles.includes(req.role) && m.status === 'active'
+            );
+            
+            // Se tem membro, pega N membros (simulando Round Robin pegando aleatório/primeiros por simplificação)
+            // Ideal seria ordernar pelo count de `times_played`
+            const selected = availableMembers.slice(0, req.count || 1);
+            
+            for (const sel of selected) {
+              membersToInsert.push({
+                schedule_id: insertedSched.id,
+                member_name: sel.name,
+                role: req.role,
+                status: 'pending'
+              });
+            }
+          }
+          
+          if (membersToInsert.length > 0) {
+            await supabase.from("schedule_members").insert(membersToInsert);
+          }
+        }
+      }
+      
+      return newSchedules.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+      toast.success(`${count} escalas geradas com sucesso!`);
+      setIsAutoGenerateOpen(false);
+    },
+    onError: (err: any) => {
+      toast.error("Erro na geração: " + err.message);
+    }
+  });
+
   // Funções de Equipe
   const handleAddMemberToSchedule = () => {
     if (!selectedMemberName || !selectedMemberRole) {
@@ -359,10 +511,16 @@ export default function Escalas() {
           </div>
 
           {userRole === "admin" && (
-            <Button variant="gold" onClick={handleOpenNewSchedule}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Escala
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setIsAutoGenerateOpen(true)} className="border-accent text-accent hover:bg-accent hover:text-primary">
+                <Wand2 className="w-4 h-4 mr-2" />
+                Gerar Automático
+              </Button>
+              <Button variant="gold" onClick={handleOpenNewSchedule}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Escala
+              </Button>
+            </div>
           )}
         </div>
 
@@ -697,6 +855,72 @@ export default function Escalas() {
                 )}
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Geração Automática */}
+        <Dialog open={isAutoGenerateOpen} onOpenChange={setIsAutoGenerateOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl font-display">
+                <Wand2 className="w-5 h-5 text-accent" />
+                Gerador Automático de Escalas
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4 space-y-6">
+              <div className="bg-secondary/30 p-4 rounded-xl border border-border">
+                <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                  <Settings2 className="w-4 h-4" /> Regras Ativas:
+                </h4>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
+                  {templates.length > 0 ? templates.map((t: any) => (
+                    <li key={t.id}>{t.name} ({t.time})</li>
+                  )) : (
+                    <li className="text-red-400">Nenhum template encontrado. Execute o banco de dados.</li>
+                  )}
+                </ul>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Para quantas semanas deseja gerar?</Label>
+                  <select 
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={autoGenWeeks}
+                    onChange={(e) => setAutoGenWeeks(Number(e.target.value))}
+                  >
+                    <option value={4}>1 Mês (4 semanas)</option>
+                    <option value={8}>2 Meses (8 semanas)</option>
+                    <option value={12}>3 Meses (12 semanas)</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-3 bg-secondary/20 p-3 rounded-lg border border-border">
+                  <input 
+                    type="checkbox" 
+                    id="auto-assign"
+                    checked={autoGenAssign}
+                    onChange={(e) => setAutoGenAssign(e.target.checked)}
+                    className="w-4 h-4 rounded text-accent focus:ring-accent"
+                  />
+                  <Label htmlFor="auto-assign" className="cursor-pointer">
+                    Sortear e atribuir membros automaticamente nas escalas criadas
+                  </Label>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAutoGenerateOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                variant="gold" 
+                onClick={() => autoGenerateMutation.mutate()}
+                disabled={autoGenerateMutation.isPending || templates.length === 0}
+              >
+                {autoGenerateMutation.isPending ? "Gerando..." : "Gerar Escalas"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
