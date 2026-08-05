@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 
 export default function Perfil() {
@@ -22,7 +25,7 @@ export default function Perfil() {
   });
 
   const [uploading, setUploading] = useState(false);
-  const [newUnavailability, setNewUnavailability] = useState("");
+  const [selectedDates, setSelectedDates] = useState<Date[] | undefined>([]);
 
   // Busca indisponibilidades
   const { data: unavailabilities = [], isLoading: isLoadingUnavailabilities } = useQuery({
@@ -175,20 +178,29 @@ export default function Perfil() {
   };
 
   const addUnavailabilityMutation = useMutation({
-    mutationFn: async (dateStr: string) => {
-      if (!memberId || !dateStr) throw new Error("Data inválida");
+    mutationFn: async (dates: Date[]) => {
+      if (!memberId || !dates || dates.length === 0) throw new Error("Nenhuma data selecionada");
+      
+      // Formata cada Date para "YYYY-MM-DD" no timezone local
+      const payloads = dates.map(d => {
+        // format local YYYY-MM-DD
+        const dateStr = format(d, "yyyy-MM-dd");
+        return { member_id: memberId, date: dateStr };
+      });
+      
       const { error } = await supabase
         .from("member_unavailability")
-        .insert([{ member_id: memberId, date: dateStr }]);
+        .insert(payloads);
+        
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["unavailabilities", memberId] });
-      toast.success("Data de indisponibilidade adicionada.");
-      setNewUnavailability("");
+      toast.success("Datas de indisponibilidade adicionadas!");
+      setSelectedDates([]);
     },
     onError: (err: any) => {
-      toast.error("Erro ao adicionar data (talvez já exista): " + err.message);
+      toast.error("Erro ao adicionar datas (talvez já existam): " + err.message);
     }
   });
 
@@ -346,20 +358,29 @@ export default function Perfil() {
                 Selecione as datas em que você não poderá participar de cultos ou escalas. O gerador automático irá evitar colocar seu nome nestes dias.
               </p>
               
-              <div className="flex gap-2 mb-6">
-                <Input 
-                  type="date"
-                  value={newUnavailability}
-                  onChange={(e) => setNewUnavailability(e.target.value)}
-                  className="bg-secondary/20 max-w-[200px]"
-                />
-                <Button 
-                  variant="outline" 
-                  onClick={() => newUnavailability && addUnavailabilityMutation.mutate(newUnavailability)}
-                  disabled={!newUnavailability || addUnavailabilityMutation.isPending}
-                >
-                  Adicionar
-                </Button>
+              <div className="flex flex-col sm:flex-row gap-6 mb-8">
+                <div className="bg-secondary/20 p-2 rounded-xl inline-block border border-border self-start">
+                  <Calendar
+                    mode="multiple"
+                    selected={selectedDates}
+                    onSelect={setSelectedDates}
+                    className="bg-transparent"
+                    locale={ptBR}
+                  />
+                </div>
+                
+                <div className="flex flex-col gap-3 justify-center items-start">
+                  <p className="text-sm font-medium">
+                    {selectedDates?.length || 0} {(selectedDates?.length === 1) ? "data selecionada" : "datas selecionadas"}
+                  </p>
+                  <Button 
+                    variant="gold" 
+                    onClick={() => selectedDates && selectedDates.length > 0 && addUnavailabilityMutation.mutate(selectedDates)}
+                    disabled={!selectedDates || selectedDates.length === 0 || addUnavailabilityMutation.isPending}
+                  >
+                    {addUnavailabilityMutation.isPending ? "Salvando..." : "Salvar Datas Escolhidas"}
+                  </Button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -378,9 +399,12 @@ export default function Perfil() {
                       : (rawDate || JSON.stringify(u));
                       
                     return (
-                      <div key={u.id} className="flex flex-col gap-1 bg-destructive/10 text-destructive-foreground p-3 rounded-lg border border-destructive/20">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">Data: {formattedDate}</span>
+                      <div key={u.id} className="flex flex-col gap-1 bg-destructive/10 p-4 rounded-lg border-2 border-destructive/30 shadow-sm relative overflow-hidden">
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-destructive"></div>
+                        <div className="flex items-center justify-between pl-2">
+                          <span className="font-bold text-black text-base uppercase tracking-wide">
+                            {formattedDate}
+                          </span>
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -388,10 +412,9 @@ export default function Perfil() {
                             onClick={() => deleteUnavailabilityMutation.mutate(u.id)}
                             disabled={deleteUnavailabilityMutation.isPending}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-5 h-5" />
                           </Button>
                         </div>
-                        <span className="text-[10px] opacity-50 font-mono">DEBUG: {JSON.stringify(u)}</span>
                       </div>
                     );
                   })
