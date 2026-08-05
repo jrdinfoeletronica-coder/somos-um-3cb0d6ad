@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Trash2, Edit2, Plus, Users } from "lucide-react";
 export function ScheduleTemplateManager() {
   const queryClient = useQueryClient();
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   
   const defaultFormData = {
     name: "",
@@ -109,6 +110,11 @@ export function ScheduleTemplateManager() {
         ? t.role_requirements 
         : JSON.stringify(t.role_requirements, null, 2)
     });
+    
+    // Rolar para o topo onde está o formulário
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
 
   const handleCancelEdit = () => {
@@ -122,7 +128,7 @@ export function ScheduleTemplateManager() {
     <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
       
       {/* Formulário de Criação/Edição */}
-      <div className="bg-secondary/20 p-4 rounded-xl border border-border">
+      <div ref={formRef} className="bg-secondary/20 p-4 rounded-xl border border-border">
         <h3 className="font-bold mb-4">{editingTemplate ? "Editar Regra" : "Criar Nova Regra"}</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
