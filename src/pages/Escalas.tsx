@@ -621,9 +621,9 @@ export default function Escalas() {
         {isLoading ? (
           <div className="text-center py-8">Carregando escalas...</div>
         ) : view === "list" && schedules.length > 0 ? (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {schedules.map((schedule: any, index: number) => (
-              <div key={schedule.id || index} className="animate-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
+              <div key={schedule.id || index} className="animate-slide-up h-full" style={{ animationDelay: `${index * 50}ms` }}>
                 <ScheduleCard
                   {...schedule}
                   showActions={userRole === "admin"}
