@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ScheduleCard } from "@/components/dashboard/ScheduleCard";
+import { ScheduleTemplateManager } from "@/components/dashboard/ScheduleTemplateManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,6 +52,7 @@ export default function Escalas() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAutoGenerateOpen, setIsAutoGenerateOpen] = useState(false);
+  const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"detalhes" | "equipe" | "repertorio">("detalhes");
   const [editingSchedule, setEditingSchedule] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -633,7 +635,11 @@ export default function Escalas() {
           </div>
 
           {userRole === "admin" && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <Button variant="outline" onClick={() => setIsTemplateManagerOpen(true)} className="border-accent text-accent hover:bg-accent hover:text-primary">
+                <Settings2 className="w-4 h-4 mr-2" />
+                Gerenciar Regras
+              </Button>
               <Button variant="outline" onClick={() => setIsAutoGenerateOpen(true)} className="border-accent text-accent hover:bg-accent hover:text-primary">
                 <Wand2 className="w-4 h-4 mr-2" />
                 Gerar Automático
@@ -1061,6 +1067,19 @@ export default function Escalas() {
                 {autoGenerateMutation.isPending ? "Gerando..." : "Gerar Escalas"}
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Gerenciador de Regras (Templates) */}
+        <Dialog open={isTemplateManagerOpen} onOpenChange={setIsTemplateManagerOpen}>
+          <DialogContent className="sm:max-w-[700px] bg-background">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl font-display">
+                <Settings2 className="w-5 h-5 text-accent" />
+                Gerenciar Regras de Escala Automática
+              </DialogTitle>
+            </DialogHeader>
+            <ScheduleTemplateManager />
           </DialogContent>
         </Dialog>
       </div>
