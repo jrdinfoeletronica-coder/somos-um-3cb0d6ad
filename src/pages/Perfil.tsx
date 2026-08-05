@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { UserCircle, Camera, Loader2, Save, CalendarOff, Trash2, Music2 } from "lucide-react";
+import { UserCircle, Camera, Loader2, Save, CalendarOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ALL_KEYS } from "@/lib/transpose";
 
 
 export default function Perfil() {
@@ -23,7 +22,6 @@ export default function Perfil() {
     phone: "",
     birth_date: "",
     avatar_url: "",
-    preferred_key: "",
   });
 
   const [uploading, setUploading] = useState(false);
@@ -76,7 +74,6 @@ export default function Perfil() {
         phone: member.phone || "",
         birth_date: member.birth_date || "",
         avatar_url: member.avatar_url || "",
-        preferred_key: member.preferred_key || "",
       });
     }
   }, [member]);
@@ -150,7 +147,6 @@ export default function Perfil() {
         email: formData.email.trim() || null,
         phone: formData.phone.trim() || null,
         birth_date: formData.birth_date || null,
-        preferred_key: formData.preferred_key || null,
       };
 
       if (!payload.name) {
@@ -334,47 +330,6 @@ export default function Perfil() {
                     placeholder="seu@email.com"
                   />
                 </div>
-              </div>
-
-              {/* Tom de Voz */}
-              <div className="p-4 rounded-xl border border-accent/30 bg-accent/5 space-y-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Music2 className="w-4 h-4 text-accent" />
-                  <Label className="text-accent font-semibold">Meu Tom de Voz</Label>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Defina o tom em que você canta. O sistema vai calcular automaticamente a transposição dos louvores para o seu tom.
-                </p>
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                  {ALL_KEYS.map((k) => (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, preferred_key: formData.preferred_key === k ? "" : k })}
-                      className={`py-2 px-1 rounded-lg text-sm font-bold border transition-all duration-150 ${
-                        formData.preferred_key === k
-                          ? "bg-accent text-primary border-accent shadow-lg scale-105"
-                          : "bg-secondary/20 text-foreground border-border hover:border-accent/60 hover:bg-accent/10"
-                      }`}
-                    >
-                      {k}
-                    </button>
-                  ))}
-                  {formData.preferred_key && (
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, preferred_key: "" })}
-                      className="py-2 px-1 rounded-lg text-xs border border-destructive/40 text-destructive hover:bg-destructive/10 col-span-2"
-                    >
-                      Limpar Tom
-                    </button>
-                  )}
-                </div>
-                {formData.preferred_key && (
-                  <p className="text-sm font-bold text-accent">
-                    Tom selecionado: {formData.preferred_key}
-                  </p>
-                )}
               </div>
 
               <div className="pt-4 flex justify-end">

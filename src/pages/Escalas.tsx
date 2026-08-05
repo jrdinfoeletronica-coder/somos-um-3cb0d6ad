@@ -147,6 +147,16 @@ export default function Escalas() {
     }
   });
 
+  // Buscar tons específicos por membro/música
+  const { data: allMemberSongKeys = [] } = useQuery({
+    queryKey: ['all_member_song_keys'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('member_song_keys').select('*');
+      if (error) return []; // Retorna vazio se a tabela ainda não existir
+      return data || [];
+    }
+  });
+
   // Buscar templates
   const { data: templates = [] } = useQuery({
     queryKey: ['schedule_templates'],
@@ -949,7 +959,14 @@ export default function Escalas() {
                           // Gera lembretes para cada cantor
                           const hints = vocalists.flatMap((m) => {
                             const memberData = members.find((mb: any) => mb.name?.toLowerCase().trim() === m.name?.toLowerCase().trim());
-                            const memberKey = memberData?.preferred_key;
+                            if (!memberData) return [];
+                            
+                            // Busca o tom específico deste membro para esta música
+                            const specificKeyRecord = allMemberSongKeys.find(
+                              (msk: any) => msk.member_id === memberData.id && msk.song_id === s.id
+                            );
+                            
+                            const memberKey = specificKeyRecord?.member_key;
                             if (!songKey || !memberKey) return [];
                             const hint = getTransposeHint(songKey, m.name, memberKey);
                             return hint ? [hint] : [];

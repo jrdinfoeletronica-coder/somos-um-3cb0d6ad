@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { lookupWorshipKey } from "@/lib/worshipKeys";
+import { MemberSongKeys } from "@/components/dashboard/MemberSongKeys";
 
 export default function Repertorio() {
   const [searchQuery, setSearchQuery] = useState("");
