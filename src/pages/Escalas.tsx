@@ -513,10 +513,17 @@ export default function Escalas() {
                     
                     return !subUnavail;
                   });
-                  if (substitute) memberToAssign = substitute;
+                  
+                  if (substitute) {
+                    memberToAssign = substitute;
+                  } else {
+                    // Não achou substituto e o original tá indisponível. Pula a inserção para esta vaga.
+                    continue; // Pula para a próxima iteração do loop (não insere ninguém pra essa vaga)
+                  }
                 }
                 
-                // Se o memberToAssign ainda for inválido/indisponível aqui (porque não achou substituto), ele vai ficar vazio ou ser inserido com aviso, mas vamos inserir pra manter a vaga preenchida e o líder resolver
+                // Se a estratégia for "whole_week" e ele passou pelo filtro lá em cima, ele está disponível
+                // Se for "only_day", e ele estava indisponível, a lógica acima substituiu ou deu continue.
                 
                 membersToInsert.push({
                   schedule_id: insertedSched.id,
