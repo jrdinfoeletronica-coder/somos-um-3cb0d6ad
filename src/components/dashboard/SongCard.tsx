@@ -19,6 +19,14 @@ interface SongCardProps {
   onDelete?: () => void;
 }
 
+const formatUrl = (url: string) => {
+  if (!url) return '';
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return 'https://' + url;
+  }
+  return url;
+};
+
 export function SongCard({
   title,
   artist,
@@ -98,24 +106,28 @@ export function SongCard({
                 variant="outline"
                 size="sm"
                 className="text-orange-600 border-orange-200 hover:bg-orange-50 font-bold"
-                onClick={() => window.open(cifraclubUrl, "_blank")}
+                asChild
               >
-                <FileText className="w-4 h-4 mr-1" />
-                Cifra
+                <a href={formatUrl(cifraclubUrl)} target="_blank" rel="noopener noreferrer">
+                  <FileText className="w-4 h-4 mr-1" />
+                  Cifra
+                </a>
               </Button>
             )}
             {audioUrl && (
-              <audio controls src={audioUrl} className="h-8 w-40" title="Prévia do iTunes" />
+              <audio controls src={formatUrl(audioUrl)} className="h-8 w-40" title="Prévia do iTunes" />
             )}
             {youtubeUrl && (
               <Button
                 variant="outline"
                 size="sm"
                 className="text-red-600 border-red-200 hover:bg-red-50"
-                onClick={() => window.open(youtubeUrl, "_blank")}
+                asChild
               >
-                <ExternalLink className="w-4 h-4 mr-1" />
-                YouTube
+                <a href={formatUrl(youtubeUrl)} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-1" />
+                  YouTube
+                </a>
               </Button>
             )}
             {spotifyUrl && (
@@ -123,10 +135,12 @@ export function SongCard({
                 variant="outline"
                 size="sm"
                 className="text-green-600 border-green-200 hover:bg-green-50"
-                onClick={() => window.open(spotifyUrl, "_blank")}
+                asChild
               >
-                <ExternalLink className="w-4 h-4 mr-1" />
-                Spotify
+                <a href={formatUrl(spotifyUrl)} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-1" />
+                  Spotify
+                </a>
               </Button>
             )}
           </div>
