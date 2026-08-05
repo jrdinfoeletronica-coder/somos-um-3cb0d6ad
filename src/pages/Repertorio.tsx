@@ -166,12 +166,28 @@ export default function Repertorio() {
       const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
       const artistSlug = slugify(suggestion.artistName);
       const titleSlug = slugify(suggestion.trackName);
+      const ccUrl = `https://www.cifraclub.com.br/${artistSlug}/${titleSlug}/`;
+      
+      let detectedTone = "C";
+      try {
+        const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(ccUrl)}`;
+        const res = await fetch(proxyUrl);
+        if (res.ok) {
+          const html = await res.text();
+          const tomMatch = html.match(/id="cifra_tom"[^>]*><a[^>]*>([^<]+)<\/a>/i) || html.match(/Tom:\s*<a[^>]*>([^<]+)<\/a>/i);
+          if (tomMatch && tomMatch[1]) {
+            detectedTone = tomMatch[1].trim();
+          }
+        }
+      } catch (e) {
+        console.error("Falha ao raspar tom:", e);
+      }
       
       const ytQuery = encodeURIComponent(`${suggestion.artistName} ${suggestion.trackName}`);
       const payload = {
         title: suggestion.trackName,
         artist: suggestion.artistName || "Autor Desconhecido",
-        key: "C",
+        key: detectedTone,
         bpm: null,
         youtube_url: `https://duckduckgo.com/?q=!ducky+site%3Ayoutube.com+${ytQuery}`,
         spotify_url: null,
@@ -347,23 +363,45 @@ export default function Repertorio() {
     setIsSearchingWeb(true);
     
     try {
-      // 1. Gerar Cifra Club
       const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+      const artistSlug = slugify(formData.artist);
+      const titleSlug = slugify(formData.title);
+      const ccUrl = `https://www.cifraclub.com.br/${artistSlug}/${titleSlug}/`;
+      
+      let detectedTone = formData.key || "C";
+      try {
+        const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(ccUrl)}`;
+        const res = await fetch(proxyUrl);
+        if (res.ok) {
+          const html = await res.text();
+          const tomMatch = html.match(/id="cifra_tom"[^>]*><a[^>]*>([^<]+)<\/a>/i) || html.match(/Tom:\s*<a[^>]*>([^<]+)<\/a>/i);
+          if (tomMatch && tomMatch[1]) {
+            detectedTone = tomMatch[1].trim();
+          }
+        }
+      } catch (e) {
+        console.error("Falha ao raspar tom no autogen:", e);
+      }
+
       const ytQuery = encodeURIComponent(`${formData.artist} ${formData.title}`);
       const generatedYoutubeUrl = `https://duckduckgo.com/?q=!ducky+site%3Ayoutube.com+${ytQuery}`;
-      const generatedCifraUrl = `https://duckduckgo.com/?q=!ducky+site%3Acifraclub.com.br+${ytQuery}`;
+      const generatedCifraUrl = ccUrl;
       
       // 3. Buscar Áudio no iTunes
       let newAudioUrl = "";
-      const itunesQuery = encodeURIComponent(`${formData.title} ${formData.artist}`);
-      const res = await fetch(`https://itunes.apple.com/search?term=${itunesQuery}&entity=song&limit=1`);
-      const data = await res.json();
-      if (data.results && data.results.length > 0) {
-        newAudioUrl = data.results[0].previewUrl;
+      try {
+        const iRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(formData.artist + ' ' + formData.title)}&entity=song&limit=1&country=br`);
+        const iData = await iRes.json();
+        if (iData.results && iData.results.length > 0) {
+          newAudioUrl = iData.results[0].previewUrl || "";
+        }
+      } catch (e) {
+        console.error(e);
       }
       
       setFormData(prev => ({
         ...prev,
+        key: detectedTone,
         cifraclub_url: generatedCifraUrl,
         youtube_url: generatedYoutubeUrl,
         audio_url: newAudioUrl || prev.audio_url
