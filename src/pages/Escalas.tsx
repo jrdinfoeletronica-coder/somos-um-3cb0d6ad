@@ -877,8 +877,34 @@ export default function Escalas() {
                     </div>
                   </div>
 
+                  {(() => {
+                    const VOCAL_ROLES = ["vocal", "vocalista", "cantor", "cantora", "ministro", "ministrante", "lider", "líder", "worship"];
+                    const scheduledVocalists = assignedMembers.filter((m) =>
+                      VOCAL_ROLES.some(r => m.role?.toLowerCase().includes(r))
+                    );
+                    
+                    const hasExperiencedVocalist = scheduledVocalists.some((m) => {
+                      const memberData = members.find((mb: any) => mb.name?.toLowerCase().trim() === m.name?.toLowerCase().trim());
+                      return memberData?.experience_level === "Experiente";
+                    });
+
+                    const showExperienceWarning = scheduledVocalists.length > 0 && !hasExperiencedVocalist;
+
+                    return showExperienceWarning ? (
+                      <div className="mb-4 p-3 bg-amber-500/10 border border-amber-400/30 rounded-xl flex items-start gap-3">
+                        <div className="text-amber-500 mt-0.5">⚠️</div>
+                        <div>
+                          <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Atenção à Experiência</p>
+                          <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-0.5">
+                            Nenhum cantor "Experiente" foi escalado. Considere adicionar pelo menos um vocal experiente para equilibrar a escala.
+                          </p>
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
                   <div className="space-y-3">
-                    <Label className="text-xs text-muted-foreground">Membros Escaldados ({assignedMembers.length})</Label>
+                    <Label className="text-xs text-muted-foreground">Membros Escalados ({assignedMembers.length})</Label>
                     {assignedMembers.length === 0 ? (
                       <div className="text-center p-6 border border-dashed border-border rounded-xl opacity-60">
                         <UserPlus className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />

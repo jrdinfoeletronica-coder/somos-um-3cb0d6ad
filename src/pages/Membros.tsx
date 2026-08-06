@@ -38,7 +38,8 @@ export default function Membros() {
     email: "",
     phone: "",
     status: "active" as "active" | "inactive",
-    access_level: "viewer" as "admin" | "editor" | "viewer"
+    access_level: "viewer" as "admin" | "editor" | "viewer",
+    experience_level: "Intermediário"
   });
 
   const userRole = localStorage.getItem("userRole") || "viewer";
@@ -80,7 +81,8 @@ export default function Membros() {
         phone: formData.phone.trim() || null,
         roles: selectedRoles,
         status: formData.status,
-        access_level: formData.access_level
+        access_level: formData.access_level,
+        experience_level: formData.experience_level
       };
 
       if (!payload.name) {
@@ -133,7 +135,8 @@ export default function Membros() {
       email: "",
       phone: "",
       status: "active",
-      access_level: "viewer"
+      access_level: "viewer",
+      experience_level: "Intermediário"
     });
   };
 
@@ -150,7 +153,8 @@ export default function Membros() {
       email: member.email || "",
       phone: member.phone || "",
       status: member.status || "active",
-      access_level: member.access_level || "viewer"
+      access_level: member.access_level || "viewer",
+      experience_level: member.experience_level || "Intermediário"
     });
     setIsDialogOpen(true);
   };
@@ -322,7 +326,7 @@ export default function Membros() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="member-status">Status</Label>
                   <select
@@ -347,6 +351,20 @@ export default function Membros() {
                     <option value="admin">Administrador</option>
                     <option value="editor">Editor</option>
                     <option value="viewer">Visualizador</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="member-exp">Experiência Musical</Label>
+                  <select
+                    id="member-exp"
+                    value={formData.experience_level}
+                    onChange={(e) => setFormData({ ...formData, experience_level: e.target.value })}
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    <option value="Iniciante">Iniciante</option>
+                    <option value="Intermediário">Intermediário</option>
+                    <option value="Experiente">Experiente</option>
                   </select>
                 </div>
               </div>
