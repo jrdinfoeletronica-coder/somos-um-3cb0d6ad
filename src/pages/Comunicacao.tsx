@@ -402,6 +402,32 @@ export default function Comunicacao() {
             ${mobileView === "chat" ? "flex" : "hidden"} md:flex
           `}
         >
+          {/* Barra fixa de voltar — sempre visível no topo do painel direito (mobile) */}
+          <div
+            className="md:hidden flex items-center gap-2 px-3 py-2 border-b border-border bg-secondary/10 shrink-0"
+          >
+            <button
+              onClick={handleBackToList}
+              title="Voltar"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 12px",
+                borderRadius: 8,
+                border: "1px solid hsl(var(--border))",
+                background: "transparent",
+                cursor: "pointer",
+                color: "hsl(var(--foreground))",
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              <ArrowLeft style={{ width: 16, height: 16 }} />
+              Voltar
+            </button>
+          </div>
+
           {!activeConversation ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-secondary/10">
               <div className="w-24 h-24 rounded-full bg-accent/10 border-2 border-accent/20 flex items-center justify-center">
