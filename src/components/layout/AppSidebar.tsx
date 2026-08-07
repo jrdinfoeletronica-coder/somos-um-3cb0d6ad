@@ -41,6 +41,7 @@ const editorNavItems = [
   { icon: Music, label: "Repertório", path: "/repertorio" },
   { icon: Users, label: "Membros", path: "/membros" },
   { icon: Bell, label: "Comunicação", path: "/comunicacao" },
+  { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
   { icon: UserCircle, label: "Meu Perfil", path: "/perfil" },
 ];
 
@@ -49,6 +50,7 @@ const viewerNavItems = [
   { icon: Calendar, label: "Minhas Escalas", path: "/escalas" },
   { icon: Music, label: "Repertório", path: "/repertorio" },
   { icon: Bell, label: "Comunicação", path: "/comunicacao" },
+  { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
   { icon: UserCircle, label: "Meu Perfil", path: "/perfil" },
 ];
 

@@ -1,8 +1,8 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { cn } from "@/lib/utils";
-import { Bell, Menu } from "lucide-react";
+import { Bell, Menu, ArrowLeft, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DashboardLayoutProps {
@@ -15,8 +15,34 @@ import { NotificationBanner } from "@/components/ui/NotificationBanner";
 export function DashboardLayout({ children, title }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const navigate = useNavigate();
   const userRole = localStorage.getItem("userRole") || "viewer";
+
+  useEffect(() => {
+    // Ativa dark mode por padrão se não tiver preferência
+    const theme = localStorage.getItem("theme");
+    if (theme === "dark" || !theme) {
+      document.documentElement.classList.add("dark");
+      setIsDarkMode(true);
+      if (!theme) localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      setIsDarkMode(false);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    if (isDarkMode) {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+      setIsDarkMode(false);
+    } else {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+      setIsDarkMode(true);
+    }
+  };
 
   const handleLogout = () => {
     // Limpar dados de sessão
@@ -68,11 +94,21 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
               )}
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="relative"
+                onClick={toggleTheme}
+                className="text-muted-foreground hover:text-foreground"
+                title="Mudar tema"
+              >
+                {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="relative text-muted-foreground hover:text-foreground"
                 onClick={() => navigate("/comunicacao")}
               >
                 <Bell className="w-5 h-5" />
