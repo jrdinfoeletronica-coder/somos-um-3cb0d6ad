@@ -278,6 +278,25 @@ export default function Comunicacao() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-secondary/20">
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.history.back()}
+                title="Voltar"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  border: "1px solid hsl(var(--border))",
+                  background: "transparent",
+                  cursor: "pointer",
+                  color: "hsl(var(--foreground))",
+                  marginRight: 4,
+                }}
+              >
+                <ArrowLeft style={{ width: 16, height: 16 }} />
+              </button>
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-accent to-[hsl(30_80%_45%)] flex items-center justify-center">
                 <span className="text-sm font-bold text-primary">
                   {myName.charAt(0).toUpperCase()}
@@ -383,29 +402,6 @@ export default function Comunicacao() {
             ${mobileView === "chat" ? "flex" : "hidden"} md:flex
           `}
         >
-          {/* Barra fixa de volta — visível no mobile sempre que o painel direito estiver aberto */}
-          <div className="flex md:hidden items-center gap-2 px-3 py-2 border-b border-border bg-secondary/30 shrink-0">
-            <button
-              onClick={handleBackToList}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "6px 12px",
-                borderRadius: 8,
-                border: "1px solid hsl(var(--border))",
-                background: "hsl(var(--background))",
-                cursor: "pointer",
-                color: "hsl(var(--foreground))",
-                fontWeight: 600,
-                fontSize: 14,
-              }}
-            >
-              <ArrowLeft style={{ width: 16, height: 16 }} />
-              Voltar
-            </button>
-          </div>
-
           {!activeConversation ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-secondary/10">
               <div className="w-24 h-24 rounded-full bg-accent/10 border-2 border-accent/20 flex items-center justify-center">
