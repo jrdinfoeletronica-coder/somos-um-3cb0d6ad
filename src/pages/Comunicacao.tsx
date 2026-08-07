@@ -401,16 +401,26 @@ export default function Comunicacao() {
             <div className="flex-1 flex flex-col min-w-0">
               {/* Cabeçalho */}
               <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-secondary/20 shrink-0">
-                {/* Botão voltar — visível em todas as telas */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                {/* Botão voltar */}
+                <button
                   onClick={handleBackToList}
                   title="Voltar para lista"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    border: "1px solid hsl(var(--border))",
+                    background: "hsl(var(--secondary) / 0.4)",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    color: "hsl(var(--foreground))",
+                  }}
                 >
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
+                  <ArrowLeft style={{ width: 18, height: 18 }} />
+                </button>
 
                 {activeConversation.isGroup ? (
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[hsl(220_50%_30%)] to-[hsl(220_50%_45%)] flex items-center justify-center shrink-0">
