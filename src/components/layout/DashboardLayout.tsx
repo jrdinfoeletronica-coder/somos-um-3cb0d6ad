@@ -65,7 +65,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate(-1)}
+                onClick={() => window.history.back()}
                 className="shrink-0 text-muted-foreground hover:text-foreground hidden sm:flex"
                 title="Voltar"
               >
@@ -74,7 +74,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate(-1)}
+                onClick={() => window.history.back()}
                 className="shrink-0 text-muted-foreground hover:text-foreground sm:hidden"
                 title="Voltar"
               >
