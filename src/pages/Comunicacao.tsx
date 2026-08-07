@@ -163,6 +163,8 @@ export default function Comunicacao() {
 
   const handleBackToList = () => {
     setMobileView("list");
+    setActiveConversation(null);
+    setMessages([]);
   };
 
   const handleSetMyName = (e: React.FormEvent) => {
@@ -399,12 +401,13 @@ export default function Comunicacao() {
             <div className="flex-1 flex flex-col min-w-0">
               {/* Cabeçalho */}
               <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-secondary/20 shrink-0">
-                {/* Botão voltar — só no mobile */}
+                {/* Botão voltar — visível em todas as telas */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="md:hidden h-8 w-8 shrink-0 text-muted-foreground"
+                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
                   onClick={handleBackToList}
+                  title="Voltar para lista"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
