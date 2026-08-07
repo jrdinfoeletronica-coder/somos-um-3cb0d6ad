@@ -8,6 +8,7 @@ import { Music, Plus, Search, ListMusic, Globe, RefreshCw, Lightbulb } from "luc
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { cn, fuzzyIncludes } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { lookupWorshipKey } from "@/lib/worshipKeys";
@@ -362,13 +363,22 @@ export default function Repertorio() {
     setIsSearchResultsOpen(true);
     
     try {
-      // Buscar 10 resultados no iTunes
-      const iRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(formData.artist + ' ' + formData.title)}&entity=song&limit=10&country=br`);
-      const iData = await iRes.json();
+      // Tenta buscar com Artista + Titulo
+      const queryCompleta = encodeURIComponent(formData.artist + ' ' + formData.title);
+      let iRes = await fetch(`https://itunes.apple.com/search?term=${queryCompleta}&entity=song&limit=10&country=br`);
+      let iData = await iRes.json();
+      
+      // Se não encontrou, tenta buscar SÓ pelo título (Fallback para caso o nome do artista esteja escrito errado)
+      if (!iData.results || iData.results.length === 0) {
+        const querySoTitulo = encodeURIComponent(formData.title);
+        iRes = await fetch(`https://itunes.apple.com/search?term=${querySoTitulo}&entity=song&limit=15&country=br`);
+        iData = await iRes.json();
+      }
+
       if (iData.results && iData.results.length > 0) {
         setSearchResults(iData.results);
       } else {
-        toast.error("Nenhuma música encontrada com essa descrição.");
+        toast.error("Nenhuma música encontrada nem mesmo apenas pelo título.");
         setIsSearchResultsOpen(false);
       }
     } catch (e) {
@@ -415,8 +425,8 @@ export default function Repertorio() {
 
   const filteredSongs = songs.filter((song: any) => {
     const matchesSearch =
-      song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (song.artist && song.artist.toLowerCase().includes(searchQuery.toLowerCase()));
+      fuzzyIncludes(song.title, searchQuery) ||
+      (song.artist && fuzzyIncludes(song.artist, searchQuery));
     const matchesTone = !selectedTone || song.tone === selectedTone;
     return matchesSearch && matchesTone;
   });
