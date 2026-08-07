@@ -2,7 +2,7 @@ import { ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { cn } from "@/lib/utils";
-import { Bell, Menu, ArrowLeft } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DashboardLayoutProps {
@@ -61,28 +61,8 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
                 <Menu className="w-5 h-5" />
               </Button>
 
-              {/* Botão de Voltar */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => window.history.back()}
-                className="shrink-0 text-muted-foreground hover:text-foreground hidden sm:flex"
-                title="Voltar"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => window.history.back()}
-                className="shrink-0 text-muted-foreground hover:text-foreground sm:hidden"
-                title="Voltar"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-
               {title && (
-                <h1 className="font-display text-xl md:text-2xl font-semibold text-foreground truncate max-w-[150px] sm:max-w-none">
+                <h1 className="font-display text-2xl font-semibold text-foreground">
                   {title}
                 </h1>
               )}
