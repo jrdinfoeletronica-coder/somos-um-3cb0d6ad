@@ -985,13 +985,15 @@ const WORSHIP_KEYS: Record<string, string> = {
   "faz um milagre|": "G",
 };
 
-const normalize = (text: string): string =>
-  text
+const normalize = (text: string): string => {
+  if (!text) return "";
+  return text
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9 |]/g, "")
     .trim();
+};
 
 /**
  * Busca a tonalidade de uma musica no banco interno.

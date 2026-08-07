@@ -123,6 +123,8 @@ export default function Repertorio() {
 
   const resetForm = () => {
     setEditingSong(null);
+    setIsSearchResultsOpen(false);
+    setSearchResults([]);
     setFormData({
       title: "",
       artist: "",
@@ -380,8 +382,8 @@ export default function Repertorio() {
   };
 
   const handleSelectSearchResult = (result: any) => {
-    const trackName = result.trackName;
-    const artistName = result.artistName || "Autor Desconhecido";
+    const trackName = String(result?.trackName || "");
+    const artistName = String(result?.artistName || "Autor Desconhecido");
     
     // Busca tom no banco local
     const foundKey = lookupWorshipKey(trackName, artistName);
