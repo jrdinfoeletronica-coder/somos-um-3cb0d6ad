@@ -401,7 +401,9 @@ export default function Repertorio() {
 
     const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
     const ytQuery = encodeURIComponent(`${artistName} ${trackName} oficial`);
-    const generatedYoutubeUrl = `https://duckduckgo.com/?q=!ducky+site%3Ayoutube.com+${ytQuery}`;
+    
+    // Usando Google "Estou com Sorte" para maior precisão em vez do DuckDuckGo
+    const generatedYoutubeUrl = `https://www.google.com/search?btnI=1&q=site%3Ayoutube.com+${ytQuery}`;
     const generatedCifraUrl = `https://www.cifraclub.com.br/${slugify(artistName)}/${slugify(trackName)}/`;
     
     setFormData(prev => ({
