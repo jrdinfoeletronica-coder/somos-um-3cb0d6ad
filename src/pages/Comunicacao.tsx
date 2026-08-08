@@ -398,7 +398,7 @@ export default function Comunicacao() {
         {/* No mobile: visível só quando mobileView==="chat" */}
         <div
           className={`
-            flex-1 min-w-0 flex-col
+            flex-1 min-w-0 min-h-0 flex-col
             ${mobileView === "chat" ? "flex" : "hidden"} md:flex
           `}
         >
@@ -443,7 +443,7 @@ export default function Comunicacao() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 min-h-0">
               {/* Cabeçalho */}
               <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-secondary/20 shrink-0">
                 {/* Botão voltar */}
