@@ -398,7 +398,7 @@ export default function Comunicacao() {
         {/* No mobile: visível só quando mobileView==="chat" */}
         <div
           className={`
-            flex-1 min-w-0 min-h-0 flex-col
+            flex-1 min-w-0 flex-col
             ${mobileView === "chat" ? "flex" : "hidden"} md:flex
           `}
         >
@@ -490,7 +490,7 @@ export default function Comunicacao() {
 
               {/* Mensagens */}
               <div
-                className="flex-1 overflow-y-auto chat-scroll px-3 md:px-4 py-4 space-y-1"
+                className="flex-1 min-h-0 overflow-y-auto chat-scroll px-3 md:px-4 py-4 space-y-1"
                 style={{
                   backgroundImage:
                     "radial-gradient(circle, hsl(var(--accent) / 0.03) 1px, transparent 1px)",
