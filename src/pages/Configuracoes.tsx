@@ -5,16 +5,20 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { Settings, Mic2, Plus, Key, Copy, Check, Link2, ShieldCheck } from "lucide-react";
+import { Settings, Mic2, Plus, Key, Copy, Check, Link2, ShieldCheck, DatabaseBackup, Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { doManualBackup, downloadLocalBackup, listRemoteBackups } from "@/lib/chatBackup";
 
 export default function Configuracoes() {
-  const [activeTab, setActiveTab] = useState<"geral" | "funcoes" | "acesso">("geral");
+  const [activeTab, setActiveTab] = useState<"geral" | "funcoes" | "acesso" | "backup">("geral");
   const [newRole, setNewRole] = useState("");
   const [customCode, setCustomCode] = useState("");
   const [isCodeActive, setIsCodeActive] = useState(true);
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [remoteBackups, setRemoteBackups] = useState<any[]>([]);
+  const [loadingBackups, setLoadingBackups] = useState(false);
+  const [doingBackup, setDoingBackup] = useState(false);
   const queryClient = useQueryClient();
 
   // Buscar funções únicas dos membros
@@ -98,6 +102,36 @@ export default function Configuracoes() {
     saveCodeMutation.mutate();
   };
 
+  const handleManualBackup = async () => {
+    setDoingBackup(true);
+    try {
+      await doManualBackup();
+      toast.success("Backup criado e enviado ao servidor com sucesso!");
+      loadRemoteBackups();
+    } catch (e) {
+      toast.error("Erro ao criar backup.");
+    } finally {
+      setDoingBackup(false);
+    }
+  };
+
+  const handleDownloadBackup = async () => {
+    const ok = await downloadLocalBackup();
+    if (ok) toast.success("Backup baixado com sucesso!");
+    else toast.info("Nenhuma mensagem encontrada para exportar.");
+  };
+
+  const loadRemoteBackups = async () => {
+    setLoadingBackups(true);
+    const list = await listRemoteBackups();
+    setRemoteBackups(list);
+    setLoadingBackups(false);
+  };
+
+  useEffect(() => {
+    if (activeTab === "backup") loadRemoteBackups();
+  }, [activeTab]);
+
 
 
   const handleCopyCode = () => {
@@ -121,7 +155,7 @@ export default function Configuracoes() {
     <DashboardLayout title="Configurações">
       <div className="space-y-6 animate-fade-in">
         {/* Tabs */}
-        <div className="flex items-center gap-2 bg-card rounded-lg border border-border p-1 w-fit">
+        <div className="flex items-center gap-2 bg-card rounded-lg border border-border p-1 w-fit flex-wrap">
           <Button
             variant={activeTab === "geral" ? "soft" : "ghost"}
             size="sm"
@@ -145,6 +179,14 @@ export default function Configuracoes() {
           >
             <Key className="w-4 h-4 mr-2" />
             Código de Acesso
+          </Button>
+          <Button
+            variant={activeTab === "backup" ? "soft" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("backup")}
+          >
+            <DatabaseBackup className="w-4 h-4 mr-2" />
+            Backup
           </Button>
         </div>
 
@@ -352,6 +394,94 @@ export default function Configuracoes() {
                 </div>
 
               </div>
+            </div>
+          </div>
+        )}
+        {/* Tab: Backup */}
+        {activeTab === "backup" && (
+          <div className="space-y-6">
+            {/* Info */}
+            <div className="card-church p-6 space-y-4">
+              <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+                <DatabaseBackup className="w-5 h-5 text-accent" />
+                Backup das Mensagens
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                <div className="bg-secondary/40 rounded-lg p-4 border border-border text-center">
+                  <p className="text-2xl font-bold text-accent">30 dias</p>
+                  <p className="text-muted-foreground mt-1">Retenção de mensagens</p>
+                </div>
+                <div className="bg-secondary/40 rounded-lg p-4 border border-border text-center">
+                  <p className="text-2xl font-bold text-accent">Semanal</p>
+                  <p className="text-muted-foreground mt-1">Backup automático</p>
+                </div>
+                <div className="bg-secondary/40 rounded-lg p-4 border border-border text-center">
+                  <p className="text-2xl font-bold text-accent">JSON</p>
+                  <p className="text-muted-foreground mt-1">Formato de exportação</p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground bg-accent/5 border border-accent/10 rounded-lg p-3">
+                📌 As mensagens são automaticamente copiadas para o servidor toda semana e apagadas do chat após 30 dias. O histórico fica salvo em segurança.
+              </p>
+            </div>
+
+            {/* Ações manuais */}
+            <div className="card-church p-6 space-y-4">
+              <h4 className="font-semibold text-foreground">Ações Manuais</h4>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  variant="gold"
+                  onClick={handleManualBackup}
+                  disabled={doingBackup}
+                  className="flex items-center gap-2"
+                >
+                  {doingBackup ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <DatabaseBackup className="w-4 h-4" />
+                  )}
+                  {doingBackup ? "Criando backup..." : "Fazer Backup Agora"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadBackup}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Baixar Mensagens (JSON)
+                </Button>
+              </div>
+            </div>
+
+            {/* Lista de backups remotos */}
+            <div className="card-church p-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-foreground">Backups no Servidor</h4>
+                <Button variant="ghost" size="sm" onClick={loadRemoteBackups} disabled={loadingBackups}>
+                  <RefreshCw className={`w-4 h-4 mr-1 ${loadingBackups ? "animate-spin" : ""}`} />
+                  Atualizar
+                </Button>
+              </div>
+              {remoteBackups.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">
+                  {loadingBackups ? "Carregando..." : "Nenhum backup remoto encontrado. Faça o primeiro backup agora!"}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {remoteBackups.map((b: any) => (
+                    <div key={b.name} className="flex items-center justify-between px-4 py-3 bg-secondary/30 rounded-lg border border-border text-sm">
+                      <div>
+                        <p className="font-medium text-foreground">{b.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {b.updated_at ? new Date(b.updated_at).toLocaleString("pt-BR") : ""}
+                          {b.metadata?.size ? ` • ${(b.metadata.size / 1024).toFixed(1)} KB` : ""}
+                        </p>
+                      </div>
+                      <DatabaseBackup className="w-4 h-4 text-accent" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

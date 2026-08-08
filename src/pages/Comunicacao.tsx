@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { runChatMaintenanceIfNeeded } from "@/lib/chatBackup";
 import {
   Send,
   Users,
@@ -116,6 +117,9 @@ export default function Comunicacao() {
 
   useEffect(() => {
     if (!myName) return;
+
+    // Manutenção automática: backup semanal + limpeza de mensagens > 30 dias
+    runChatMaintenanceIfNeeded().catch(console.error);
 
     fetchMessages();
 
