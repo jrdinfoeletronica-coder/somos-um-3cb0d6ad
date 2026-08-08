@@ -15,6 +15,7 @@ import ResetSenha from "./pages/ResetSenha";
 import Comunicacao from "./pages/Comunicacao";
 import Relatorios from "./pages/Relatorios";
 import Perfil from "./pages/Perfil";
+import Confirmar from "./pages/Confirmar";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/comunicacao" element={<Comunicacao />} />
           <Route path="/relatorios" element={<Relatorios />} />
           <Route path="/perfil" element={<Perfil />} />
+          <Route path="/confirmar" element={<Confirmar />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -19,7 +19,11 @@ import {
   CheckCircle,
   Wand2,
   Settings2,
-  ArrowRightLeft
+  ArrowRightLeft,
+  MessageSquare,
+  Eye,
+  Send,
+  X
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -68,6 +72,13 @@ export default function Escalas() {
   const [autoGenWeeks, setAutoGenWeeks] = useState(4);
   const [autoGenAssign, setAutoGenAssign] = useState(true);
   const [unavailabilityStrategy, setUnavailabilityStrategy] = useState("whole_week"); // "whole_week" | "only_day"
+  const [autoGenStep, setAutoGenStep] = useState<"config" | "preview">("config");
+  const [previewData, setPreviewData] = useState<{ date: string; event: string; time: string; location: string; members: { name: string; role: string; phone?: string }[] }[]>([]);
+  const [showWhatsAppPanel, setShowWhatsAppPanel] = useState(false);
+  const [whatsAppMessage, setWhatsAppMessage] = useState(
+    localStorage.getItem("whatsapp_schedule_msg") ||
+    "Ol\u00e1 {nome}! Voc\u00ea est\u00e1 escalado(a) para o {evento} em {data} \u00e0s {hora}. Confirme sua presen\u00e7a: {link}"
+  );
 
   // Equipe
   const [assignedMembers, setAssignedMembers] = useState<{ name: string; role: string }[]>([]);
@@ -82,17 +93,9 @@ export default function Escalas() {
   const { data: schedules = [], isLoading } = useQuery({
     queryKey: ['schedules'],
     queryFn: async () => {
-      // 1. Limpeza automática do mês passado
+      // Soft delete: apenas filtra escalas de hoje em diante (não apaga do banco, preserva métricas)
       const today = new Date();
-      // YYYY-MM-01
-      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-      
-      try {
-        // Deleta todas as escalas onde a data é menor que o 1º dia do mês atual
-        await supabase.from('schedules').delete().lt('date', firstDayOfMonth);
-      } catch (e) {
-        console.error("Erro ao limpar escalas antigas:", e);
-      }
+      const todayStr = today.toISOString().split('T')[0];
 
       // 2. Busca as escalas atuais
       const { data, error } = await supabase.from('schedules').select(`
@@ -109,7 +112,7 @@ export default function Escalas() {
             artist
           )
         )
-      `).order('date', { ascending: true });
+      `).gte('date', todayStr).order('date', { ascending: true });
       if (error) throw error;
       return (data || []).map((s: any) => ({
         ...s,
@@ -340,6 +343,67 @@ export default function Escalas() {
     }
   };
 
+  // Gera prévia em memória sem salvar
+  const buildPreview = () => {
+    if (templates.length === 0) return;
+    const today = new Date();
+    const result: typeof previewData = [];
+    for (let w = 0; w < autoGenWeeks; w++) {
+      const weekSchedules: any[] = [];
+      for (let d = 1; d <= 7; d++) {
+        const currentDate = new Date(today);
+        currentDate.setDate(today.getDate() + (w * 7) + d);
+        const dayOfWeek = currentDate.getDay();
+        const dayOfMonth = currentDate.getDate();
+        const nthWeek = Math.ceil(dayOfMonth / 7);
+        let selectedTemplate = null;
+        for (const t of templates) {
+          let shouldCreate = false;
+          if (t.is_special_monthly) {
+            if (dayOfWeek === t.day_of_week && nthWeek === t.nth_week) shouldCreate = true;
+          } else {
+            const isConflict = templates.some((st: any) => st.is_special_monthly && st.day_of_week === dayOfWeek && nthWeek === st.nth_week);
+            if (dayOfWeek === t.day_of_week && !isConflict) shouldCreate = true;
+          }
+          if (shouldCreate) { selectedTemplate = t; break; }
+        }
+        if (selectedTemplate) {
+          const formattedDate = currentDate.toISOString().split('T')[0];
+          const alreadyExists = schedules.some((s: any) => s.date === formattedDate && s.event === selectedTemplate.event_name);
+          if (!alreadyExists) {
+            weekSchedules.push({ date: formattedDate, event: selectedTemplate.event_name, time: selectedTemplate.time, location: selectedTemplate.location || 'Templo Principal', _template_ref: selectedTemplate });
+          }
+        }
+      }
+      const weeklyRoles = new Map();
+      for (const sched of weekSchedules) {
+        const reqs = typeof sched._template_ref.role_requirements === 'string' ? JSON.parse(sched._template_ref.role_requirements) : sched._template_ref.role_requirements || [];
+        for (const r of reqs) { if (!weeklyRoles.has(r.role) || weeklyRoles.get(r.role) < r.count) weeklyRoles.set(r.role, r.count); }
+      }
+      const weekTeam: { role: string; member: any }[] = [];
+      const usedIds = new Set();
+      for (const [role, count] of weeklyRoles.entries()) {
+        let avail = (members as any[]).filter((m: any) => m.roles?.includes(role) && m.status === 'active' && !usedIds.has(m.id));
+        avail = avail.sort(() => 0.5 - Math.random()).slice(0, count as number);
+        for (const m of avail) { weekTeam.push({ role, member: m }); usedIds.add(m.id); }
+      }
+      for (const sched of weekSchedules) {
+        const reqs = typeof sched._template_ref.role_requirements === 'string' ? JSON.parse(sched._template_ref.role_requirements) : sched._template_ref.role_requirements || [];
+        const membersForDay: { name: string; role: string; phone?: string }[] = [];
+        for (const req of reqs) {
+          const team = weekTeam.filter((wt) => wt.role === req.role);
+          for (let i = 0; i < Math.min(req.count, team.length); i++) {
+            const m = team[i].member;
+            membersForDay.push({ name: m.name, role: req.role, phone: m.phone });
+          }
+        }
+        result.push({ date: sched.date, event: sched.event, time: sched.time, location: sched.location, members: membersForDay });
+      }
+    }
+    setPreviewData(result);
+    setAutoGenStep("preview");
+  };
+
   // Funções de Geração Automática
   const autoGenerateMutation = useMutation({
     mutationFn: async () => {
@@ -564,6 +628,8 @@ export default function Escalas() {
       queryClient.invalidateQueries({ queryKey: ["schedules"] });
       toast.success(`${count} escalas geradas com sucesso!`);
       setIsAutoGenerateOpen(false);
+      setAutoGenStep("config");
+      setShowWhatsAppPanel(true);
     },
     onError: (err: any) => {
       toast.error("Erro na geração: " + err.message);
@@ -655,6 +721,12 @@ export default function Escalas() {
                 <Wand2 className="w-4 h-4 mr-2" />
                 Gerar Automático
               </Button>
+              {schedules.length > 0 && (
+                <Button variant="outline" onClick={() => setShowWhatsAppPanel(true)} className="border-green-500/50 text-green-600 hover:bg-green-500/10">
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  WhatsApp
+                </Button>
+              )}
               <Button variant="gold" onClick={handleOpenNewSchedule}>
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Escala
@@ -1070,86 +1142,149 @@ export default function Escalas() {
           </DialogContent>
         </Dialog>
 
-        {/* Modal de Geração Automática */}
-        <Dialog open={isAutoGenerateOpen} onOpenChange={setIsAutoGenerateOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
+        {/* Modal de Geração Automática - 2 etapas */}
+        <Dialog open={isAutoGenerateOpen} onOpenChange={(open) => { setIsAutoGenerateOpen(open); if (!open) setAutoGenStep("config"); }}>
+          <DialogContent className="sm:max-w-[620px] max-h-[88vh] flex flex-col overflow-hidden">
+            <DialogHeader className="shrink-0">
               <DialogTitle className="flex items-center gap-2 text-xl font-display">
                 <Wand2 className="w-5 h-5 text-accent" />
-                Gerador Automático de Escalas
+                {autoGenStep === "config" ? "Gerador Automático de Escalas" : "Prévia — Revise antes de confirmar"}
               </DialogTitle>
-            </DialogHeader>
-            <div className="py-4 space-y-6">
-              <div className="bg-secondary/30 p-4 rounded-xl border border-border">
-                <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                  <Settings2 className="w-4 h-4" /> Regras Ativas:
-                </h4>
-                <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
-                  {templates.length > 0 ? templates.map((t: any) => (
-                    <li key={t.id}>{t.name} ({t.time})</li>
-                  )) : (
-                    <li className="text-red-400">Nenhum template encontrado. Execute o banco de dados.</li>
-                  )}
-                </ul>
+              <div className="flex gap-2 mt-2">
+                <span className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${autoGenStep === "config" ? "bg-accent text-primary" : "bg-secondary text-muted-foreground"}`}>1. Configurar</span>
+                <span className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${autoGenStep === "preview" ? "bg-accent text-primary" : "bg-secondary text-muted-foreground"}`}>2. Revisar e Confirmar</span>
               </div>
+            </DialogHeader>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Para quantas semanas deseja gerar?</Label>
-                  <select 
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={autoGenWeeks}
-                    onChange={(e) => setAutoGenWeeks(Number(e.target.value))}
-                  >
-                    <option value={4}>1 Mês (4 semanas)</option>
-                    <option value={8}>2 Meses (8 semanas)</option>
-                    <option value={12}>3 Meses (12 semanas)</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-4 bg-secondary/20 p-4 rounded-lg border border-border">
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="checkbox" 
-                      id="auto-assign"
-                      checked={autoGenAssign}
-                      onChange={(e) => setAutoGenAssign(e.target.checked)}
-                      className="w-4 h-4 rounded text-accent focus:ring-accent"
-                    />
-                    <Label htmlFor="auto-assign" className="cursor-pointer font-semibold">
-                      Sortear e atribuir equipe para a semana inteira
-                    </Label>
+            <div className="flex-1 overflow-y-auto py-4 space-y-4">
+              {/* STEP 1: Config */}
+              {autoGenStep === "config" && (
+                <div className="space-y-5">
+                  <div className="bg-secondary/30 p-4 rounded-xl border border-border">
+                    <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                      <Settings2 className="w-4 h-4" /> Regras Ativas:
+                    </h4>
+                    <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
+                      {templates.length > 0 ? templates.map((t: any) => (
+                        <li key={t.id}>{t.name} ({t.time})</li>
+                      )) : (
+                        <li className="text-red-400">Nenhum template encontrado.</li>
+                      )}
+                    </ul>
                   </div>
-                  
-                  {autoGenAssign && (
-                    <div className="pl-7 space-y-2">
-                      <Label className="text-muted-foreground text-xs uppercase tracking-wider">
-                        O que fazer se o membro sorteado avisou que está indisponível em um dos dias?
-                      </Label>
-                      <select 
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        value={unavailabilityStrategy}
-                        onChange={(e) => setUnavailabilityStrategy(e.target.value)}
-                      >
-                        <option value="whole_week">Opção A: Tirar o membro da semana toda (Escalar outro na semana)</option>
-                        <option value="only_day">Opção B: Escalar um Substituto apenas naquele dia específico</option>
-                      </select>
+                  <div className="space-y-2">
+                    <Label>Para quantas semanas deseja gerar?</Label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={autoGenWeeks}
+                      onChange={(e) => setAutoGenWeeks(Number(e.target.value))}
+                    >
+                      <option value={1}>1 Semana</option>
+                      <option value={4}>1 Mês (4 semanas)</option>
+                      <option value={8}>2 Meses (8 semanas)</option>
+                      <option value={12}>3 Meses (12 semanas)</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-4 bg-secondary/20 p-4 rounded-lg border border-border">
+                    <div className="flex items-center gap-3">
+                      <input type="checkbox" id="auto-assign" checked={autoGenAssign} onChange={(e) => setAutoGenAssign(e.target.checked)} className="w-4 h-4 rounded text-accent" />
+                      <Label htmlFor="auto-assign" className="cursor-pointer font-semibold">Sortear e atribuir equipe automaticamente</Label>
+                    </div>
+                    {autoGenAssign && (
+                      <div className="pl-7 space-y-2">
+                        <Label className="text-muted-foreground text-xs uppercase tracking-wider">Estratégia para membros indisponíveis:</Label>
+                        <select
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          value={unavailabilityStrategy}
+                          onChange={(e) => setUnavailabilityStrategy(e.target.value)}
+                        >
+                          <option value="whole_week">Tirar o membro da semana toda</option>
+                          <option value="only_day">Escalar substituto só naquele dia</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: Preview */}
+              {autoGenStep === "preview" && (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground bg-secondary/30 rounded-xl p-3 border border-border">
+                    Revise os membros de cada escala. Use o seletor para trocar qualquer integrante antes de confirmar.
+                  </p>
+                  {previewData.length === 0 && (
+                    <div className="text-center py-10 text-muted-foreground">
+                      <Calendar className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                      <p>Nenhuma nova escala para gerar (já existem ou não há regras configuradas).</p>
                     </div>
                   )}
+                  {previewData.map((sched, si) => (
+                    <div key={si} className="border border-border rounded-xl p-4 bg-card/60 space-y-3">
+                      <div>
+                        <p className="font-semibold text-foreground">{sched.event}</p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {new Date(sched.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })} — {sched.time}
+                        </p>
+                      </div>
+                      {sched.members.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">Nenhum membro atribuído para esta data.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {sched.members.map((m, mi) => (
+                            <div key={mi} className="flex items-center justify-between bg-secondary/30 rounded-lg px-3 py-2">
+                              <div>
+                                <span className="text-sm font-medium text-foreground">{m.name}</span>
+                                <span className="ml-2 text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded-full">{m.role}</span>
+                              </div>
+                              <select
+                                className="h-7 text-xs border border-input bg-background rounded-md px-2 max-w-[160px]"
+                                value={m.name}
+                                onChange={(e) => {
+                                  const newName = e.target.value;
+                                  const memberData = (members as any[]).find((mb: any) => mb.name === newName);
+                                  const updated = [...previewData];
+                                  updated[si] = { ...updated[si], members: updated[si].members.map((mm, mmi) => mmi === mi ? { ...mm, name: newName, phone: memberData?.phone } : mm) };
+                                  setPreviewData(updated);
+                                }}
+                              >
+                                {(members as any[]).filter((mb: any) => mb.roles?.includes(m.role) && mb.status === 'active').map((mb: any) => (
+                                  <option key={mb.id} value={mb.name}>{mb.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAutoGenerateOpen(false)}>
-                Cancelar
-              </Button>
-              <Button 
-                variant="gold" 
-                onClick={() => autoGenerateMutation.mutate()}
-                disabled={autoGenerateMutation.isPending || templates.length === 0}
-              >
-                {autoGenerateMutation.isPending ? "Gerando..." : "Gerar Escalas"}
-              </Button>
+
+            <DialogFooter className="shrink-0 border-t border-border pt-4">
+              {autoGenStep === "config" ? (
+                <>
+                  <Button variant="outline" onClick={() => setIsAutoGenerateOpen(false)}>Cancelar</Button>
+                  <Button variant="gold" onClick={buildPreview} disabled={templates.length === 0}>
+                    <Eye className="w-4 h-4 mr-2" /> Ver Prévia
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => setAutoGenStep("config")}>
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Voltar
+                  </Button>
+                  <Button
+                    variant="gold"
+                    onClick={() => autoGenerateMutation.mutate()}
+                    disabled={autoGenerateMutation.isPending || previewData.length === 0}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    {autoGenerateMutation.isPending ? "Gerando..." : `Confirmar e Gerar ${previewData.length} Escala${previewData.length !== 1 ? 's' : ''}`}
+                  </Button>
+                </>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1166,6 +1301,94 @@ export default function Escalas() {
             <ScheduleTemplateManager />
           </DialogContent>
         </Dialog>
+
+        {/* Painel WhatsApp Web */}
+        {showWhatsAppPanel && userRole === "admin" && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowWhatsAppPanel(false)}>
+            <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg max-h-[88vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+              <div className="p-5 border-b border-border flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-semibold text-foreground">Enviar via WhatsApp Web</h3>
+                    <p className="text-xs text-muted-foreground">Clique em cada membro para abrir o WhatsApp</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowWhatsAppPanel(false)} className="text-muted-foreground hover:text-foreground p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-4 border-b border-border shrink-0">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">
+                  Mensagem (use: {'{nome}'}, {'{evento}'}, {'{data}'}, {'{hora}'}, {'{link}'})
+                </Label>
+                <textarea
+                  className="w-full text-sm border border-input bg-background rounded-xl p-3 h-24 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={whatsAppMessage}
+                  onChange={(e) => { setWhatsAppMessage(e.target.value); localStorage.setItem("whatsapp_schedule_msg", e.target.value); }}
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {(() => {
+                  const uniqueMembers = new Map<string, { name: string; phone: string; schedules: { event: string; date: string; time: string }[] }>();
+                  schedules.forEach((s: any) => {
+                    (s.members || []).forEach((m: any) => {
+                      const memberData = (members as any[]).find((mb: any) => mb.name?.toLowerCase().trim() === m.name?.toLowerCase().trim());
+                      const phone = memberData?.phone || "";
+                      if (!uniqueMembers.has(m.name)) uniqueMembers.set(m.name, { name: m.name, phone, schedules: [] });
+                      uniqueMembers.get(m.name)!.schedules.push({ event: s.event, date: s.date, time: s.time });
+                    });
+                  });
+                  if (uniqueMembers.size === 0) return (
+                    <p className="text-center text-muted-foreground text-sm py-8">Nenhum membro escalado nas próximas escalas.</p>
+                  );
+                  return Array.from(uniqueMembers.values()).map((member) => {
+                    const baseUrl = window.location.origin;
+                    const confirmLink = `${baseUrl}/confirmar?member=${encodeURIComponent(member.name)}`;
+                    const first = member.schedules[0];
+                    const msg = whatsAppMessage
+                      .replace(/\{nome\}/g, member.name)
+                      .replace(/\{evento\}/g, first?.event || "")
+                      .replace(/\{data\}/g, first ? new Date(first.date + 'T12:00:00').toLocaleDateString('pt-BR') : "")
+                      .replace(/\{hora\}/g, first?.time || "")
+                      .replace(/\{link\}/g, confirmLink);
+                    const rawPhone = member.phone.replace(/\D/g, "");
+                    const phoneFormatted = rawPhone.startsWith("55") ? rawPhone : "55" + rawPhone;
+                    const waUrl = rawPhone
+                      ? `https://web.whatsapp.com/send?phone=${phoneFormatted}&text=${encodeURIComponent(msg)}`
+                      : `https://web.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+                    return (
+                      <a
+                        key={member.name}
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/20 hover:bg-green-500/10 hover:border-green-500/30 transition-all group cursor-pointer"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{member.name}</p>
+                          <p className="text-xs text-muted-foreground">{member.schedules.length} escala(s) · {member.phone || "Sem telefone cadastrado"}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-green-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Abrir WhatsApp</span>
+                          <Send className="w-4 h-4 text-green-500" />
+                        </div>
+                      </a>
+                    );
+                  });
+                })()}
+              </div>
+
+              <div className="p-4 border-t border-border shrink-0">
+                <Button variant="outline" className="w-full" onClick={() => setShowWhatsAppPanel(false)}>Fechar</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
