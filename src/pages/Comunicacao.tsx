@@ -335,7 +335,7 @@ export default function Comunicacao() {
           </div>
 
           {/* Lista */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto chat-scroll">
             {filteredConversations.map((conv) => {
               const last = getLastMessage(conv.id);
               const isActive = activeConversation?.id === conv.id;
@@ -490,7 +490,7 @@ export default function Comunicacao() {
 
               {/* Mensagens */}
               <div
-                className="flex-1 overflow-y-auto px-3 md:px-4 py-4 space-y-1"
+                className="flex-1 overflow-y-auto chat-scroll px-3 md:px-4 py-4 space-y-1"
                 style={{
                   backgroundImage:
                     "radial-gradient(circle, hsl(var(--accent) / 0.03) 1px, transparent 1px)",
@@ -539,7 +539,7 @@ export default function Comunicacao() {
                                 <div
                                   className={`px-3 py-2 rounded-2xl text-sm shadow-sm ${
                                     isMe
-                                      ? "bg-accent text-primary rounded-br-sm"
+                                      ? "bg-accent text-accent-foreground rounded-br-sm"
                                       : "bg-card border border-border text-foreground rounded-bl-sm"
                                   }`}
                                 >
@@ -551,12 +551,12 @@ export default function Comunicacao() {
                                   >
                                     <span
                                       className={`text-[10px] ${
-                                        isMe ? "text-primary/60" : "text-muted-foreground"
+                                        isMe ? "text-accent-foreground/70" : "text-muted-foreground"
                                       }`}
                                     >
                                       {formatTime(msg.created_at)}
                                     </span>
-                                    {isMe && <CheckCheck className="w-3 h-3 text-primary/60" />}
+                                    {isMe && <CheckCheck className="w-3 h-3 text-accent-foreground/70" />}
                                   </div>
                                 </div>
                               </div>
