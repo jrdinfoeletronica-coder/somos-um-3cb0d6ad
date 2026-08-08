@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Settings, Mic2, Plus, Key, Copy, Check, Link2, ShieldCheck, DatabaseBackup, Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { doManualBackup, downloadLocalBackup, listRemoteBackups } from "@/lib/chatBackup";
+import { doManualBackup, downloadSystemBackup, listRemoteBackups } from "@/lib/chatBackup";
 
 export default function Configuracoes() {
   const [activeTab, setActiveTab] = useState<"geral" | "funcoes" | "acesso" | "backup">("geral");
@@ -116,9 +116,9 @@ export default function Configuracoes() {
   };
 
   const handleDownloadBackup = async () => {
-    const ok = await downloadLocalBackup();
-    if (ok) toast.success("Backup baixado com sucesso!");
-    else toast.info("Nenhuma mensagem encontrada para exportar.");
+    const ok = await downloadSystemBackup();
+    if (ok) toast.success("Backup do sistema baixado com sucesso!");
+    else toast.info("Nenhum dado encontrado para exportar.");
   };
 
   const loadRemoteBackups = async () => {
@@ -404,12 +404,12 @@ export default function Configuracoes() {
             <div className="card-church p-6 space-y-4">
               <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
                 <DatabaseBackup className="w-5 h-5 text-accent" />
-                Backup das Mensagens
+                Backup Completo do Sistema
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div className="bg-secondary/40 rounded-lg p-4 border border-border text-center">
-                  <p className="text-2xl font-bold text-accent">30 dias</p>
-                  <p className="text-muted-foreground mt-1">Retenção de mensagens</p>
+                  <p className="text-2xl font-bold text-accent">Tudo</p>
+                  <p className="text-muted-foreground mt-1">Membros, escalas, músicas...</p>
                 </div>
                 <div className="bg-secondary/40 rounded-lg p-4 border border-border text-center">
                   <p className="text-2xl font-bold text-accent">Semanal</p>
@@ -417,11 +417,11 @@ export default function Configuracoes() {
                 </div>
                 <div className="bg-secondary/40 rounded-lg p-4 border border-border text-center">
                   <p className="text-2xl font-bold text-accent">JSON</p>
-                  <p className="text-muted-foreground mt-1">Formato de exportação</p>
+                  <p className="text-muted-foreground mt-1">Arquivo exportável</p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground bg-accent/5 border border-accent/10 rounded-lg p-3">
-                📌 As mensagens são automaticamente copiadas para o servidor toda semana e apagadas do chat após 30 dias. O histórico fica salvo em segurança.
+                📌 O backup exporta <strong>todos os dados</strong> do sistema: membros, escalas, músicas, templates, mensagens e configurações. Feito automaticamente toda semana e disponível para download manual.
               </p>
             </div>
 
@@ -448,7 +448,7 @@ export default function Configuracoes() {
                   className="flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
-                  Baixar Mensagens (JSON)
+                  Baixar Backup Completo (JSON)
                 </Button>
               </div>
             </div>

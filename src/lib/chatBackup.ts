@@ -1,86 +1,113 @@
 import { supabase } from "./supabase";
 
-const BACKUP_KEY = "last_chat_backup";
+const BACKUP_KEY = "last_system_backup";
 const BACKUP_INTERVAL_DAYS = 7;
 const MESSAGE_TTL_DAYS = 30;
 
+// Todas as tabelas do sistema para backup completo
+const SYSTEM_TABLES = [
+  "members",
+  "songs",
+  "schedules",
+  "schedule_members",
+  "schedule_templates",
+  "messages",
+  "invite_codes",
+  "unavailability",
+  "notifications",
+];
+
+// Exporta todas as tabelas do sistema em um único objeto JSON
+async function exportAllTables(): Promise<Record<string, any[]>> {
+  const snapshot: Record<string, any[]> = {};
+
+  await Promise.all(
+    SYSTEM_TABLES.map(async (table) => {
+      try {
+        const { data } = await supabase.from(table).select("*").order("created_at", { ascending: true });
+        snapshot[table] = data || [];
+      } catch {
+        snapshot[table] = [];
+      }
+    })
+  );
+
+  return snapshot;
+}
+
+// Roda a manutenção automática ao abrir o chat:
+// 1. Backup semanal completo do sistema
+// 2. Limpeza de mensagens com mais de 30 dias
 export async function runChatMaintenanceIfNeeded() {
   const lastBackup = localStorage.getItem(BACKUP_KEY);
   const now = new Date();
 
   const shouldBackup =
     !lastBackup ||
-    (now.getTime() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24) >=
-      BACKUP_INTERVAL_DAYS;
-
-  // Calcula a data limite de 30 dias atrás
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - MESSAGE_TTL_DAYS);
-  const cutoffStr = cutoff.toISOString();
+    (now.getTime() - new Date(lastBackup).getTime()) / (1000 * 60 * 60 * 24) >= BACKUP_INTERVAL_DAYS;
 
   if (shouldBackup) {
-    await doBackup(cutoffStr);
+    await doSystemBackupToStorage("auto");
     localStorage.setItem(BACKUP_KEY, now.toISOString());
   }
 
-  // Deleta mensagens antigas (> 30 dias)
-  await supabase.from("messages").delete().lt("created_at", cutoffStr);
+  // Limpa mensagens antigas (> 30 dias) do chat — sem apagar o restante do sistema
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - MESSAGE_TTL_DAYS);
+  await supabase.from("messages").delete().lt("created_at", cutoff.toISOString());
 }
 
+// Backup manual acionado pelo admin (botão em Configurações)
 export async function doManualBackup(): Promise<string> {
-  const now = new Date();
-  const cutoffStr = new Date(now.getTime() - MESSAGE_TTL_DAYS * 86400000).toISOString();
-  const filename = await doBackup(cutoffStr);
-  localStorage.setItem(BACKUP_KEY, now.toISOString());
+  const filename = await doSystemBackupToStorage("manual");
+  localStorage.setItem(BACKUP_KEY, new Date().toISOString());
   return filename;
 }
 
-async function doBackup(cutoffStr: string): Promise<string> {
-  // Busca todas as mensagens antigas
-  const { data: oldMessages } = await supabase
-    .from("messages")
-    .select("*")
-    .lt("created_at", cutoffStr)
-    .order("created_at", { ascending: true });
+// Faz upload do snapshot completo para o Supabase Storage
+async function doSystemBackupToStorage(prefix: "auto" | "manual"): Promise<string> {
+  const snapshot = await exportAllTables();
+  const totalRecords = Object.values(snapshot).reduce((acc, arr) => acc + arr.length, 0);
 
-  if (!oldMessages || oldMessages.length === 0) return "";
+  if (totalRecords === 0) return "";
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  const filename = `backup-${timestamp}.json`;
-  const blob = new Blob([JSON.stringify(oldMessages, null, 2)], {
-    type: "application/json",
-  });
+  const filename = `${prefix}-${timestamp}.json`;
 
-  // Tenta fazer upload para o Supabase Storage (bucket chat-backups)
+  const blob = new Blob(
+    [JSON.stringify({ exported_at: new Date().toISOString(), tables: snapshot }, null, 2)],
+    { type: "application/json" }
+  );
+
   try {
-    await supabase.storage.from("chat-backups").upload(filename, blob, {
+    await supabase.storage.from("system-backups").upload(filename, blob, {
       contentType: "application/json",
       upsert: false,
     });
   } catch (e) {
-    // Se falhar (ex: bucket não existe), apenas ignora — não bloqueia a limpeza
-    console.warn("Backup remoto falhou, apenas limpeza local será feita:", e);
+    console.warn("Backup remoto falhou:", e);
   }
 
   return filename;
 }
 
-export async function downloadLocalBackup() {
-  // Baixa TODAS as mensagens existentes como JSON para o computador do usuário
-  const { data } = await supabase
-    .from("messages")
-    .select("*")
-    .order("created_at", { ascending: true });
+// Baixa o backup completo do sistema para o computador do usuário
+export async function downloadSystemBackup(): Promise<boolean> {
+  const snapshot = await exportAllTables();
+  const totalRecords = Object.values(snapshot).reduce((acc, arr) => acc + arr.length, 0);
+  if (totalRecords === 0) return false;
 
-  if (!data || data.length === 0) return false;
+  const payload = {
+    exported_at: new Date().toISOString(),
+    app: "Somos Um — Ministério de Louvor",
+    tables: snapshot,
+  };
 
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-    type: "application/json",
-  });
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `mensagens-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `somosum-backup-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -88,9 +115,10 @@ export async function downloadLocalBackup() {
   return true;
 }
 
-export async function listRemoteBackups() {
+// Lista backups salvos no servidor
+export async function listRemoteBackups(): Promise<any[]> {
   try {
-    const { data, error } = await supabase.storage.from("chat-backups").list("", {
+    const { data, error } = await supabase.storage.from("system-backups").list("", {
       sortBy: { column: "created_at", order: "desc" },
     });
     if (error) return [];
@@ -99,3 +127,4 @@ export async function listRemoteBackups() {
     return [];
   }
 }
+
