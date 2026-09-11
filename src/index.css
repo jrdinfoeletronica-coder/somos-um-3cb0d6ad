@@ -129,6 +129,29 @@ div:has(> a[href*="lovable.dev"]) {
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', sans-serif;
+    text-transform: capitalize;
+  }
+
+  /* Manter caixa normal em campos de formulário, código, links e tooltips */
+  input,
+  textarea,
+  select,
+  button,
+  a,
+  label,
+  [role="menuitem"],
+  [role="option"],
+  code,
+  pre,
+  .font-mono,
+  [placeholder] {
+    text-transform: none;
+  }
+
+  /* Restaurar capitalize apenas para conteúdo de texto dentro de inputs quando digitado */
+  input::placeholder,
+  textarea::placeholder {
+    text-transform: none;
   }
 
   h1, h2, h3, h4, h5, h6 {

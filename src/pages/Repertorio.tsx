@@ -545,7 +545,7 @@ export default function Repertorio() {
               >
                 <SongCard
                   {...song}
-                  showActions={userRole === "admin"}
+                  showActions={userRole === "admin" || userRole === "editor"}
                   onEdit={() => handleOpenEditSong(song)}
                   onDelete={() => handleDeleteSong(song.id)}
                 />

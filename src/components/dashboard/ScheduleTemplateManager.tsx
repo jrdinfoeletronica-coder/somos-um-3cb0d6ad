@@ -64,10 +64,30 @@ export function ScheduleTemplateManager() {
 
       if (editingTemplate) {
         const { error } = await supabase.from('schedule_templates').update(payload).eq('id', editingTemplate.id);
-        if (error) throw error;
+        if (error) {
+          const isColErr = error.message?.toLowerCase().includes("schema") || error.code === "PGRST204" || error.code === "42703";
+          if (isColErr) {
+            const fallbackPayload = { ...payload };
+            delete (fallbackPayload as any).is_special_monthly;
+            delete (fallbackPayload as any).nth_week;
+            const { error: fErr } = await supabase.from('schedule_templates').update(fallbackPayload).eq('id', editingTemplate.id);
+            if (fErr) throw fErr;
+            toast.warning("Regra atualizada, mas rode o SQL no Supabase para habilitar regras mensais!");
+          } else throw error;
+        }
       } else {
         const { error } = await supabase.from('schedule_templates').insert([payload]);
-        if (error) throw error;
+        if (error) {
+          const isColErr = error.message?.toLowerCase().includes("schema") || error.code === "PGRST204" || error.code === "42703";
+          if (isColErr) {
+            const fallbackPayload = { ...payload };
+            delete (fallbackPayload as any).is_special_monthly;
+            delete (fallbackPayload as any).nth_week;
+            const { error: fErr } = await supabase.from('schedule_templates').insert([fallbackPayload]);
+            if (fErr) throw fErr;
+            toast.warning("Regra criada, mas rode o SQL no Supabase para habilitar regras mensais!");
+          } else throw error;
+        }
       }
     },
     onSuccess: () => {

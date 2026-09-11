@@ -17,6 +17,7 @@ import Relatorios from "./pages/Relatorios";
 import Perfil from "./pages/Perfil";
 import Confirmar from "./pages/Confirmar";
 import NotFound from "./pages/NotFound";
+import Playlists from "./pages/Playlists";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -26,7 +27,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<CadastroMembro />} />
           <Route path="/reset-senha" element={<ResetSenha />} />
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/relatorios" element={<Relatorios />} />
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/confirmar" element={<Confirmar />} />
+          <Route path="/playlists" element={<Playlists />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -346,13 +346,28 @@ export default function Escalas() {
   // Gera prévia em memória sem salvar
   const buildPreview = () => {
     if (templates.length === 0) return;
+    
+    // Calcula quem foi o último ministrante para evitar repetição
+    const sortedSchedules = [...schedules].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    let lastWeekMinistros = new Set<string>();
+    for (const s of sortedSchedules) {
+      const mins = s.members?.filter((m: any) => m.role === 'Ministro de Louvor');
+      if (mins && mins.length > 0) {
+        mins.forEach((m: any) => {
+           const found = (members as any[]).find(mb => mb.name === m.name);
+           if (found) lastWeekMinistros.add(found.id);
+        });
+        break;
+      }
+    }
+
     const today = new Date();
     const result: typeof previewData = [];
     for (let w = 0; w < autoGenWeeks; w++) {
       const weekSchedules: any[] = [];
-      for (let d = 1; d <= 7; d++) {
+      for (let d = 0; d < 7; d++) {
         const currentDate = new Date(today);
-        currentDate.setDate(today.getDate() + (w * 7) + d);
+        currentDate.setDate(today.getDate() + (w * 7) + d + 1);
         const dayOfWeek = currentDate.getDay();
         const dayOfMonth = currentDate.getDate();
         const nthWeek = Math.ceil(dayOfMonth / 7);
@@ -368,7 +383,7 @@ export default function Escalas() {
           if (shouldCreate) { selectedTemplate = t; break; }
         }
         if (selectedTemplate) {
-          const formattedDate = currentDate.toISOString().split('T')[0];
+          const formattedDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
           const alreadyExists = schedules.some((s: any) => s.date === formattedDate && s.event === selectedTemplate.event_name);
           if (!alreadyExists) {
             weekSchedules.push({ date: formattedDate, event: selectedTemplate.event_name, time: selectedTemplate.time, location: selectedTemplate.location || 'Templo Principal', _template_ref: selectedTemplate });
@@ -383,17 +398,56 @@ export default function Escalas() {
       const weekTeam: { role: string; member: any }[] = [];
       const usedIds = new Set();
       for (const [role, count] of weeklyRoles.entries()) {
-        let avail = (members as any[]).filter((m: any) => m.roles?.includes(role) && m.status === 'active' && !usedIds.has(m.id));
+        let avail = (members as any[]).filter((m: any) => {
+          if (!m.roles?.includes(role) || m.status !== 'active' || usedIds.has(m.id)) return false;
+          
+          if (m.available_days && m.available_days.length > 0) {
+            let canAttendAtLeastOne = false;
+            for (const sched of weekSchedules) {
+              const parts = sched.date.split('-');
+              const dayOfW = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getDay();
+              if (m.available_days.includes(dayOfW)) {
+                canAttendAtLeastOne = true;
+                break;
+              }
+            }
+            if (!canAttendAtLeastOne) return false;
+          }
+
+          if (role === 'Ministro de Louvor' && lastWeekMinistros.has(m.id)) return false;
+
+          return true;
+        });
         avail = avail.sort(() => 0.5 - Math.random()).slice(0, count as number);
         for (const m of avail) { weekTeam.push({ role, member: m }); usedIds.add(m.id); }
       }
+
+      // Atualiza os ministrantes para a próxima iteração
+      const ministrosThisWeek = weekTeam.filter(wt => wt.role === 'Ministro de Louvor').map(wt => wt.member.id);
+      if (ministrosThisWeek.length > 0) lastWeekMinistros = new Set(ministrosThisWeek);
       for (const sched of weekSchedules) {
         const reqs = typeof sched._template_ref.role_requirements === 'string' ? JSON.parse(sched._template_ref.role_requirements) : sched._template_ref.role_requirements || [];
         const membersForDay: { name: string; role: string; phone?: string }[] = [];
         for (const req of reqs) {
           const team = weekTeam.filter((wt) => wt.role === req.role);
           for (let i = 0; i < Math.min(req.count, team.length); i++) {
-            const m = team[i].member;
+            let m = team[i].member;
+            
+            // Preview substitution
+            const parts = sched.date.split('-');
+            const currentDayOfW = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getDay();
+            const isUnavailDays = m.available_days && m.available_days.length > 0 && !m.available_days.includes(currentDayOfW);
+            
+            if (isUnavailDays) {
+              const substitute = members.find((sub: any) => {
+                if (!sub.roles?.includes(req.role) || sub.status !== 'active' || sub.id === m.id) return false;
+                const subUnavailDays = sub.available_days && sub.available_days.length > 0 && !sub.available_days.includes(currentDayOfW);
+                return !subUnavailDays;
+              });
+              if (substitute) m = substitute;
+              else continue;
+            }
+            
             membersForDay.push({ name: m.name, role: req.role, phone: m.phone });
           }
         }
@@ -411,7 +465,20 @@ export default function Escalas() {
         throw new Error("Nenhum modelo (template) encontrado. Execute o SQL de configuração primeiro.");
       }
 
-      // Lógica de geração agrupada por semana (Seg-Dom)
+      // Calcula quem foi o último ministrante para evitar repetição
+      const sortedSchedules = [...schedules].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      let lastWeekMinistros = new Set<string>();
+      for (const s of sortedSchedules) {
+        const mins = s.members?.filter((m: any) => m.role === 'Ministro de Louvor');
+        if (mins && mins.length > 0) {
+          mins.forEach((m: any) => {
+             const found = (members as any[]).find(mb => mb.name === m.name);
+             if (found) lastWeekMinistros.add(found.id);
+          });
+          break;
+        }
+      }
+
       const newSchedules = [];
       const today = new Date();
       // Ajusta para a próxima segunda-feira como inicio (ou usar a data atual e ir iterando)
@@ -422,9 +489,9 @@ export default function Escalas() {
       for (let w = 0; w < autoGenWeeks; w++) {
         const weekSchedules = [];
         
-        for (let d = 1; d <= 7; d++) {
+        for (let d = 0; d < 7; d++) {
           const currentDate = new Date(today);
-          currentDate.setDate(today.getDate() + (w * 7) + d);
+          currentDate.setDate(today.getDate() + (w * 7) + d + 1);
           
           const dayOfWeek = currentDate.getDay(); // 0-Dom, 1-Seg...
           const dayOfMonth = currentDate.getDate();
@@ -459,7 +526,7 @@ export default function Escalas() {
           }
 
           if (selectedTemplate) {
-            const formattedDate = currentDate.toISOString().split('T')[0];
+            const formattedDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
             const alreadyExists = schedules.some((s: any) => 
               s.date === formattedDate && s.event === selectedTemplate.event_name
             );
@@ -508,9 +575,26 @@ export default function Escalas() {
         if (autoGenAssign) {
           for (const [role, count] of weeklyRoles.entries()) {
             // Busca membros ativos para a função
-            let available = members.filter((m: any) => 
-              m.roles && m.roles.includes(role) && m.status === 'active' && !usedMemberIds.has(m.id)
-            );
+            let available = members.filter((m: any) => {
+              if (!m.roles || !m.roles.includes(role) || m.status !== 'active' || usedMemberIds.has(m.id)) return false;
+              
+              if (m.available_days && m.available_days.length > 0) {
+                let canAttendAtLeastOne = false;
+                for (const sched of week) {
+                  const parts = sched.date.split('-');
+                  const dayOfW = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getDay();
+                  if (m.available_days.includes(dayOfW)) {
+                    canAttendAtLeastOne = true;
+                    break;
+                  }
+                }
+                if (!canAttendAtLeastOne) return false;
+              }
+
+              if (role === 'Ministro de Louvor' && lastWeekMinistros.has(m.id)) return false;
+
+              return true;
+            });
             
             // Filtro de indisponibilidade (whole_week strategy)
             if (unavailabilityStrategy === "whole_week") {
@@ -538,6 +622,10 @@ export default function Escalas() {
               usedMemberIds.add(s.id);
             }
           }
+
+          // Atualiza os ministrantes para a próxima iteração
+          const ministrosThisWeek = weekTeam.filter(wt => wt.role === 'Ministro de Louvor').map(wt => wt.member.id);
+          if (ministrosThisWeek.length > 0) lastWeekMinistros = new Set(ministrosThisWeek);
         }
 
         // 3. Insere os cultos e atribui a equipe
@@ -570,18 +658,27 @@ export default function Escalas() {
               for (let i = 0; i < Math.min(req.count, teamMembersForRole.length); i++) {
                 let memberToAssign = teamMembersForRole[i].member;
                 
-                // Filtro de indisponibilidade (only_day strategy)
+                const parts = sched.date.split('-');
+                const currentDayOfW = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getDay();
+                const isUnavailDays = memberToAssign.available_days && memberToAssign.available_days.length > 0 && !memberToAssign.available_days.includes(currentDayOfW);
+
+                // Filtro de indisponibilidade
                 const isUnavail = unavailabilities.some((u: any) => {
                   const uDate = typeof u.date === 'string' ? u.date.split('T')[0] : '';
                   const sDate = typeof sched.date === 'string' ? sched.date.split('T')[0] : '';
                   return u.member_id === memberToAssign.id && uDate === sDate;
                 });
                 
-                if (isUnavail && unavailabilityStrategy === "only_day") {
+                // Forçamos a substituição se o dia fixo dele não bater (isUnavailDays)
+                // OU se a estratégia for only_day e ele estiver indisponível no calendário de férias.
+                if (isUnavailDays || (isUnavail && unavailabilityStrategy === "only_day")) {
                   // Substitui apenas pro dia
                   const substitute = members.find((m: any) => {
                     if (!m.roles || !m.roles.includes(req.role) || m.status !== 'active' || m.id === memberToAssign.id) return false;
                     
+                    const subUnavailDays = m.available_days && m.available_days.length > 0 && !m.available_days.includes(currentDayOfW);
+                    if (subUnavailDays) return false;
+
                     const subUnavail = unavailabilities.some((u: any) => {
                       const uDate = typeof u.date === 'string' ? u.date.split('T')[0] : '';
                       const sDate = typeof sched.date === 'string' ? sched.date.split('T')[0] : '';
@@ -595,7 +692,7 @@ export default function Escalas() {
                     memberToAssign = substitute;
                   } else {
                     // Não achou substituto e o original tá indisponível. Pula a inserção para esta vaga.
-                    continue; // Pula para a próxima iteração do loop (não insere ninguém pra essa vaga)
+                    continue; // Pula para a próxima iteração do loop
                   }
                 }
                 

@@ -39,7 +39,8 @@ export default function Membros() {
     phone: "",
     status: "active" as "active" | "inactive",
     access_level: "viewer" as "admin" | "editor" | "viewer",
-    experience_level: "Intermediário"
+    experience_level: "Intermediário",
+    available_days: [] as number[]
   });
 
   const userRole = localStorage.getItem("userRole") || "viewer";
@@ -82,7 +83,8 @@ export default function Membros() {
         roles: selectedRoles,
         status: formData.status,
         access_level: formData.access_level,
-        experience_level: formData.experience_level
+        experience_level: formData.experience_level,
+        available_days: formData.available_days.length > 0 ? formData.available_days : null
       };
 
       if (!payload.name) {
@@ -94,12 +96,31 @@ export default function Membros() {
           .from("members")
           .update(payload)
           .eq("id", editingMember.id);
-        if (error) throw error;
+        
+        if (error) {
+          const isColErr = error.message?.toLowerCase().includes("schema") || error.code === "PGRST204" || error.code === "42703";
+          if (isColErr) {
+            const fallbackPayload = { ...payload };
+            delete (fallbackPayload as any).available_days;
+            const { error: fErr } = await supabase.from("members").update(fallbackPayload).eq("id", editingMember.id);
+            if (fErr) throw fErr;
+            toast.warning("Membro atualizado, mas rode o SQL no Supabase para habilitar o filtro de dias disponíveis.");
+          } else throw error;
+        }
       } else {
         const { error } = await supabase
           .from("members")
           .insert([payload]);
-        if (error) throw error;
+        if (error) {
+          const isColErr = error.message?.toLowerCase().includes("schema") || error.code === "PGRST204" || error.code === "42703";
+          if (isColErr) {
+            const fallbackPayload = { ...payload };
+            delete (fallbackPayload as any).available_days;
+            const { error: fErr } = await supabase.from("members").insert([fallbackPayload]);
+            if (fErr) throw fErr;
+            toast.warning("Membro adicionado, mas rode o SQL no Supabase para habilitar o filtro de dias disponíveis.");
+          } else throw error;
+        }
       }
     },
     onSuccess: () => {
@@ -136,7 +157,8 @@ export default function Membros() {
       phone: "",
       status: "active",
       access_level: "viewer",
-      experience_level: "Intermediário"
+      experience_level: "Intermediário",
+      available_days: []
     });
   };
 
@@ -154,7 +176,8 @@ export default function Membros() {
       phone: member.phone || "",
       status: member.status || "active",
       access_level: member.access_level || "viewer",
-      experience_level: member.experience_level || "Intermediário"
+      experience_level: member.experience_level || "Intermediário",
+      available_days: member.available_days || []
     });
     setIsDialogOpen(true);
   };
@@ -170,6 +193,15 @@ export default function Membros() {
       setSelectedRoles(selectedRoles.filter((r) => r !== role));
     } else {
       setSelectedRoles([...selectedRoles, role]);
+    }
+  };
+
+  const handleToggleDay = (dayIndex: number) => {
+    const current = formData.available_days;
+    if (current.includes(dayIndex)) {
+      setFormData({ ...formData, available_days: current.filter(d => d !== dayIndex) });
+    } else {
+      setFormData({ ...formData, available_days: [...current, dayIndex] });
     }
   };
 
@@ -387,6 +419,33 @@ export default function Membros() {
                         }`}
                       >
                         {role}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Dias Disponíveis */}
+              <div className="space-y-2 pt-2 border-t border-border">
+                <Label>Dias Disponíveis (Opcional)</Label>
+                <p className="text-xs text-muted-foreground -mt-1">
+                  Selecione os dias que este membro pode tocar. Se deixar vazio, ele estará disponível todos os dias.
+                </p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((dayName, idx) => {
+                    const isSelected = formData.available_days.includes(idx);
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleToggleDay(idx)}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-all ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-input text-muted-foreground hover:bg-secondary"
+                        }`}
+                      >
+                        {dayName}
                       </button>
                     );
                   })}
