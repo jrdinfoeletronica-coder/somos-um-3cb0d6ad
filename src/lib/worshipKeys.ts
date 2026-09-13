@@ -802,7 +802,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   "o agir de deus|aline barros": "G",
   "haja de deus|aline barros": "G",
   "o haja de deus|aline barros": "G",
-  "caminho de milagres|aline barros": "C",
   "caminho de milagre|aline barros": "C",
   "ressuscita-me|aline barros": "D",
   "tudo e possivel|aline barros": "G",
@@ -1087,14 +1086,6 @@ export async function fetchCifraClubKey(artist: string, title: string): Promise<
   const noTitleArticle = rawSlugTitle.replace(/^(o|a|os|as)-/i, "");
   if (noTitleArticle !== rawSlugTitle) {
     titleVariants.add(noTitleArticle);
-  }
-  // Testa versão plural (caminho-de-milagre -> caminho-de-milagres)
-  if (!rawSlugTitle.endsWith("s")) {
-    titleVariants.add(rawSlugTitle + "s");
-  }
-  // Testa versão singular (caminho-de-milagres -> caminho-de-milagre)
-  if (rawSlugTitle.endsWith("s")) {
-    titleVariants.add(rawSlugTitle.slice(0, -1));
   }
 
   // Gera todas as combinações possíveis de URLs

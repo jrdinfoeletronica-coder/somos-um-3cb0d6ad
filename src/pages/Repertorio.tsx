@@ -4,7 +4,7 @@ import { SongCard } from "@/components/dashboard/SongCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Music, Plus, Search, ListMusic, Globe, RefreshCw, Lightbulb } from "lucide-react";
+import { Music, Plus, Search, ListMusic, Globe, RefreshCw, Lightbulb, Zap, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +21,24 @@ export default function Repertorio() {
   const [selectedTone, setSelectedTone] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const userRole = localStorage.getItem("userRole") || "viewer";
+
+  // Busca rápida de tom ao vivo
+  const [quickLookup, setQuickLookup] = useState("");
+  const [quickResult, setQuickResult] = useState<{ key: string; artist?: string } | null>(null);
+  const [quickNotFound, setQuickNotFound] = useState(false);
+
+  const handleQuickLookup = (value: string) => {
+    setQuickLookup(value);
+    setQuickNotFound(false);
+    if (!value.trim()) { setQuickResult(null); return; }
+    const found = lookupWorshipKey(value.trim(), "");
+    if (found) {
+      setQuickResult({ key: found });
+    } else {
+      setQuickResult(null);
+      if (value.trim().length > 2) setQuickNotFound(true);
+    }
+  };
   
   // Estados para as Sugestões de Louvor (iTunes/Google)
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
@@ -451,6 +469,45 @@ export default function Repertorio() {
     <DashboardLayout title="Repertório">
       <div className="space-y-6 animate-fade-in">
         
+        {/* ⚡ Busca Rápida de Tom - para uso ao vivo */}
+        <div className="bg-gradient-to-r from-yellow-500/15 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="w-9 h-9 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-yellow-500" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground text-sm">Busca Rápida de Tom</h3>
+                <p className="text-xs text-muted-foreground">Para consulta ao vivo — instantâneo!</p>
+              </div>
+            </div>
+            <div className="flex-1 w-full relative">
+              <Input
+                placeholder="Digite o nome do louvor..."
+                value={quickLookup}
+                onChange={(e) => handleQuickLookup(e.target.value)}
+                className="bg-background pr-8 text-base font-medium"
+                autoComplete="off"
+              />
+              {quickLookup && (
+                <button onClick={() => { setQuickLookup(""); setQuickResult(null); setQuickNotFound(false); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            {quickResult && (
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-sm text-muted-foreground">Tom:</span>
+                <span className="text-3xl font-black text-yellow-500 tracking-tight">{quickResult.key}</span>
+              </div>
+            )}
+            {quickNotFound && !quickResult && (
+              <div className="shrink-0 text-sm text-muted-foreground italic">Não encontrado no banco</div>
+            )}
+          </div>
+        </div>
+
         {/* Tema / Inspiração */}
         <div className="bg-gradient-to-r from-accent/20 to-background p-4 rounded-xl border border-accent/20 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
