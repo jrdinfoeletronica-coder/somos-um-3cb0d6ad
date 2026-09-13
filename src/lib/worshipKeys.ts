@@ -1606,6 +1606,225 @@ const WORSHIP_KEYS: Record<string, string> = {
   "barraba|jerson rufino": "Am",
   "filho pródigo|jerson rufino": "G",
   "o anjo do egito|jerson rufino": "Dm",
+
+  // ==========================================================
+  // LOTE 2/4 - LOUVORES ATUAIS (CONTEMPORÂNEOS / HITS)
+  // ==========================================================
+
+  // ═══════════════════════════════════════════════
+  // VALESCA MAYSSA
+  // ═══════════════════════════════════════════════
+  "dias de guerra|valesca mayssa": "Am",
+  "arvore cortada|valesca mayssa": "Em",
+  "ta chorando por que|valesca mayssa": "C",
+  "eu sou teu pai|valesca mayssa": "G",
+  "boa obra|valesca mayssa": "C",
+  "o encontro|valesca mayssa": "Em",
+
+  // ═══════════════════════════════════════════════
+  // MARIA MARÇAL
+  // ═══════════════════════════════════════════════
+  "deserto|maria marcal": "Cm",
+  "deixa|maria marcal": "Em",
+  "enquanto deus trabalha|maria marcal": "Am",
+  "uma coisa nova|maria marcal": "Fm",
+  "infinito|maria marcal": "G",
+
+  // ═══════════════════════════════════════════════
+  // JEFFERSON E SUELLEN
+  // ═══════════════════════════════════════════════
+  "vem me buscar|jefferson e suellen": "Em",
+  "saudade de casa|jefferson e suellen": "Am",
+  "profetiza|jefferson e suellen": "Dm",
+  "labareda|jefferson e suellen": "Em",
+
+  // ═══════════════════════════════════════════════
+  // CASA WORSHIP
+  // ═══════════════════════════════════════════════
+  "a casa e sua|casa worship": "G",
+  "eu te vejo em tudo|casa worship": "C",
+  "faz arraial|casa worship": "Am",
+  "era eu|casa worship": "C",
+  "vento impetuoso|casa worship": "Am",
+  "yeshua|casa worship": "D",
+
+  // ═══════════════════════════════════════════════
+  // LEANDRO BORGES
+  // ═══════════════════════════════════════════════
+  "deus e eu|leandro borges": "C",
+  "cresca|leandro borges": "F",
+  "o silencio de deus|leandro borges": "Am",
+  "um refrão pra sua alma|leandro borges": "C",
+  "deixa eu te usar|leandro borges": "Em",
+
+  // ═══════════════════════════════════════════════
+  // JULLIANY SOUZA / LEO BRANDÃO
+  // ═══════════════════════════════════════════════
+  "lindo momento|julliany souza": "G",
+  "eu me atraiu|julliany souza": "A",
+  "sinto fluir|julliany souza": "D",
+  "teu toque|leo brandao": "F",
+  "a mesa|julliany souza": "G",
+
+  // ═══════════════════════════════════════════════
+  // KEMILLY SANTOS
+  // ═══════════════════════════════════════════════
+  "fica tranquilo|kemilly santos": "D",
+  "o jogo virou|kemilly santos": "Cm",
+  "a promessa|kemilly santos": "C",
+  "tem cheiro de milagre|kemilly santos": "Am",
+
+  // ═══════════════════════════════════════════════
+  // JULIA VITORIA
+  // ═══════════════════════════════════════════════
+  "de dentro pra fora|julia vitoria": "G",
+  "alem do rio azul|julia vitoria": "D",
+  "tuas aguas|julia vitoria": "C",
+  "somos teu povo|julia vitoria": "Em",
+
+  // ═══════════════════════════════════════════════
+  // TALES ROBERTO / OUTROS ATUAIS
+  // ═══════════════════════════════════════════════
+  "deus da minha vida|tales": "G",
+  "cheios do espirito santo|tales": "Em",
+  
+  // ═══════════════════════════════════════════════
+  // MIDIAN LIMA
+  // ═══════════════════════════════════════════════
+  "jo|midian lima": "Dm",
+  "nao pare|midian lima": "G",
+  "prioridade|midian lima": "C",
+  "olhai pra cruz|midian lima": "F",
+
+  // ═══════════════════════════════════════════════
+  // DELINO MARÇAL
+  // ═══════════════════════════════════════════════
+  "deus e deus|delino marcal": "G",
+  "guarda meu coracao|delino marcal": "D",
+  "vim falar com deus|delino marcal": "A",
+
+  // ═══════════════════════════════════════════════
+  // ISAIAH SAAD / GABRIEL GUEDES
+  // ═══════════════════════════════════════════════
+  "ousado amor|gabriel guedes": "Em",
+  "ele vem|gabriel guedes": "C",
+  "noiva|gabriel guedes": "Em",
+  "minhas guerras|gabriel guedes": "Am",
+  "vitorioso es|gabriel guedes": "D",
+
+  // ═══════════════════════════════════════════════
+  // ISADORA POMPEO
+  // ═══════════════════════════════════════════════
+  "minha morada|isadora pompeo": "D",
+  "bencaos que nao tem fim|isadora pompeo": "A",
+  "oi jesus|isadora pompeo": "G",
+  "seja forte|isadora pompeo": "Am",
+  "toca em mim de novo|isadora pompeo": "C",
+  "cicatrizes|isadora pompeo": "E",
+
+  // ═══════════════════════════════════════════════
+  // THIAGO MAKARIE
+  // ═══════════════════════════════════════════════
+  "ate que o senhor venha|thiago makarie": "G",
+  "tu es tudo|thiago makarie": "D",
+
+  // ═══════════════════════════════════════════════
+  // VICTIN / RAP GOSPEL ATUAL
+  // ═══════════════════════════════════════════════
+  "ja agradeco|victin": "Em",
+  "chamado|victin": "Am",
+  "nobreza|victin": "Em",
+
+  // ═══════════════════════════════════════════════
+  // VITORIA SOUZA
+  // ═══════════════════════════════════════════════
+  "você vai ver|vitoria souza": "G",
+  "não desista|vitoria souza": "C",
+
+  // ═══════════════════════════════════════════════
+  // HITS "CORINHOS" MODERNOS E RETETÉ (ATUAIS)
+  // ═══════════════════════════════════════════════
+  "eu vou passar pela cruz|": "Am",
+  "quem te viu passar na prova|": "Cm",
+  "santo es tu|": "D",
+  "havera um amanhecer|": "F",
+  "pode ser hoje|": "C",
+  "a promessa|": "Em",
+  "ta chorando porque|": "G",
+  "o nazareno|": "Dm",
+  "rejeitados|": "Am",
+  "so quero ver voce|": "D",
+
+  // ═══════════════════════════════════════════════
+  // LUKAS AGUSTINHO
+  // ═══════════════════════════════════════════════
+  "algo novo|lukas agustinho": "C",
+  "louve|lukas agustinho": "G",
+  "em fervente oracao|lukas agustinho": "A",
+  
+  // ═══════════════════════════════════════════════
+  // SAMUEL MESSIAS
+  // ═══════════════════════════════════════════════
+  "todavia me alegrarei|samuel messias": "E",
+  "voce nao vai parar|samuel messias": "C",
+  "os planos de deus|samuel messias": "G",
+
+  // ═══════════════════════════════════════════════
+  // SARAH FARIAS
+  // ═══════════════════════════════════════════════
+  "deixa eu te usar|sarah farias": "Em",
+  "sobrevivi|sarah farias": "Am",
+  "renovo|sarah farias": "F",
+  "so quem tem raiz|sarah farias": "C",
+
+  // ═══════════════════════════════════════════════
+  // ELIAS SILVA / CLÁSSICOS PENTECOSTAIS CANTADOS HOJE
+  // ═══════════════════════════════════════════════
+  "livramento|elias silva": "G",
+  "o agir de deus|elias silva": "Cm",
+  
+  // ═══════════════════════════════════════════════
+  // MINISTÉRIO ZOE
+  // ═══════════════════════════════════════════════
+  "aquieta minh'alma|ministerio zoe": "G",
+  "voce foi o primeiro a me amar|ministerio zoe": "D",
+  "nunca foi sobre nos|ministerio zoe": "E",
+  "fogo chora|ministerio zoe": "Am",
+
+  // ═══════════════════════════════════════════════
+  // TON CARFI
+  // ═══════════════════════════════════════════════
+  "porque eu te amei|ton carfi": "E",
+  "orei por voce|ton carfi": "C",
+  "historia de davi|ton carfi": "G",
+  "infinitamente mais|ton carfi": "D",
+
+  // ═══════════════════════════════════════════════
+  // ALISSON E NEIDE
+  // ═══════════════════════════════════════════════
+  "sinceridade|alisson e neide": "Fm",
+  "paulo e silas|alisson e neide": "Am",
+  "dependente|alisson e neide": "G",
+
+  // ═══════════════════════════════════════════════
+  // EULA PAULA
+  // ═══════════════════════════════════════════════
+  "se a igreja orar|eula paula": "C",
+
+  // ═══════════════════════════════════════════════
+  // IGREJA BATISTA ATITUDE
+  // ═══════════════════════════════════════════════
+  "nada temerei|batista atitude": "E",
+  "vitorioso es|batista atitude": "D",
+  "meu amado|batista atitude": "G",
+
+  // ═══════════════════════════════════════════════
+  // ADAHABY / CENTRAL 3 (HITS)
+  // ═══════════════════════════════════════════════
+  "me leva pra casa|central 3": "Em",
+  "tudo a ver com ele|central 3": "Em",
+  "nao ha outro lugar|central 3": "G",
+  "eu me rendo|central 3": "D",
 };
 
 const normalize = (text: string): string => {
