@@ -1083,6 +1083,300 @@ const WORSHIP_KEYS: Record<string, string> = {
   "ha um lugar|heloisa rosa": "D",
   "se andarmos na luz|heloisa rosa": "E",
   "lindo jesus|heloisa rosa": "C",
+
+  // ═══════════════════════════════════════════════
+  // CORINHOS DE FOGO E CLASSICOS PENTECOSTAIS
+  // ═══════════════════════════════════════════════
+  "fogo no pe|": "Em",
+  "jacob segurou o anjo|": "Em",
+  "tem anjo passeando|": "Em",
+  "o sangue de jesus tem poder|": "Am",
+  "caiam por terra agora|": "Am",
+  "ele e o leao da tribo de juda|": "Em",
+  "vencendo vem jesus|": "G",
+  "alvo mais que a neve|": "C",
+  "grandioso es tu|": "G",
+  "porque ele vive|": "G",
+  "a cruz sagrada|": "C",
+  "conta as bencaos|": "D",
+  "firme nas promessas|": "G",
+  "ha poder no sangue|": "G",
+  "foi na cruz|": "G",
+
+  // ═══════════════════════════════════════════════
+  // CASSIANE
+  // ═══════════════════════════════════════════════
+  "com muito louvor|cassiane": "Am",
+  "500 graus|cassiane": "Em",
+  "hino da vitoria|cassiane": "C",
+  "oferta agradavel|cassiane": "G",
+  "amigo espirito santo|cassiane": "D",
+  "imagine|cassiane": "F",
+  "todo poderoso|cassiane": "Dm",
+  "louve sempre|cassiane": "G",
+  "cachoeira de poder|cassiane": "Em",
+
+  // ═══════════════════════════════════════════════
+  // DAMARES
+  // ═══════════════════════════════════════════════
+  "sabor de mel|damares": "Cm",
+  "um novo vencedor|damares": "G",
+  "o maior trofeu|damares": "D",
+  "diamante|damares": "Am",
+  "consolador|damares": "F",
+  "apocalipse|damares": "Em",
+
+  // ═══════════════════════════════════════════════
+  // LAURIETE
+  // ═══════════════════════════════════════════════
+  "palavras|lauriete": "Cm",
+  "deus dos deuses|lauriete": "Am",
+  "guarda o que tens|lauriete": "F",
+  "dias de elias|lauriete": "G",
+
+  // ═══════════════════════════════════════════════
+  // OFICINA G3
+  // ═══════════════════════════════════════════════
+  "o tempo|oficina g3": "Em",
+  "incondicional|oficina g3": "Am",
+  "meu legado|oficina g3": "Em",
+  "humanos|oficina g3": "E",
+  "ate quando|oficina g3": "Am",
+
+  // ═══════════════════════════════════════════════
+  // RENASCER PRAISE
+  // ═══════════════════════════════════════════════
+  "promessa|renascer praise": "G",
+  "plano melhor|renascer praise": "D",
+  "nao ha outro igual|renascer praise": "G",
+  "1000 graus|renascer praise": "Am",
+  "mil graus|renascer praise": "Am",
+  "esperanca|renascer praise": "C",
+
+  // ═══════════════════════════════════════════════
+  // TOQUE NO ALTAR / APASCENTAR
+  // ═══════════════════════════════════════════════
+  "tua graca me basta|toque no altar": "G",
+  "toda sorte de bencaos|toque no altar": "E",
+  "abro mao|toque no altar": "C",
+  "olha pra mim|toque no altar": "G",
+  "deus de promessas|toque no altar": "G",
+  "bendito serei|toque no altar": "G",
+  "restitui|toque no altar": "G",
+
+  // ═══════════════════════════════════════════════
+  // TRAZENDO A ARCA
+  // ═══════════════════════════════════════════════
+  "marca da promessa|trazendo a arca": "Dm",
+  "sobre as aguas|trazendo a arca": "C",
+  "toca na rocha|trazendo a arca": "Am",
+  "pra tocar no manto|trazendo a arca": "D",
+  "me entrego a ti|trazendo a arca": "G",
+
+  // ═══════════════════════════════════════════════
+  // MINISTÉRIO KOINONYA DE LOUVOR
+  // ═══════════════════════════════════════════════
+  "quem pode livrar|koinonya": "G",
+  "ao unico|koinonya": "D",
+  "espirito de deus|koinonya": "G",
+  "leao de juda|koinonya": "Em",
+  "ofereco minha vida|koinonya": "G",
+
+  // ═══════════════════════════════════════════════
+  // ASAPH BORBA
+  // ═══════════════════════════════════════════════
+  "jesus em tua presenca|asaph borba": "D",
+  "alto preco|asaph borba": "G",
+  "ensina me|asaph borba": "D",
+
+  // ═══════════════════════════════════════════════
+  // NOVO SOM
+  // ═══════════════════════════════════════════════
+  "escrevi|novo som": "G",
+  "heroi dos herois|novo som": "C",
+  "pra voce|novo som": "D",
+  "por um segundo|novo som": "A",
+
+  // ═══════════════════════════════════════════════
+  // VOZ DA VERDADE
+  // ═══════════════════════════════════════════════
+  "o escudo|voz da verdade": "Cm",
+  "projeto no deserto|voz da verdade": "Am",
+  "sou um milagre|voz da verdade": "G",
+  "sangue cor de carmim|voz da verdade": "Am",
+  "pra que|voz da verdade": "Dm",
+  "alem do rio azul|voz da verdade": "F",
+  "chuva de sangue|voz da verdade": "Am",
+
+  // ═══════════════════════════════════════════════
+  // VENCEDORES POR CRISTO
+  // ═══════════════════════════════════════════════
+  "buscar me eis|vencedores por cristo": "G",
+  "mente e coracao|vencedores por cristo": "C",
+  "salmo 96|vencedores por cristo": "D",
+
+  // ═══════════════════════════════════════════════
+  // SHIRLEY CARVALHAES
+  // ═══════════════════════════════════════════════
+  "ha uma saida|shirley carvalhaes": "Fm",
+  "vendavais|shirley carvalhaes": "Am",
+  "deus prove|shirley carvalhaes": "Em",
+  "esse adorador|shirley carvalhaes": "Cm",
+  "farao ou deus|shirley carvalhaes": "Dm",
+  "ditosa cidade|shirley carvalhaes": "Am",
+
+  // ═══════════════════════════════════════════════
+  // JULIO CESAR
+  // ═══════════════════════════════════════════════
+  "nao ha deus maior|julio cesar": "G",
+
+  // ═══════════════════════════════════════════════
+  // ALDA CELIA
+  // ═══════════════════════════════════════════════
+  "chuva de avivamento|alda celia": "C",
+  "deus do impossivel|alda celia": "D",
+  "mostra me tua gloria|alda celia": "G",
+
+  // ═══════════════════════════════════════════════
+  // LUO / APC 16
+  // ═══════════════════════════════════════════════
+  "muito amor|apc 16": "Am",
+  "basta|apc 16": "Em",
+  "ja posso suportar|pregador luo": "Am",
+  "arvore de bons frutos|pregador luo": "Em",
+
+  // ═══════════════════════════════════════════════
+  // LIVRES PARA ADORAR
+  // ═══════════════════════════════════════════════
+  "vai valer a pena|livres": "D",
+  "mais um dia|livres": "G",
+  "quando o mundo cai ao meu redor|livres": "Em",
+  "ele vive|livres": "A",
+  "so em jesus|livres": "G",
+
+  // ═══════════════════════════════════════════════
+  // MARQUINHOS GOMES
+  // ═══════════════════════════════════════════════
+  "ele nao desiste de voce|marquinhos gomes": "D",
+  "nao morrerei|marquinhos gomes": "Em",
+  "rei da gloria|marquinhos gomes": "G",
+
+  // ═══════════════════════════════════════════════
+  // LUDMILA FERBER
+  // ═══════════════════════════════════════════════
+  "nunca pare de lutar|ludmila ferber": "C",
+  "os sonhos de deus|ludmila ferber": "D",
+  "aguas purificadoras|ludmila ferber": "G",
+  "sopra espirito|ludmila ferber": "C",
+  "buscar tua face e preciso|ludmila ferber": "D",
+
+  // ═══════════════════════════════════════════════
+  // SOSTENES / JOTTA A
+  // ═══════════════════════════════════════════════
+  "estou contigo|jotta a": "C",
+  "extraordinario|jotta a": "G",
+
+  // ═══════════════════════════════════════════════
+  // GABRIELA GOMES
+  // ═══════════════════════════════════════════════
+  "deus provera|gabriela gomes": "C",
+  "o meu pai e bom|gabriela gomes": "G",
+
+  // ═══════════════════════════════════════════════
+  // THEO RUBIA
+  // ═══════════════════════════════════════════════
+  "pode morar aqui|theo rubia": "C",
+  "eu so quero presenca|theo rubia": "G",
+
+  // ═══════════════════════════════════════════════
+  // STELLA LAURA
+  // ═══════════════════════════════════════════════
+  "descansa|stella laura": "G",
+  "deixa comigo|stella laura": "C",
+  "o segredo e louvar|stella laura": "D",
+
+  // ═══════════════════════════════════════════════
+  // JEFERSON PILLAR
+  // ═══════════════════════════════════════════════
+  "e so confiar|jeferson pillar": "D",
+  "sabe filho|jeferson pillar": "G",
+
+  // ═══════════════════════════════════════════════
+  // DANIEL ALENCAR / DAVI SILVA
+  // ═══════════════════════════════════════════════
+  "nome sobre todo nome|davi silva": "G",
+  "casa de davi|davi silva": "D",
+
+  // ═══════════════════════════════════════════════
+  // HILLSONG PORTUGUES (MAIS USADAS)
+  // ═══════════════════════════════════════════════
+  "o quao lindo esse nome e|hillsong": "D",
+  "nome doce|hillsong": "D",
+  "eu me rendo|hillsong": "C",
+  "em teus bracos|hillsong": "G",
+
+  // ═══════════════════════════════════════════════
+  // ELEVATION WORSHIP PORTUGUES
+  // ═══════════════════════════════════════════════
+  "a bencao|elevation": "G",
+  "deus de promessas|elevation": "G",
+  "leao|elevation": "G",
+  "sepulcros|elevation": "B",
+  "aqui como no ceu|elevation": "D",
+  "o mesmo deus|elevation": "D",
+
+  // ═══════════════════════════════════════════════
+  // ADAHABY / CENTRAL 3
+  // ═══════════════════════════════════════════════
+  "para que entre o rei|central 3": "Em",
+  "eu me achego|central 3": "D",
+  "tudo a ver com ele|central 3": "Em",
+  "meu amado e|central 3": "Em",
+
+  // ═══════════════════════════════════════════════
+  // SOM DO REINO / ALESSANDRO VILAS BOAS
+  // ═══════════════════════════════════════════════
+  "quero conhecer jesus|alessandro vilas boas": "Am",
+  "o fogo nunca dorme|alessandro vilas boas": "Em",
+  "ser mudado|alessandro vilas boas": "C",
+  "me fez amar|alessandro vilas boas": "G",
+  "deixa queimar|alessandro vilas boas": "Am",
+
+  // ═══════════════════════════════════════════════
+  // FHOP / FLORIANOPOLIS HOUSE OF PRAYER
+  // ═══════════════════════════════════════════════
+  "maranata|fhop": "Am",
+  "uma coisa|fhop": "C",
+  "volte os olhos|fhop": "D",
+  "somos teu povo|fhop": "G",
+
+  // ═══════════════════════════════════════════════
+  // DUNAMIS MUSIC
+  // ═══════════════════════════════════════════════
+  "queima de novo|dunamis": "Em",
+  "meu melhor amigo|dunamis": "D",
+  "muralhas|dunamis": "G",
+  "fogo consolador|dunamis": "Am",
+
+  // ═══════════════════════════════════════════════
+  // OUTROS HITS RECENTES E LOUVORES
+  // ═══════════════════════════════════════════════
+  "caminho no deserto|": "C",
+  "teu amor nao falha|": "A",
+  "tudo e teu|": "D",
+  "para que entre o rei|": "Em",
+  "que ele cresca|": "C",
+  "tu es bom|": "G",
+  "dias de elias|": "G",
+  "deus e deus|": "G",
+  "nada alem do sangue|": "G",
+  "poderoso deus|": "D",
+  "tu es soberano|": "D",
+  "a ti eu vou clamar|": "G",
+  "vim para adorar te|": "E",
+  "meu respirar|": "A",
+  "a ele a gloria|": "Am",
+  "espiritosanto|": "G",
 };
 
 const normalize = (text: string): string => {
