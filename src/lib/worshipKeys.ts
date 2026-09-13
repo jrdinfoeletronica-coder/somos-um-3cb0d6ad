@@ -802,6 +802,11 @@ const WORSHIP_KEYS: Record<string, string> = {
   "o agir de deus|aline barros": "G",
   "haja de deus|aline barros": "G",
   "o haja de deus|aline barros": "G",
+  "caminho de milagre|aline barros": "C",
+  "ressuscita-me|aline barros": "D",
+  "tudo e possivel|aline barros": "G",
+  "o pao da vida|aline barros": "C",
+  "rendido estou|aline barros": "G",
 
   // ═══════════════════════════════════════════════
   // JOTTA A
