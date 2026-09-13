@@ -1377,6 +1377,235 @@ const WORSHIP_KEYS: Record<string, string> = {
   "meu respirar|": "A",
   "a ele a gloria|": "Am",
   "espiritosanto|": "G",
+
+  // ==========================================================
+  // LOTE 1/4 - RUMO AOS 1000 LOUVORES
+  // ==========================================================
+  
+  // ═══════════════════════════════════════════════
+  // HARPA CRISTÃ - OS MAIS CANTADOS (GENÉRICOS)
+  // ═══════════════════════════════════════════════
+  "chuvas de graca|": "G",
+  "saudosa lembranca|": "D",
+  "o exilado|": "A",
+  "firme nas promessas|": "G",
+  "alvo mais que a neve|": "C",
+  "a face adorada de jesus|": "D",
+  "grato a ti|": "G",
+  "guia me sempre meu senhor|": "D",
+  "mansao sobre o monte|": "G",
+  "plena paz|": "E",
+  "os guerreiros se preparam|": "G",
+  "em fervente oracao|": "A",
+  "o sangue purificador|": "G",
+  "vem cear|": "C",
+  "sobre as ondas do mar|": "G",
+  "vencendo vem jesus|": "G",
+  "a mensagem da cruz|": "A",
+  "olhai pra o cordeiro de deus|": "D",
+  "conversao|": "G",
+  "mais grato a ti|": "G",
+  "o rei esta voltando|": "G",
+  "guarda o contacto|": "D",
+  "so o sangue de jesus|": "E",
+  "deus velara por ti|": "G",
+  "vivifica tua igreja|": "G",
+  "tudo entegarei|": "D",
+  "a ovelha perdida|": "C",
+  "ao passar o jordao|": "G",
+  "os crentes marcham|": "G",
+  "nao desanimes|": "F",
+  "quando o nosso deus agir|": "D",
+  "jesus e o caminho|": "G",
+  "mais perto quero estar|": "G",
+  "deixa a luz do ceu entrar|": "G",
+  "jesus me transformou|": "D",
+  "no jardim|": "Ab",
+  "solta o cabo da nau|": "D",
+  "flor gloriosa|": "E",
+  "uma flor gloriosa|": "E",
+  "cristo cura sim|": "A",
+  "ao estrugir a trombeta|": "G",
+
+  // ═══════════════════════════════════════════════
+  // MINISTÉRIO AVIVAH
+  // ═══════════════════════════════════════════════
+  "maranata|avivah": "Em",
+  "invocamos|avivah": "G",
+  "eu me prostro|avivah": "D",
+  "cancao do apocalipse|avivah": "A",
+  "ninguem explica deus|avivah": "G",
+  "exaltado|avivah": "C",
+  "noites escuras|avivah": "Am",
+
+  // ═══════════════════════════════════════════════
+  // PEDRAS VIVAS
+  // ═══════════════════════════════════════════════
+  "pai nosso|pedras vivas": "Em",
+  "fogo falador|pedras vivas": "Am",
+  "o grito|pedras vivas": "Cm",
+  "assentado no trono|pedras vivas": "C",
+  "eu escolho deus|pedras vivas": "D",
+
+  // ═══════════════════════════════════════════════
+  // FERNANDA BRUM
+  // ═══════════════════════════════════════════════
+  "espirito santo|fernanda brum": "D",
+  "cura me|fernanda brum": "Am",
+  "o que tua gloria fez comigo|fernanda brum": "Em",
+  "em tua presenca|fernanda brum": "C",
+  "amada minha|fernanda brum": "G",
+  "vinho novo|fernanda brum": "D",
+  "sua digital|fernanda brum": "Em",
+  "aleluia|fernanda brum": "A",
+  "paviao|fernanda brum": "C",
+  "nao e tarde|fernanda brum": "F",
+
+  // ═══════════════════════════════════════════════
+  // EYSHILA
+  // ═══════════════════════════════════════════════
+  "nada pode calar um adorador|eyshila": "E",
+  "terremoto|eyshila": "Em",
+  "fiel a mim|eyshila": "G",
+  "deus no controle|eyshila": "C",
+  "sonhos nao tem fim|eyshila": "D",
+  "caminho de milagre|eyshila": "C", // Garantindo a variação com nome da Eyshila também
+  "posso clamar|eyshila": "F",
+
+  // ═══════════════════════════════════════════════
+  // KLEBER LUCAS (MAIS HITS)
+  // ═══════════════════════════════════════════════
+  "aos pes da cruz|kleber lucas": "D",
+  "vou deixar na cruz|kleber lucas": "G",
+  "propocito|kleber lucas": "E",
+  "o melhor esta por vir|kleber lucas": "A",
+  "meu alvo|kleber lucas": "D",
+  "cuida de mim|kleber lucas": "G",
+
+  // ═══════════════════════════════════════════════
+  // PREGADOR LUO / APOCALIPSE 16 (MAIS MÚSICAS)
+  // ═══════════════════════════════════════════════
+  "ja posso suportar|pregador luo": "Am",
+  "arvore de bons frutos|pregador luo": "Em",
+  "bagaça|pregador luo": "Em",
+  "apaga a luz|pregador luo": "Am",
+  "vou colher sorrindo|pregador luo": "Bm",
+  "unico incompravel|pregador luo": "Fm",
+  
+  // ═══════════════════════════════════════════════
+  // PG
+  // ═══════════════════════════════════════════════
+  "quem sou eu|pg": "Em",
+  "meu universo|pg": "E",
+  "eu quero estar|pg": "C",
+  "posso ouvir|pg": "Am",
+  "formoso es|pg": "G",
+  "a arca|pg": "D",
+  "faz chover|pg": "Em",
+  
+  // ═══════════════════════════════════════════════
+  // RESGATE
+  // ═══════════════════════════════════════════════
+  "5 50 am|resgate": "D",
+  "todo som|resgate": "G",
+  "a voz do deserto|resgate": "E",
+  "passo a passo|resgate": "C",
+  "eu estou aqui|resgate": "Am",
+  "lucifes|resgate": "Em",
+
+  // ═══════════════════════════════════════════════
+  // ROSA DE SARON
+  // ═══════════════════════════════════════════════
+  "sem voce|rosa de saron": "Bm",
+  "do alto da pedra|rosa de saron": "Am",
+  "as dores do silencio|rosa de saron": "Em",
+  "cartas ao remetente|rosa de saron": "C",
+  "monte inverno|rosa de saron": "Fm",
+  "aurora|rosa de saron": "D",
+  "meninos e leoes|rosa de saron": "C",
+  "lembrancas|rosa de saron": "Em",
+
+  // ═══════════════════════════════════════════════
+  // KATSBARNEA
+  // ═══════════════════════════════════════════════
+  "extra|katsbarnea": "Em",
+  "grito de alerta|katsbarnea": "Am",
+  "cristo ou barrabas|katsbarnea": "E",
+  "apocalipse now|katsbarnea": "Dm",
+  
+  // ═══════════════════════════════════════════════
+  // SORAYA MORAES
+  // ═══════════════════════════════════════════════
+  "quao grande e o meu deus|soraya moraes": "G",
+  "caminho no deserto|soraya moraes": "D",
+  "som da chuva|soraya moraes": "Em",
+  "sobre as aguas|soraya moraes": "A",
+  "cadete do espirito|soraya moraes": "Cm",
+
+  // ═══════════════════════════════════════════════
+  // BANDA GERD
+  // ═══════════════════════════════════════════════
+  "esconderijo do altissimo|gerd": "G",
+  "santo de israel|gerd": "E",
+
+  // ═══════════════════════════════════════════════
+  // GRUPO LOGOS
+  // ═══════════════════════════════════════════════
+  "portas abertas|logos": "A",
+  "autor da minha fe|logos": "G",
+  "situaçoes|logos": "D",
+
+  // ═══════════════════════════════════════════════
+  // MINISTÉRIO APASCENTAR DE NOVA IGUAÇU / TOQUE NO ALTAR (MAIS)
+  // ═══════════════════════════════════════════════
+  "leao de juda|apascentar": "Em",
+  "tuas aguas|apascentar": "F",
+  "te adoramos|apascentar": "C",
+  "faz chover|apascentar": "Am",
+  "coroa de justica|apascentar": "G",
+  
+  // ═══════════════════════════════════════════════
+  // CHRIS DURAN
+  // ═══════════════════════════════════════════════
+  "sonhos|chris duran": "E",
+  "tu es meu deus|chris duran": "C",
+  "um amor pra recordar|chris duran": "G",
+
+  // ═══════════════════════════════════════════════
+  // RODOLFO ABRANTES
+  // ═══════════════════════════════════════════════
+  "isaias 9|rodolfo abrantes": "Em",
+  "o misterio|rodolfo abrantes": "Am",
+  "beija flor|rodolfo abrantes": "D",
+  "eu vibro por ti|rodolfo abrantes": "C",
+
+  // ═══════════════════════════════════════════════
+  // NIVEA SOARES (MAIS HITS)
+  // ═══════════════════════════════════════════════
+  "encharca me|nivea soares": "G",
+  "fogo e gloria|nivea soares": "D",
+  "aguas do trono|nivea soares": "E",
+  "aquele que e|nivea soares": "F",
+  "rio|nivea soares": "Am",
+  
+  // ═══════════════════════════════════════════════
+  // MARIANE
+  // ═══════════════════════════════════════════════
+  "se nao for pra te adorar|mariane": "G",
+  
+  // ═══════════════════════════════════════════════
+  // DISCOPRAISE
+  // ═══════════════════════════════════════════════
+  "se eu me humilhar|discopraise": "A",
+  "ouca o meu clamor|discopraise": "C",
+  "favor de deus|discopraise": "G",
+
+  // ═══════════════════════════════════════════════
+  // JERSON RUFINO
+  // ═══════════════════════════════════════════════
+  "barraba|jerson rufino": "Am",
+  "filho pródigo|jerson rufino": "G",
+  "o anjo do egito|jerson rufino": "Dm",
 };
 
 const normalize = (text: string): string => {
