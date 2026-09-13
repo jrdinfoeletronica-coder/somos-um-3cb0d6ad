@@ -1056,43 +1056,72 @@ const slugify = (text: string) =>
 export async function fetchCifraClubKey(artist: string, title: string): Promise<string | null> {
   if (!title) return null;
 
-  // Limpa o nome do artista para pegar apenas o primeiro artista principal (remove & feat, ft., etc)
+  // Limpa o nome do artista principal (remove feat, &, etc)
   const mainArtist = (artist || "").split(/&|feat|ft\.|,|\b-\b|\be\b/i)[0].trim();
 
-  const slugArtist = slugify(mainArtist);
-  const slugTitle = slugify(title);
-  if (!slugTitle) return null;
+  const rawSlugArtist = slugify(mainArtist);
+  const rawSlugTitle = slugify(title);
+  if (!rawSlugTitle) return null;
 
-  const targetUrl = slugArtist
-    ? `https://www.cifraclub.com.br/${slugArtist}/${slugTitle}/`
-    : `https://www.cifraclub.com.br/${slugTitle}/`;
+  // Variações inteligentes de slugs para contornar remoção de artigos pelo Cifra Club (ex: "sarando-terra-ferida")
+  const artistVariants = new Set<string>();
+  if (rawSlugArtist) {
+    artistVariants.add(rawSlugArtist);
+    // Remove artigos intermediários (-a-, -o-, -de-, -da-, -do-)
+    artistVariants.add(rawSlugArtist.replace(/-a-|-o-|-de-|-da-|-do-|-e-/g, "-"));
+    // Remove prefixos como ministerio-, banda-, grupo-
+    const noPrefix = rawSlugArtist.replace(/^(ministerio|min|banda|grupo)-/i, "");
+    artistVariants.add(noPrefix);
+    artistVariants.add(noPrefix.replace(/-a-|-o-|-de-|-da-|-do-|-e-/g, "-"));
+  }
 
-  // Tenta fetch direto primeiro. Se der erro de CORS/rede no navegador, tenta os proxies.
-  const urlsToTry = [
-    targetUrl,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
-  ];
+  const titleVariants = new Set<string>();
+  titleVariants.add(rawSlugTitle);
+  // Remove artigos iniciais no título (o-haja-de-deus -> haja-de-deus)
+  const noTitleArticle = rawSlugTitle.replace(/^(o|a|os|as)-/i, "");
+  if (noTitleArticle !== rawSlugTitle) {
+    titleVariants.add(noTitleArticle);
+  }
 
-  for (const url of urlsToTry) {
-    try {
-      const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-      if (!res.ok) continue;
-      const html = await res.text();
-      if (!html || html.length < 500) continue;
+  // Gera todas as combinações possíveis de URLs
+  const candidateUrls: string[] = [];
+  for (const aSlug of Array.from(artistVariants)) {
+    for (const tSlug of Array.from(titleVariants)) {
+      candidateUrls.push(`https://www.cifraclub.com.br/${aSlug}/${tSlug}/`);
+    }
+  }
+  for (const tSlug of Array.from(titleVariants)) {
+    candidateUrls.push(`https://www.cifraclub.com.br/${tSlug}/`);
+  }
 
-      // 1. Novo layout do Cifra Club
-      const match1 = html.match(/data-anchor="--chord-tone"[^>]*>([A-G][#b]?m?)</i);
-      if (match1) return match1[1];
+  for (const targetUrl of candidateUrls) {
+    // Tenta fetch direto primeiro. Se der erro de CORS/rede no navegador, tenta os proxies.
+    const urlsToTry = [
+      targetUrl,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+    ];
 
-      // 2. Layout clássico do Cifra Club
-      const match2 = html.match(/id="js-c-key"[^>]*>([A-G][#b]?m?)</i);
-      if (match2) return match2[1];
+    for (const url of urlsToTry) {
+      try {
+        const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+        if (!res.ok) continue;
+        const html = await res.text();
+        if (!html || html.length < 500) continue;
 
-      // 3. Fallback scan: palavra "Tom" seguida da nota
-      const match3 = html.match(/Tom[\s\S]{0,150}?>\s*([A-G][#b]?m?)\s*</i);
-      if (match3) return match3[1];
-    } catch (e) {
-      // Falha de CORS ou rede -> continua para o próximo proxy
+        // 1. Novo layout do Cifra Club
+        const match1 = html.match(/data-anchor="--chord-tone"[^>]*>([A-G][#b]?m?)</i);
+        if (match1) return match1[1];
+
+        // 2. Layout clássico do Cifra Club
+        const match2 = html.match(/id="js-c-key"[^>]*>([A-G][#b]?m?)</i);
+        if (match2) return match2[1];
+
+        // 3. Fallback scan: palavra "Tom" seguida da nota
+        const match3 = html.match(/Tom[\s\S]{0,150}?>\s*([A-G][#b]?m?)\s*</i);
+        if (match3) return match3[1];
+      } catch (e) {
+        // Falha de CORS ou rede -> tenta próximo proxy
+      }
     }
   }
 
