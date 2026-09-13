@@ -423,19 +423,19 @@ export default function Repertorio() {
     const trackName = String(result?.trackName || "");
     const artistName = String(result?.artistName || "Autor Desconhecido");
     
-    toast.loading("Buscando tom original e clipe...", { id: "yt-search" });
-
-    // Busca tom no banco local e online no Cifra Club
-    const keyInfo = await getBestSongKey(artistName, trackName);
+    toast.loading("Preenchendo dados...", { id: "yt-search" });
 
     const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
     const ytQuery = `${artistName} ${trackName} oficial`;
-    
-    const generatedYoutubeUrl = await getOfficialYoutubeUrl(ytQuery);
-      
     const cleanArtistName = artistName.split(/&|feat|ft\.|,|\b-\b|\be\b/i)[0].trim();
     const generatedCifraUrl = `https://www.cifraclub.com.br/${slugify(cleanArtistName)}/${slugify(trackName)}/`;
-    
+
+    // ⚡ Roda busca de tom e YouTube em PARALELO para ser mais rápido
+    const [keyInfo, generatedYoutubeUrl] = await Promise.all([
+      getBestSongKey(artistName, trackName),
+      getOfficialYoutubeUrl(ytQuery),
+    ]);
+      
     setFormData(prev => ({
       ...prev,
       title: trackName,
@@ -449,9 +449,9 @@ export default function Repertorio() {
     
     toast.dismiss("yt-search");
     if (keyInfo.fullKey !== "C") {
-      toast.success(`Versão escolhida! Tom identificado: ${keyInfo.fullKey} — Links preenchidos.`);
+      toast.success(`Tom: ${keyInfo.fullKey} ✓`);
     } else {
-      toast.success("Versão escolhida! Links preenchidos.");
+      toast.success("Música importada!");
     }
     setIsSearchResultsOpen(false);
   };

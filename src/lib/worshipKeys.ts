@@ -2368,18 +2368,24 @@ export function parseKeyAndMode(rawKey: string | null): { key: string; keyMode: 
 
 /**
  * Tenta identificar o tom original primeiro no banco interno e depois via scraping online do Cifra Club.
+ * Timeout de 3s no Cifra Club para não travar o fluxo de importação.
  */
 export async function getBestSongKey(artist: string, title: string): Promise<{ key: string; keyMode: "Maior" | "Menor"; fullKey: string }> {
-  // 1. Tenta banco de dados local
+  // 1. Tenta banco de dados local (instantâneo)
   const localKey = lookupWorshipKey(title, artist);
   if (localKey) {
     return parseKeyAndMode(localKey);
   }
 
-  // 2. Tenta busca online em tempo real no Cifra Club
-  const onlineKey = await fetchCifraClubKey(artist, title);
-  if (onlineKey) {
-    return parseKeyAndMode(onlineKey);
+  // 2. Tenta busca online no Cifra Club com timeout de 3 segundos
+  try {
+    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+    const onlineKey = await Promise.race([fetchCifraClubKey(artist, title), timeoutPromise]);
+    if (onlineKey) {
+      return parseKeyAndMode(onlineKey);
+    }
+  } catch {
+    // Falha silenciosa, usa padrão abaixo
   }
 
   return { key: "C", keyMode: "Maior", fullKey: "C" };
