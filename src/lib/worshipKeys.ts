@@ -789,6 +789,21 @@ const WORSHIP_KEYS: Record<string, string> = {
   "teus olhos|elizeu correa": "D",
 
   // ═══════════════════════════════════════════════
+  // MINISTÉRIO SARANDO A TERRA FERIDA
+  // ═══════════════════════════════════════════════
+  "o haja de deus|ministerio sarando a terra ferida": "G",
+  "haja de deus|ministerio sarando a terra ferida": "G",
+  "espírito santo|ministerio sarando a terra ferida": "D",
+  "deus do secreto|ministerio sarando a terra ferida": "G",
+
+  // ═══════════════════════════════════════════════
+  // ALINE BARROS (Adicionais)
+  // ═══════════════════════════════════════════════
+  "o agir de deus|aline barros": "G",
+  "haja de deus|aline barros": "G",
+  "o haja de deus|aline barros": "G",
+
+  // ═══════════════════════════════════════════════
   // JOTTA A
   // ═══════════════════════════════════════════════
   "hallelujah|jotta a": "G",
@@ -1026,3 +1041,105 @@ export function lookupWorshipKey(title: string, artist: string): string | null {
 
   return null;
 }
+
+const slugify = (text: string) =>
+  text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+
+/**
+ * Tenta buscar o tom original da música diretamente na página do Cifra Club em tempo real.
+ */
+export async function fetchCifraClubKey(artist: string, title: string): Promise<string | null> {
+  if (!title) return null;
+
+  // Limpa o nome do artista para pegar apenas o primeiro artista principal (remove & feat, ft., etc)
+  const mainArtist = (artist || "").split(/&|feat|ft\.|,|\b-\b|\be\b/i)[0].trim();
+
+  const slugArtist = slugify(mainArtist);
+  const slugTitle = slugify(title);
+  if (!slugTitle) return null;
+
+  const targetUrl = slugArtist
+    ? `https://www.cifraclub.com.br/${slugArtist}/${slugTitle}/`
+    : `https://www.cifraclub.com.br/${slugTitle}/`;
+
+  // Tenta fetch direto primeiro. Se der erro de CORS/rede no navegador, tenta os proxies.
+  const urlsToTry = [
+    targetUrl,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+  ];
+
+  for (const url of urlsToTry) {
+    try {
+      const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+      if (!res.ok) continue;
+      const html = await res.text();
+      if (!html || html.length < 500) continue;
+
+      // 1. Novo layout do Cifra Club
+      const match1 = html.match(/data-anchor="--chord-tone"[^>]*>([A-G][#b]?m?)</i);
+      if (match1) return match1[1];
+
+      // 2. Layout clássico do Cifra Club
+      const match2 = html.match(/id="js-c-key"[^>]*>([A-G][#b]?m?)</i);
+      if (match2) return match2[1];
+
+      // 3. Fallback scan: palavra "Tom" seguida da nota
+      const match3 = html.match(/Tom[\s\S]{0,150}?>\s*([A-G][#b]?m?)\s*</i);
+      if (match3) return match3[1];
+    } catch (e) {
+      // Falha de CORS ou rede -> continua para o próximo proxy
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Converte uma string de tom (ex: "Am", "F#m", "C", "C Menor") em { key: "A", keyMode: "Menor", fullKey: "A Menor" }
+ */
+export function parseKeyAndMode(rawKey: string | null): { key: string; keyMode: "Maior" | "Menor"; fullKey: string } {
+  if (!rawKey) return { key: "C", keyMode: "Maior", fullKey: "C" };
+  const clean = rawKey.trim();
+
+  const isMinor = clean.endsWith("m") || clean.endsWith(" Menor") || clean.endsWith(" minor");
+  let baseKey = clean
+    .replace(/m$/, "")
+    .replace(/\s+Menor$/i, "")
+    .replace(/\s+minor$/i, "")
+    .replace(/\s+Maior$/i, "")
+    .trim();
+
+  if (baseKey.length >= 1) {
+    baseKey = baseKey.charAt(0).toUpperCase() + baseKey.slice(1);
+  }
+
+  if (isMinor) {
+    return { key: baseKey, keyMode: "Menor", fullKey: `${baseKey} Menor` };
+  }
+  return { key: baseKey, keyMode: "Maior", fullKey: baseKey };
+}
+
+/**
+ * Tenta identificar o tom original primeiro no banco interno e depois via scraping online do Cifra Club.
+ */
+export async function getBestSongKey(artist: string, title: string): Promise<{ key: string; keyMode: "Maior" | "Menor"; fullKey: string }> {
+  // 1. Tenta banco de dados local
+  const localKey = lookupWorshipKey(title, artist);
+  if (localKey) {
+    return parseKeyAndMode(localKey);
+  }
+
+  // 2. Tenta busca online em tempo real no Cifra Club
+  const onlineKey = await fetchCifraClubKey(artist, title);
+  if (onlineKey) {
+    return parseKeyAndMode(onlineKey);
+  }
+
+  return { key: "C", keyMode: "Maior", fullKey: "C" };
+}
+

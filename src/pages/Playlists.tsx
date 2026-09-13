@@ -9,10 +9,11 @@ import { toast } from "sonner";
 import {
   Plus, ListMusic, Trash2, Search, Globe, RefreshCw,
   Sun, Sunset, Moon, Heart, Grape, Youtube, Music, ExternalLink, FileText, Check, Edit2,
-  Play, SkipBack, SkipForward, X
+  Play, Pause, RotateCcw, RotateCw, SkipBack, SkipForward, X
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { lookupWorshipKey } from "@/lib/worshipKeys";
+import { lookupWorshipKey, getBestSongKey } from "@/lib/worshipKeys";
+import { searchYoutubeVideoId, getOfficialYoutubeUrl } from "@/lib/youtube";
 import { cn } from "@/lib/utils";
 
 // ─── Pastas padrão ───────────────────────────────────────────────────────────
@@ -79,10 +80,23 @@ export default function Playlists() {
   // Controles do Player
   const [isPlaying, setIsPlaying] = useState(false);
   const [playedProgress, setPlayedProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [resolvedVideoId, setResolvedVideoId] = useState<string | null>(null);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
   
   const audioRef = useRef<HTMLAudioElement>(null);
+  const ytPlayerRef = useRef<any>(null);
+
+  // Carrega a API do YouTube Iframe caso não esteja carregada
+  useEffect(() => {
+    if (typeof window !== "undefined" && !(window as any).YT) {
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName("script")[0];
+      firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+  }, []);
 
   // Sincroniza Play/Pause com a tag de áudio nativa caso esteja tocando preview
   useEffect(() => {
@@ -92,12 +106,14 @@ export default function Playlists() {
     }
   }, [isPlaying]);
 
-  // Efeito para configurar o player sempre que a música muda
+  // Efeito para configurar a música atual e buscar o videoId se necessário
   useEffect(() => {
     if (!isPlayerOpen || playerQueue.length === 0) return;
     
     setIsPlaying(false);
     setPlayedProgress(0);
+    setCurrentTime(0);
+    setDuration(0);
     setResolvedVideoId(null);
     setAudioPreviewUrl(null);
     
@@ -105,7 +121,7 @@ export default function Playlists() {
     if (!track) return;
 
     let id = null;
-    if (track.youtubeUrl && !track.youtubeUrl.includes('google.com/search')) {
+    if (track.youtubeUrl && !track.youtubeUrl.includes('google.com/search') && !track.youtubeUrl.includes('duckduckgo.com') && !track.youtubeUrl.includes('youtube.com/results')) {
       const v = track.youtubeUrl.match(/[?&]v=([^&]+)/);
       if (v) id = v[1];
       else {
@@ -119,17 +135,154 @@ export default function Playlists() {
     }
 
     if (id) {
-      // Tem link direto válido
       setResolvedVideoId(id);
-    } else if (track.audioUrl) {
-      // Fallback para o MP3 da Apple (Preview 30s) quando não tem YouTube
-      setAudioPreviewUrl(track.audioUrl);
-      toast.info("Tocando prévia. Adicione o link do YouTube na edição da música para tocar o áudio completo.", { duration: 6000 });
-      setIsPlaying(true);
     } else {
-      toast.error("Áudio indisponível para esta música. Edite e adicione um link do YouTube.");
+      let cancelled = false;
+      searchYoutubeVideoId(`${track.artist || ''} ${track.title} oficial`).then(fetchedId => {
+        if (cancelled) return;
+        if (fetchedId) {
+          setResolvedVideoId(fetchedId);
+        } else if (track.audioUrl) {
+          setAudioPreviewUrl(track.audioUrl);
+          toast.info("Tocando prévia de áudio.", { duration: 4000 });
+          setIsPlaying(true);
+        } else {
+          toast.error("Áudio indisponível para esta música. Adicione um link do YouTube.");
+        }
+      });
+      return () => { cancelled = true; };
     }
   }, [playerIndex, isPlayerOpen, playerQueue]);
+
+  // Inicializa ou recarrega o IFrame Player do YouTube
+  useEffect(() => {
+    if (!resolvedVideoId || !isPlayerOpen) return;
+
+    const initOrLoadYT = () => {
+      const win = window as any;
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.loadVideoById === "function") {
+        ytPlayerRef.current.loadVideoById(resolvedVideoId);
+        setIsPlaying(true);
+      } else if (win.YT && win.YT.Player) {
+        try {
+          ytPlayerRef.current = new win.YT.Player("yt-player-element", {
+            height: "1",
+            width: "1",
+            videoId: resolvedVideoId,
+            playerVars: {
+              autoplay: 1,
+              controls: 0,
+              modestbranding: 1,
+              rel: 0,
+              enablejsapi: 1,
+            },
+            events: {
+              onReady: (e: any) => {
+                e.target.playVideo();
+                setIsPlaying(true);
+              },
+              onStateChange: (e: any) => {
+                if (win.YT) {
+                  if (e.data === win.YT.PlayerState.PLAYING) setIsPlaying(true);
+                  else if (e.data === win.YT.PlayerState.PAUSED) setIsPlaying(false);
+                  else if (e.data === win.YT.PlayerState.ENDED) {
+                    setIsPlaying(false);
+                    setPlayerIndex(prev => (prev < playerQueue.length - 1 ? prev + 1 : prev));
+                  }
+                }
+              },
+            },
+          });
+        } catch (e) {
+          console.error("Erro ao inicializar YouTube Player:", e);
+        }
+      }
+    };
+
+    const win = window as any;
+    if (win.YT && win.YT.Player) {
+      initOrLoadYT();
+    } else {
+      win.onYouTubeIframeAPIReady = () => {
+        initOrLoadYT();
+      };
+    }
+  }, [resolvedVideoId, isPlayerOpen]);
+
+  // Atualiza tempo corrente, duração e progresso em tempo real
+  useEffect(() => {
+    if (!isPlaying) return;
+    const timer = setInterval(() => {
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === "function") {
+        const cur = ytPlayerRef.current.getCurrentTime() || 0;
+        const dur = ytPlayerRef.current.getDuration() || 0;
+        setCurrentTime(cur);
+        setDuration(dur);
+        setPlayedProgress(dur > 0 ? cur / dur : 0);
+      } else if (audioRef.current) {
+        const cur = audioRef.current.currentTime || 0;
+        const dur = audioRef.current.duration || 0;
+        setCurrentTime(cur);
+        setDuration(dur);
+        setPlayedProgress(dur > 0 ? cur / dur : 0);
+      }
+    }, 400);
+
+    return () => clearInterval(timer);
+  }, [isPlaying]);
+
+  // Troca a posição da música (Seek / Arrastar a barra)
+  const handleSeek = (newSeconds: number) => {
+    setCurrentTime(newSeconds);
+    setPlayedProgress(duration > 0 ? newSeconds / duration : 0);
+
+    if (ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === "function") {
+      ytPlayerRef.current.seekTo(newSeconds, true);
+    }
+    if (audioRef.current) {
+      audioRef.current.currentTime = newSeconds;
+    }
+  };
+
+  const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!duration || duration <= 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+    handleSeek(pct * duration);
+  };
+
+  const togglePlayPause = () => {
+    if (isPlaying) {
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === "function") {
+        ytPlayerRef.current.pauseVideo();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setIsPlaying(false);
+    } else {
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.playVideo === "function") {
+        ytPlayerRef.current.playVideo();
+      }
+      if (audioRef.current) {
+        audioRef.current.play();
+      }
+      setIsPlaying(true);
+    }
+  };
+
+  const handleSkipSeconds = (offset: number) => {
+    const target = Math.max(0, Math.min(duration || 0, currentTime + offset));
+    handleSeek(target);
+  };
+
+  const formatTime = (seconds: number) => {
+    if (isNaN(seconds) || seconds <= 0) return "00:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins < 10 ? "0" : ""}${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
 
   // ── Queries ──────────────────────────────────────────────────────────────
 
@@ -262,10 +415,10 @@ export default function Playlists() {
     mutationFn: async (result: any) => {
       const trackName = String(result?.trackName || "");
       const artistName = String(result?.artistName || "Autor Desconhecido");
-      const foundKey = lookupWorshipKey(trackName, artistName);
-      const detectedTone = foundKey || "C";
-      const ytQuery = encodeURIComponent(`${artistName} ${trackName} oficial`);
-      const youtubeUrl = `https://www.google.com/search?btnI=1&q=site%3Ayoutube.com+${ytQuery}`;
+      const keyInfo = await getBestSongKey(artistName, trackName);
+      const detectedTone = keyInfo.fullKey;
+      const ytQuery = `${artistName} ${trackName} oficial`;
+      const youtubeUrl = await getOfficialYoutubeUrl(ytQuery);
       const ccUrl = `https://www.cifraclub.com.br/${slugify(artistName)}/${slugify(trackName)}/`;
 
       // Verifica se a música já existe no repertório pelo título+artista
@@ -905,94 +1058,124 @@ export default function Playlists() {
           </form>
         </DialogContent>
       </Dialog>
-      {/* ─── Global Player (YouTube IFrame nativo) ───────────────────────────── */}
+      {/* ─── Global Player (Com Barra Interativa + YouTube API + HTML5 Audio) ── */}
       {isPlayerOpen && (() => {
         const track = playerQueue[playerIndex];
-        const iframeSrc = resolvedVideoId ? `https://www.youtube.com/embed/${resolvedVideoId}?autoplay=1&rel=0` : null;
 
         return (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950 border-t border-zinc-800 text-white shadow-2xl">
-            {/* Barra de progresso no topo */}
-            <div className="w-full h-1 bg-zinc-800">
-              <div className="h-full bg-violet-500 transition-all duration-1000" style={{ width: `${playedProgress * 100}%` }} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 text-white shadow-2xl animate-fade-in">
+            {/* Barra de progresso interativa (clicável para avançar/voltar) */}
+            <div
+              className="w-full h-3 bg-zinc-800/80 cursor-pointer relative group flex items-center"
+              onClick={handleProgressBarClick}
+              title="Clique para avançar ou voltar a música"
+            >
+              {/* Progresso preenchido */}
+              <div
+                className="h-1.5 bg-gradient-to-r from-violet-600 to-amber-400 group-hover:h-2 transition-all duration-150"
+                style={{ width: `${Math.min(100, Math.max(0, playedProgress * 100))}%` }}
+              />
+              {/* Thumb/Indicador visual no hover */}
+              <div
+                className="absolute w-3.5 h-3.5 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -translate-x-1/2 pointer-events-none"
+                style={{ left: `${Math.min(100, Math.max(0, playedProgress * 100))}%` }}
+              />
             </div>
 
-            <div className="flex items-center gap-3 px-3 py-2">
-              {/* Ícone da música (Iframe do YouTube oculto ou Player HTML5) */}
-              <div className="shrink-0 rounded-md overflow-hidden bg-zinc-800 flex items-center justify-center relative" style={{ width: 48, height: 48 }}>
-                <Music className="w-6 h-6 text-zinc-500" />
-                
-                {/* Iframe oculto para tocar o áudio oficial */}
-                {resolvedVideoId && (
-                  <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '200px', height: '200px', overflow: 'hidden' }}>
-                    <iframe
-                      key={`${playerIndex}-${iframeSrc}`}
-                      src={iframeSrc!}
-                      width={200}
-                      height={200}
-                      allow="autoplay; encrypted-media"
-                      allowFullScreen={false}
-                      title={track?.title}
-                      onLoad={() => {
-                        setPlayedProgress(0);
-                        setIsPlaying(true);
-                      }}
-                      style={{ border: 'none', display: 'block' }}
-                    />
-                  </div>
-                )}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-2.5">
+              {/* Info da música + tempo */}
+              <div className="flex items-center gap-3 w-full sm:w-1/3 min-w-0">
+                <div className="shrink-0 rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center relative" style={{ width: 44, height: 44 }}>
+                  <Music className="w-5 h-5 text-violet-400" />
 
-                {/* Tag de áudio HTML5 para tocar a prévia do iTunes */}
-                {audioPreviewUrl && (
-                  <audio
-                    ref={audioRef}
-                    src={audioPreviewUrl}
-                    onTimeUpdate={(e) => {
-                      const audio = e.currentTarget;
-                      if (audio.duration) {
-                        setPlayedProgress(audio.currentTime / audio.duration);
-                      }
-                    }}
-                    onEnded={() => {
-                      if (playerIndex < playerQueue.length - 1) setPlayerIndex(i => i + 1);
-                      else setIsPlaying(false);
-                    }}
+                  {/* Div alvo da API de IFrame do YouTube */}
+                  <div
+                    id="yt-player-element"
+                    style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px' }}
                   />
-                )}
+
+                  {/* Fallback Áudio HTML5 */}
+                  {audioPreviewUrl && (
+                    <audio
+                      ref={audioRef}
+                      src={audioPreviewUrl}
+                      onEnded={() => {
+                        if (playerIndex < playerQueue.length - 1) setPlayerIndex(i => i + 1);
+                        else setIsPlaying(false);
+                      }}
+                    />
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-sm truncate text-white">
+                    {track?.title || 'Sem título'}
+                  </p>
+                  <p className="text-xs text-zinc-400 truncate">{track?.artist || ''}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[11px] font-mono text-violet-300 font-medium">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </span>
+                    <span className="text-[10px] text-zinc-500">
+                      ({playerIndex + 1} de {playerQueue.length})
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Info da música */}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm truncate">
-                  {track?.title || 'Sem título'}
-                </p>
-                <p className="text-xs text-zinc-400 truncate">{track?.artist || ''}</p>
-                <p className="text-[10px] text-zinc-600 mt-0.5">
-                  {playerIndex + 1} / {playerQueue.length}
-                </p>
-              </div>
+              {/* Controles de Reprodução */}
+              <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                <button
+                  onClick={() => handleSkipSeconds(-10)}
+                  className="p-1.5 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                  title="Voltar 10s"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
 
-              {/* Controles */}
-              <div className="flex items-center gap-3 shrink-0">
                 <button
                   onClick={() => setPlayerIndex(i => Math.max(0, i - 1))}
                   disabled={playerIndex === 0}
-                  className="text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
+                  className="p-1.5 rounded-full text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
                   title="Anterior"
                 >
                   <SkipBack className="w-5 h-5 fill-current" />
                 </button>
+
+                <button
+                  onClick={togglePlayPause}
+                  className="w-10 h-10 rounded-full bg-violet-600 hover:bg-violet-500 text-white flex items-center justify-center shadow-lg transition-transform active:scale-95"
+                  title={isPlaying ? "Pausar" : "Reproduzir"}
+                >
+                  {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
+                </button>
+
                 <button
                   onClick={() => setPlayerIndex(i => Math.min(playerQueue.length - 1, i + 1))}
                   disabled={playerIndex === playerQueue.length - 1}
-                  className="text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
+                  className="p-1.5 rounded-full text-zinc-400 hover:text-white disabled:opacity-30 transition-colors"
                   title="Próxima"
                 >
                   <SkipForward className="w-5 h-5 fill-current" />
                 </button>
+
                 <button
-                  onClick={() => setIsPlayerOpen(false)}
-                  className="text-zinc-400 hover:text-white transition-colors ml-2"
+                  onClick={() => handleSkipSeconds(10)}
+                  className="p-1.5 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                  title="Avançar 10s"
+                >
+                  <RotateCw className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Botão Fechar */}
+              <div className="w-full sm:w-1/3 flex justify-end shrink-0">
+                <button
+                  onClick={() => {
+                    setIsPlaying(false);
+                    setIsPlayerOpen(false);
+                  }}
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                   title="Fechar"
                 >
                   <X className="w-5 h-5" />

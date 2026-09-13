@@ -27,6 +27,15 @@ const formatUrl = (url: string) => {
   return url;
 };
 
+const formatYoutubeUrl = (url: string, title?: string, artist?: string) => {
+  if (!url) return '';
+  if (url.includes('duckduckgo.com') || url.includes('google.com/search')) {
+    const q = `${artist || ''} ${title || ''} oficial`.trim();
+    return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+  }
+  return formatUrl(url);
+};
+
 export function SongCard({
   title,
   artist,
@@ -124,7 +133,7 @@ export function SongCard({
                 className="text-red-600 border-red-200 hover:bg-red-50"
                 asChild
               >
-                <a href={formatUrl(youtubeUrl)} target="_blank" rel="noopener noreferrer">
+                <a href={formatYoutubeUrl(youtubeUrl, title, artist)} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="w-4 h-4 mr-1" />
                   YouTube
                 </a>

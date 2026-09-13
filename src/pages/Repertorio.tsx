@@ -11,7 +11,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn, fuzzyIncludes } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { lookupWorshipKey } from "@/lib/worshipKeys";
+import { lookupWorshipKey, getBestSongKey } from "@/lib/worshipKeys";
+import { searchYoutubeVideoId, getOfficialYoutubeUrl } from "@/lib/youtube";
 import { MemberSongKeys } from "@/components/dashboard/MemberSongKeys";
 
 export default function Repertorio() {
@@ -39,6 +40,7 @@ export default function Repertorio() {
     title: "",
     artist: "",
     key: "C",
+    keyMode: "Maior",
     bpm: "",
     youtube_url: "",
     spotify_url: "",
@@ -47,7 +49,7 @@ export default function Repertorio() {
     tags: ""
   });
 
-  const tones = ["C", "D", "E", "F", "G", "A", "B", "C#", "F#", "G#"];
+  const tones = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B"];
 
   const { data: songs = [], isLoading } = useQuery({
     queryKey: ['songs'],
@@ -71,7 +73,7 @@ export default function Repertorio() {
       const payload = {
         title: formData.title.trim(),
         artist: formData.artist.trim() || "Autor Desconhecido",
-        key: formData.key,
+        key: formData.keyMode === "Menor" ? `${formData.key} Menor` : formData.key,
         bpm: formData.bpm ? parseInt(formData.bpm) : null,
         youtube_url: formData.youtube_url.trim() || null,
         spotify_url: formData.spotify_url.trim() || null,
@@ -130,6 +132,7 @@ export default function Repertorio() {
       title: "",
       artist: "",
       key: "C",
+      keyMode: "Maior",
       bpm: "",
       youtube_url: "",
       spotify_url: "",
@@ -146,10 +149,15 @@ export default function Repertorio() {
 
   const handleOpenEditSong = (song: any) => {
     setEditingSong(song);
+    // Separa "C Menor" -> key="C", keyMode="Menor"
+    const rawKey: string = song.key || "C";
+    const modeSuffix = rawKey.endsWith(" Menor") ? "Menor" : "Maior";
+    const baseKey = rawKey.replace(" Menor", "").replace(" Maior", "").trim();
     setFormData({
       title: song.title,
       artist: song.artist || "",
-      key: song.key || "C",
+      key: baseKey,
+      keyMode: modeSuffix,
       bpm: song.bpm ? song.bpm.toString() : "",
       youtube_url: song.youtube_url || "",
       spotify_url: song.spotify_url || "",
@@ -173,20 +181,22 @@ export default function Repertorio() {
 
   const importSongMutation = useMutation({
     mutationFn: async (suggestion: any) => {
-      // Busca no banco local de tonalidades
-      const foundKey = lookupWorshipKey(suggestion.trackName, suggestion.artistName);
-      const detectedTone = foundKey || "C";
+      // Busca tom original (local + scraping Cifra Club)
+      const keyInfo = await getBestSongKey(suggestion.artistName || "", suggestion.trackName);
 
-      const ytQuery = encodeURIComponent(`${suggestion.artistName} ${suggestion.trackName}`);
+      const ytQuery = `${suggestion.artistName || ""} ${suggestion.trackName} oficial`;
+      const youtubeUrl = await getOfficialYoutubeUrl(ytQuery);
+      
+      const cleanArtistName = (artistName || "").split(/&|feat|ft\.|,|\b-\b|\be\b/i)[0].trim();
       const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
-      const ccUrl = `https://www.cifraclub.com.br/${slugify(suggestion.artistName)}/${slugify(suggestion.trackName)}/`;
+      const ccUrl = `https://www.cifraclub.com.br/${slugify(cleanArtistName)}/${slugify(suggestion.trackName)}/`;
 
       const payload = {
         title: suggestion.trackName,
         artist: suggestion.artistName || "Autor Desconhecido",
-        key: detectedTone,
+        key: keyInfo.fullKey,
         bpm: null,
-        youtube_url: `https://duckduckgo.com/?q=!ducky+site%3Ayoutube.com+${ytQuery}`,
+        youtube_url: youtubeUrl,
         spotify_url: null,
         cifraclub_url: ccUrl,
         audio_url: suggestion.previewUrl || null,
@@ -391,35 +401,39 @@ export default function Repertorio() {
     }
   };
 
-  const handleSelectSearchResult = (result: any) => {
+  const handleSelectSearchResult = async (result: any) => {
     const trackName = String(result?.trackName || "");
     const artistName = String(result?.artistName || "Autor Desconhecido");
     
-    // Busca tom no banco local
-    const foundKey = lookupWorshipKey(trackName, artistName);
-    const detectedTone = foundKey || formData.key || "C";
+    toast.loading("Buscando tom original e clipe...", { id: "yt-search" });
+
+    // Busca tom no banco local e online no Cifra Club
+    const keyInfo = await getBestSongKey(artistName, trackName);
 
     const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
-    const ytQuery = encodeURIComponent(`${artistName} ${trackName} oficial`);
+    const ytQuery = `${artistName} ${trackName} oficial`;
     
-    // Usando Google "Estou com Sorte" para maior precisão em vez do DuckDuckGo
-    const generatedYoutubeUrl = `https://www.google.com/search?btnI=1&q=site%3Ayoutube.com+${ytQuery}`;
-    const generatedCifraUrl = `https://www.cifraclub.com.br/${slugify(artistName)}/${slugify(trackName)}/`;
+    const generatedYoutubeUrl = await getOfficialYoutubeUrl(ytQuery);
+      
+    const cleanArtistName = artistName.split(/&|feat|ft\.|,|\b-\b|\be\b/i)[0].trim();
+    const generatedCifraUrl = `https://www.cifraclub.com.br/${slugify(cleanArtistName)}/${slugify(trackName)}/`;
     
     setFormData(prev => ({
       ...prev,
       title: trackName,
       artist: artistName,
-      key: detectedTone,
+      key: keyInfo.key,
+      keyMode: keyInfo.keyMode,
       cifraclub_url: generatedCifraUrl,
       youtube_url: generatedYoutubeUrl,
       audio_url: result.previewUrl || prev.audio_url
     }));
     
-    if (foundKey) {
-      toast.success(`Versão escolhida! Tom: ${foundKey} — Links preenchidos.`);
+    toast.dismiss("yt-search");
+    if (keyInfo.fullKey !== "C") {
+      toast.success(`Versão escolhida! Tom identificado: ${keyInfo.fullKey} — Links preenchidos.`);
     } else {
-      toast.success("Versão escolhida! Tom não encontrado, verifique manualmente.");
+      toast.success("Versão escolhida! Links preenchidos.");
     }
     setIsSearchResultsOpen(false);
   };
@@ -476,7 +490,7 @@ export default function Repertorio() {
             </div>
 
             {/* Tone Filter */}
-            <div className="flex items-center gap-1 bg-card rounded-lg border border-border p-1">
+            <div className="flex flex-wrap items-center gap-1 bg-card rounded-lg border border-border p-1">
               <Button
                 variant={!selectedTone ? "soft" : "ghost"}
                 size="sm"
@@ -489,7 +503,7 @@ export default function Repertorio() {
                   key={tone}
                   variant={selectedTone === tone ? "soft" : "ghost"}
                   size="sm"
-                  className="px-3"
+                  className="px-2 min-w-[36px]"
                   onClick={() => setSelectedTone(tone)}
                 >
                   {tone}
@@ -695,7 +709,7 @@ export default function Repertorio() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="song-key">Tom Original</Label>
                   <select
@@ -707,6 +721,18 @@ export default function Repertorio() {
                     {tones.map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="song-key-mode">Modo</Label>
+                  <select
+                    id="song-key-mode"
+                    value={formData.keyMode}
+                    onChange={(e) => setFormData({ ...formData, keyMode: e.target.value })}
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    <option value="Maior">Maior</option>
+                    <option value="Menor">Menor</option>
                   </select>
                 </div>
                 <div className="space-y-2">
