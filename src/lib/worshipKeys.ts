@@ -2213,6 +2213,17 @@ const normalize = (text: string): string => {
 };
 
 /**
+ * Mapa normalizado em tempo de execução para garantir que acentos 
+ * inseridos no hardcode não quebrem a busca exata ou parcial.
+ */
+const NORMALIZED_WORSHIP_KEYS: Record<string, string> = {};
+for (const [key, tone] of Object.entries(WORSHIP_KEYS)) {
+  const [title, artist] = key.split("|");
+  const normKey = `${normalize(title)}|${artist ? normalize(artist) : ""}`;
+  NORMALIZED_WORSHIP_KEYS[normKey] = tone;
+}
+
+/**
  * Busca a tonalidade de uma musica no banco interno.
  * Retorna o tom se encontrado, ou null caso nao encontre.
  */
@@ -2222,10 +2233,10 @@ export function lookupWorshipKey(title: string, artist: string): string | null {
 
   // 1. Busca exata titulo|artista
   const exactKey = `${normTitle}|${normArtist}`;
-  if (WORSHIP_KEYS[exactKey]) return WORSHIP_KEYS[exactKey];
+  if (NORMALIZED_WORSHIP_KEYS[exactKey]) return NORMALIZED_WORSHIP_KEYS[exactKey];
 
   // 2. Busca parcial: titulo e artista contidos na chave
-  for (const [key, tone] of Object.entries(WORSHIP_KEYS)) {
+  for (const [key, tone] of Object.entries(NORMALIZED_WORSHIP_KEYS)) {
     const [keyTitle, keyArtist] = key.split("|");
     if (!keyArtist) continue;
     const titleMatch = normTitle === keyTitle || normTitle.includes(keyTitle) || keyTitle.includes(normTitle);
@@ -2234,7 +2245,7 @@ export function lookupWorshipKey(title: string, artist: string): string | null {
   }
 
   // 3. Busca so por titulo (fallback)
-  for (const [key, tone] of Object.entries(WORSHIP_KEYS)) {
+  for (const [key, tone] of Object.entries(NORMALIZED_WORSHIP_KEYS)) {
     const [keyTitle] = key.split("|");
     if (keyTitle && (normTitle === keyTitle || normTitle.includes(keyTitle) || keyTitle.includes(normTitle))) {
       return tone;
