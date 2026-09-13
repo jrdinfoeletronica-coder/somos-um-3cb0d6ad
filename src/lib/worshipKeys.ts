@@ -2017,6 +2017,189 @@ const WORSHIP_KEYS: Record<string, string> = {
   "falando de vida|eyshila": "D",
   "deus cuida de mim|eyshila": "C", // cover
   "eu quero ser santo|eyshila": "Em",
+
+  // ==========================================================
+  // LOTE 4/4 - MAIS LOUVORES ATUAIS / VIRAL (TIKTOK/REELS) / RECENTES
+  // ==========================================================
+
+  // ═══════════════════════════════════════════════
+  // NATHÁLIA BRAGA (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "deus te escondeu|nathalia braga": "Am",
+  "o choro dura uma noite|nathalia braga": "G",
+  "eu nao desisto|nathalia braga": "Em",
+
+  // ═══════════════════════════════════════════════
+  // KELLEN BYANCA
+  // ═══════════════════════════════════════════════
+  "esta tudo bem|kellen byanca": "C",
+  "o tempo e de deus|kellen byanca": "Am",
+  "pode dormir tranquilo|kellen byanca": "G",
+
+  // ═══════════════════════════════════════════════
+  // THALES ROBERTO / ATUAIS (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "mesmo sem entender|thalles roberto": "D",
+  "nada alem do sangue|thalles roberto": "G",
+  "quando o mundo cai ao meu redor|thalles roberto": "Em",
+
+  // ═══════════════════════════════════════════════
+  // ISADORA POMPEO (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "como nunca antes|isadora pompeo": "Am",
+  "nem um segundo|isadora pompeo": "C",
+  "historia|isadora pompeo": "G",
+  "resultado|isadora pompeo": "Dm",
+  "guia me|isadora pompeo": "D",
+  "pra te contar os meus segredos|isadora pompeo": "Am",
+
+  // ═══════════════════════════════════════════════
+  // STELLA LAURA (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "meu socorro|stella laura": "Em",
+  "plano perfeito|stella laura": "C",
+  "conta pra mim|stella laura": "Am",
+
+  // ═══════════════════════════════════════════════
+  // JEFFERSON E SUELLEN (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "esperança|jefferson e suellen": "C",
+  "o amor de deus|jefferson e suellen": "Am",
+  "fogo no pe|jefferson e suellen": "Em",
+
+  // ═══════════════════════════════════════════════
+  // LUKAS AGUSTINHO (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "meu irmao|lukas agustinho": "C",
+  "foi a mao de deus|lukas agustinho": "G",
+
+  // ═══════════════════════════════════════════════
+  // ALESSANDRO VILAS BOAS (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "encontrei o meu lugar|alessandro vilas boas": "G",
+  "tu es tudo que eu preciso|alessandro vilas boas": "C",
+  "me leva mais alto|alessandro vilas boas": "D",
+
+  // ═══════════════════════════════════════════════
+  // ISAÍAS SAAD (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "enquanto eu viver|isaias saad": "C",
+  "agua viva|isaias saad": "G",
+  "nao ha outro|isaias saad": "F",
+
+  // ═══════════════════════════════════════════════
+  // LULLY
+  // ═══════════════════════════════════════════════
+  "o que o mundo nao pode dar|lully": "Am",
+  "perdao|lully": "C",
+
+  // ═══════════════════════════════════════════════
+  // ELI SOARES
+  // ═══════════════════════════════════════════════
+  "me ajude a melhorar|eli soares": "G",
+  "se eu cair|eli soares": "C",
+  "os anjos te louvam|eli soares": "D",
+  "tudo que eu sou|eli soares": "A",
+  "graca|eli soares": "Em",
+  "promessa|eli soares": "D",
+
+  // ═══════════════════════════════════════════════
+  // PRISCILLA ALCANTARA (FASE GOSPEL)
+  // ═══════════════════════════════════════════════
+  "girassol|priscilla alcantara": "G",
+  "sobrevivi|priscilla alcantara": "Em",
+  "inteiro|priscilla alcantara": "D",
+  "correntes|priscilla alcantara": "C",
+
+  // ═══════════════════════════════════════════════
+  // JULIA VITORIA (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "tu es bom|julia vitoria": "D",
+  "fome e sede|julia vitoria": "C",
+  "se o espirito santo|julia vitoria": "Am",
+
+  // ═══════════════════════════════════════════════
+  // BE ONE MUSIC / IGREJA DA CIDADE
+  // ═══════════════════════════════════════════════
+  "deixa queimar|be one": "C",
+  "bom bom pai|be one": "G",
+  "fogo|be one": "Am",
+
+  // ═══════════════════════════════════════════════
+  // TON CARFI (ATUAIS E FEATS)
+  // ═══════════════════════════════════════════════
+  "minha vez|ton carfi": "G",
+  "hospital|ton carfi": "Dm",
+  "a cruz|ton carfi": "A",
+
+  // ═══════════════════════════════════════════════
+  // PAULO NETO
+  // ═══════════════════════════════════════════════
+  "tua presenca|paulo neto": "Em",
+  "nao foi por acaso|paulo neto": "Am",
+  "ressurreicao em naim|paulo neto": "Fm",
+  "ze e marta|paulo neto": "Cm",
+
+  // ═══════════════════════════════════════════════
+  // VITORIA SOUZA
+  // ═══════════════════════════════════════════════
+  "processo|vitoria souza": "Em",
+  "ele trabalha|vitoria souza": "G",
+
+  // ═══════════════════════════════════════════════
+  // GABRIEL GUEDES (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "nada mais|gabriel guedes": "C",
+  "te exaltamos|gabriel guedes": "D",
+  "dono do meu ser|gabriel guedes": "G",
+  "meu coracao te pertence|gabriel guedes": "Am",
+
+  // ═══════════════════════════════════════════════
+  // SARAH BEATRIZ
+  // ═══════════════════════════════════════════════
+  "todavia me alegrarei|sarah beatriz": "E", // Cover
+  "basta acreditar|sarah beatriz": "G",
+  "promessas|sarah beatriz": "Am", // Cover
+  "o maior vilão sou eu|sarah beatriz": "Em",
+
+  // ═══════════════════════════════════════════════
+  // MARIANA VALADÃO
+  // ═══════════════════════════════════════════════
+  "hosana|mariana valadao": "C",
+  "se eu apenas te tocar|mariana valadao": "D",
+  "vai brilhar|mariana valadao": "G",
+
+  // ═══════════════════════════════════════════════
+  // NVI (NOVA VERSÃO INTERNACIONAL) / VERSÕES ATUAIS
+  // ═══════════════════════════════════════════════
+  "jeova jireh|": "Em", // Aline Barros versão atual
+  "leao da tribo de juda|": "Em",
+  "tu es rei|": "G",
+  "nada temerei|": "Em",
+
+  // ═══════════════════════════════════════════════
+  // MAIS CORINHOS DE FOGO / AVIVAMENTO ATUAL (RETETÉ)
+  // ═══════════════════════════════════════════════
+  "eu marquei um encontro com deus|": "Am",
+  "fogo no altar|": "Em",
+  "vai tremer|": "Am",
+  "canta que eu cuido|": "C",
+  "pisa no inimigo|": "Em",
+  "marcha marchando|": "G",
+  "vem espirito santo|": "C",
+  "toca-me|": "D",
+
+  // ═══════════════════════════════════════════════
+  // HITS GERAIS DA INTERNET (TIKTOK/REELS GOSPEL)
+  // ═══════════════════════════════════════════════
+  "deus ta te ensinando a ser forte|": "Em",
+  "ta chorando por que|": "C",
+  "calma, deus esta cuidando de tudo|": "G",
+  "deixa deus fazer|": "Am",
+  "voce vai vencer|": "C",
+  "nao e o fim|": "D",
+  "haverá milagres|": "F",
+  "deus vai te surpreender|": "G",
 };
 
 const normalize = (text: string): string => {
