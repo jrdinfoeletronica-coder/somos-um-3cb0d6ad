@@ -1825,6 +1825,198 @@ const WORSHIP_KEYS: Record<string, string> = {
   "tudo a ver com ele|central 3": "Em",
   "nao ha outro lugar|central 3": "G",
   "eu me rendo|central 3": "D",
+
+  // ==========================================================
+  // LOTE 3/4 - GRANDES MINISTÉRIOS E CONGREGAÇÃO CLÁSSICA (ANOS 90/2000)
+  // ==========================================================
+
+  // ═══════════════════════════════════════════════
+  // DIANTE DO TRONO (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "preciso de ti|diante do trono": "D",
+  "aguas purificadoras|diante do trono": "G",
+  "nos bracos do pai|diante do trono": "D",
+  "quero subir|diante do trono": "Am",
+  "tempo de festa|diante do trono": "E",
+  "me amou primeiro|diante do trono": "C",
+  "cançao do amor|diante do trono": "G",
+  "a vitoria da cruz|diante do trono": "Em",
+  "cordeiro e leao|diante do trono": "D",
+  "esperanca|diante do trono": "C",
+  "manancial|diante do trono": "A",
+  "aos olhos do pai|diante do trono": "E",
+  "te agradeco|diante do trono": "G",
+
+  // ═══════════════════════════════════════════════
+  // VINEYARD BRASIL
+  // ═══════════════════════════════════════════════
+  "vem esta e a hora|vineyard": "D",
+  "me derramar|vineyard": "D",
+  "senhor te quero|vineyard": "G",
+  "reina em mim|vineyard": "C",
+  "teu nome e santo|vineyard": "Am",
+  "mais que um amigo|vineyard": "C",
+  "quebrantado|vineyard": "E",
+  "fome|vineyard": "G",
+  "meu respirar|vineyard": "A",
+  "entrega|vineyard": "D",
+  "aleluia gloria|vineyard": "G",
+
+  // ═══════════════════════════════════════════════
+  // ADHEMAR DE CAMPOS
+  // ═══════════════════════════════════════════════
+  "ele e exaltado|adhemar de campos": "F",
+  "tributo a yehovah|adhemar de campos": "Em",
+  "bem supremo|adhemar de campos": "D",
+  "grande e o senhor|adhemar de campos": "A",
+  "nosso general|adhemar de campos": "Em",
+  "homem de guerra|adhemar de campos": "Am",
+  "o leao da tribo de juda|adhemar de campos": "Em",
+  "pela fe|adhemar de campos": "D",
+
+  // ═══════════════════════════════════════════════
+  // ALINE BARROS E CIA / INFANTIL CLÁSSICO
+  // ═══════════════════════════════════════════════
+  "homenzinho torto|aline barros": "C",
+  "pula pula|aline barros": "G",
+  "arca de noe|aline barros": "D",
+  "dança do pinguim|aline barros": "E",
+  "sou um milagre|aline barros": "C",
+  "consagraçao|aline barros": "G",
+
+  // ═══════════════════════════════════════════════
+  // CORINHOS CLÁSSICOS DE IGREJA (ANOS 80 E 90)
+  // ═══════════════════════════════════════════════
+  "estamos aqui senhor|": "G",
+  "a alegria esta no coracao|": "D",
+  "posso pisar numa tropa|": "Em",
+  "se o espirito de deus se move em mim|": "Em",
+  "eu tenho um amigo que me ama|": "E",
+  "solta o cabo da nau|": "D",
+  "vem com josue lutar em jerico|": "Am",
+  "espiritosanto|": "G",
+  "jesus em tua presenca|": "D",
+  "leao de juda prevaleceu|": "Em",
+  "os que confiam no senhor|": "Am",
+  "cada passo que dás|": "C",
+
+  // ═══════════════════════════════════════════════
+  // ASAPH BORBA (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "infinitamente mais|asaph borba": "D",
+  "o meu louvor|asaph borba": "G",
+  "jesus e o rei da gloria|asaph borba": "E",
+
+  // ═══════════════════════════════════════════════
+  // LUDMILA FERBER (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "ouco deus me chamar|ludmila ferber": "C",
+  "uncao sem limites|ludmila ferber": "G",
+  "os sonhos de deus|ludmila ferber": "D",
+  "a docura do teu falar|ludmila ferber": "E",
+
+  // ═══════════════════════════════════════════════
+  // TOQUE NO ALTAR / TRAZENDO A ARCA (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "meu amado|toque no altar": "D",
+  "nao importa o dia|trazendo a arca": "A",
+  "desperta|trazendo a arca": "Em",
+  "cruz|trazendo a arca": "C",
+  "o chao vai tremer|trazendo a arca": "Dm",
+  "invoca-me|trazendo a arca": "G",
+  "celebre|trazendo a arca": "E",
+
+  // ═══════════════════════════════════════════════
+  // PASTOR ANTÔNIO CIRILO / SANTA GERAÇÃO
+  // ═══════════════════════════════════════════════
+  "poderoso deus|antonio cirilo": "D",
+  "intencidade|antonio cirilo": "A",
+  "fogo e gloria|antonio cirilo": "E",
+  "nao ha outro como tu|antonio cirilo": "C",
+  "teu fluxo de amor|antonio cirilo": "G",
+
+  // ═══════════════════════════════════════════════
+  // NENEA SOARES (NÍVEA) - MAIS ANTIGAS
+  // ═══════════════════════════════════════════════
+  "meu amor maior|nivea soares": "G",
+  "centro da tua vontade|nivea soares": "D",
+  "eis me aqui|nivea soares": "E",
+  "gloria e honra|nivea soares": "A",
+
+  // ═══════════════════════════════════════════════
+  // DAVID QUINLAN
+  // ═══════════════════════════════════════════════
+  "abracame|david quinlan": "G",
+  "aguas profundas|david quinlan": "D",
+  "fogo e gloria|david quinlan": "E",
+  "geracao que danca|david quinlan": "Am",
+  "te amo|david quinlan": "C",
+
+  // ═══════════════════════════════════════════════
+  // HELOISA ROSA (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "estou livre|heloisa rosa": "G",
+  "vaidade|heloisa rosa": "Em",
+  "quero dancar|heloisa rosa": "D",
+  "estantes de uma vida|heloisa rosa": "Am",
+  "teu fluir|heloisa rosa": "C",
+
+  // ═══════════════════════════════════════════════
+  // CLAMOR PELAS NAÇÕES
+  // ═══════════════════════════════════════════════
+  "mergulhar|clamor pelas nacoes": "E",
+  "o deserto|clamor pelas nacoes": "Bm",
+  "que amor e esse|clamor pelas nacoes": "G",
+
+  // ═══════════════════════════════════════════════
+  // FERNANDINHO (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "abundante chuva|fernandinho": "Dm",
+  "danca dos pinguins|fernandinho": "C",
+  "galileu|fernandinho": "Dm",
+  "seda rocha|fernandinho": "G",
+  "eu vou subir a montanha|fernandinho": "A",
+  "ainda que a figueira|fernandinho": "Em",
+  "faz chover|fernandinho": "Em",
+
+  // ═══════════════════════════════════════════════
+  // LUIZ DE CARVALHO / VITORINO SILVA (TRADICIONAIS)
+  // ═══════════════════════════════════════════════
+  "alvo mais que a neve|luiz de carvalho": "C",
+  "cem ovelhas|vitorino silva": "G",
+  "o rei esta voltando|vitorino silva": "E",
+
+  // ═══════════════════════════════════════════════
+  // MARA LIMA
+  // ═══════════════════════════════════════════════
+  "alem da medicina|mara lima": "D",
+  "daniel|mara lima": "Am",
+  "uncao divina|mara lima": "Fm",
+  "sabe filho|mara lima": "G",
+
+  // ═══════════════════════════════════════════════
+  // ROZEANE RIBEIRO
+  // ═══════════════════════════════════════════════
+  "e deus|rozeane ribeiro": "Am",
+  "o hino da vitoria|rozeane ribeiro": "C",
+  "jeova jireh|rozeane ribeiro": "Dm",
+
+  // ═══════════════════════════════════════════════
+  // CASSIANE (EXPANSÃO CORINHOS/ANTIGAS)
+  // ═══════════════════════════════════════════════
+  "a cura|cassiane": "G",
+  "recompensa|cassiane": "E",
+  "ele e o rei|cassiane": "Dm",
+  "sementes da fe|cassiane": "Am",
+  "lugar cheio de gloria|cassiane": "C",
+
+  // ═══════════════════════════════════════════════
+  // EYSHILA (EXPANSÃO)
+  // ═══════════════════════════════════════════════
+  "jesus o brasil quer te adorar|eyshila": "G",
+  "falando de vida|eyshila": "D",
+  "deus cuida de mim|eyshila": "C", // cover
+  "eu quero ser santo|eyshila": "Em",
 };
 
 const normalize = (text: string): string => {
