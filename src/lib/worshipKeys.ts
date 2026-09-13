@@ -1003,6 +1003,86 @@ const WORSHIP_KEYS: Record<string, string> = {
   "king of kings|": "G",
   "way maker|": "G",
   "faz um milagre|": "G",
+
+  // ═══════════════════════════════════════════════
+  // MORADA
+  // ═══════════════════════════════════════════════
+  "e tudo sobre voce|morada": "E",
+  "pra onde eu irei|morada": "G",
+  "uma coisa|morada": "C",
+  "so tu es santo|morada": "D",
+  "ele me ama|morada": "G",
+
+  // ═══════════════════════════════════════════════
+  // ISAIAS SAAD
+  // ═══════════════════════════════════════════════
+  "ousado amor|isaias saad": "Em",
+  "incondicional|isaias saad": "G",
+  "vou alem|isaias saad": "C",
+  "ruja o leao|isaias saad": "Em",
+  "o carpinteiro|isaias saad": "D",
+  "bondade de deus|isaias saad": "G",
+
+  // ═══════════════════════════════════════════════
+  // NIVEA SOARES
+  // ═══════════════════════════════════════════════
+  "me esvaziar|nivea soares": "G",
+  "teu amor nao falha|nivea soares": "A",
+  "em tua presenca|nivea soares": "D",
+  "filho do deus vivo|nivea soares": "F",
+  "reina sobre mim|nivea soares": "G",
+  "nenhum deus como tu|nivea soares": "D",
+
+  // ═══════════════════════════════════════════════
+  // ANDERSON FREIRE
+  // ═══════════════════════════════════════════════
+  "raridade|anderson freire": "G",
+  "igreja vem|anderson freire": "Am",
+  "a igreja vem|anderson freire": "Am",
+  "efesios 6|anderson freire": "Em",
+  "cancao do ceu|anderson freire": "C",
+
+  // ═══════════════════════════════════════════════
+  // THALLES ROBERTO
+  // ═══════════════════════════════════════════════
+  "deus da minha vida|thalles roberto": "G",
+  "meu mundo|thalles roberto": "C",
+  "ardendo em fogo|thalles roberto": "Em",
+  "ele e contigo|thalles roberto": "D",
+  "cheios do espirito santo|thalles roberto": "E",
+
+  // ═══════════════════════════════════════════════
+  // KEMUEL
+  // ═══════════════════════════════════════════════
+  "algo novo|kemuel": "D",
+  "oceanos|kemuel": "E",
+  "oh quao lindo esse nome e|kemuel": "D",
+  "facanos um|kemuel": "G",
+
+  // ═══════════════════════════════════════════════
+  // BRUNA KARLA
+  // ═══════════════════════════════════════════════
+  "advogado fiel|bruna karla": "D",
+  "sou humano|bruna karla": "G",
+  "quando eu chorar|bruna karla": "C",
+  "deixar a lagrima rolar|bruna karla": "A",
+  "cicatrizes|bruna karla": "G",
+
+  // ═══════════════════════════════════════════════
+  // PRISCILLA ALCANTARA
+  // ═══════════════════════════════════════════════
+  "espirito santo|priscilla alcantara": "G",
+  "me refez|priscilla alcantara": "D",
+  "liberdade|priscilla alcantara": "Em",
+  "empata|priscilla alcantara": "A",
+
+  // ═══════════════════════════════════════════════
+  // HELOISA ROSA
+  // ═══════════════════════════════════════════════
+  "jesus e o caminho|heloisa rosa": "G",
+  "ha um lugar|heloisa rosa": "D",
+  "se andarmos na luz|heloisa rosa": "E",
+  "lindo jesus|heloisa rosa": "C",
 };
 
 const normalize = (text: string): string => {
