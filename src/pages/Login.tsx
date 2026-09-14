@@ -90,7 +90,7 @@ export default function Login() {
   // ══════════════════════════════════════════════════════════════════════════
   if (view === "forgot") {
     return (
-      <div className="min-h-screen bg-background flex flex-col lg:justify-center py-12 pb-32 px-6">
+      <div className="h-[100dvh] overflow-y-auto bg-background flex flex-col lg:justify-center py-12 pb-32 px-6">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Card */}
           <div className="card-church p-8 space-y-6">
@@ -174,7 +174,7 @@ export default function Login() {
   // RENDER ── Tela de Login
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="h-[100dvh] bg-background flex">
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:flex-1 bg-gradient-to-br from-navy via-navy-light to-navy relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">

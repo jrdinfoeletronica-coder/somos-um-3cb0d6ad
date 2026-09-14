@@ -184,7 +184,7 @@ export default function CadastroMembro() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="h-[100dvh] overflow-y-auto bg-background pb-32">
       <div className="max-w-xl mx-auto w-full px-6 py-12 lg:px-8">
       {/* Back button */}
       <div className="max-w-xl mx-auto w-full mb-4">

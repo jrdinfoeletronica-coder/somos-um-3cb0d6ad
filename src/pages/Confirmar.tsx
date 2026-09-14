@@ -71,7 +71,7 @@ export default function Confirmar() {
 
   if (!memberName) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center lg:justify-center py-12 pb-32 px-6 text-center">
+      <div className="h-[100dvh] overflow-y-auto bg-background flex flex-col items-center lg:justify-center py-12 pb-32 px-6 text-center">
         <XCircle className="w-14 h-14 text-red-500 mb-4" />
         <h1 className="text-2xl font-bold text-foreground mb-2">Link inválido</h1>
         <p className="text-muted-foreground">Este link não contém informações do membro.</p>
@@ -80,7 +80,7 @@ export default function Confirmar() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-[100dvh] overflow-y-auto bg-background pb-32">
       {/* Header */}
       <div className="bg-gradient-to-br from-[hsl(220_40%_20%)] to-[hsl(220_35%_30%)] px-6 py-10 text-center">
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[hsl(38_70%_50%)] to-[hsl(30_80%_45%)] flex items-center justify-center mx-auto mb-4 shadow-lg">

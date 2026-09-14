@@ -58,7 +58,7 @@ export default function ResetSenha() {
   // ── Sucesso ────────────────────────────────────────────────────────────────
   if (isDone) {
     return (
-      <div className="min-h-screen bg-background flex flex-col lg:justify-center py-12 pb-32 px-6">
+      <div className="h-[100dvh] overflow-y-auto bg-background flex flex-col lg:justify-center py-12 pb-32 px-6">
         <div className="card-church max-w-md w-full p-8 text-center space-y-6 animate-scale-up">
           <div className="w-20 h-20 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-10 h-10 text-green-500" />
