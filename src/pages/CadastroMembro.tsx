@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Music, User, Mail, Phone, Key, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -184,7 +184,8 @@ export default function CadastroMembro() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col justify-center py-12 px-6 lg:px-8">
+    <div className="min-h-screen bg-background overflow-y-auto">
+      <div className="max-w-xl mx-auto w-full px-6 py-12 lg:px-8">
       {/* Back button */}
       <div className="max-w-xl mx-auto w-full mb-4">
         <Button variant="ghost" size="sm" onClick={() => navigate("/login")} className="text-muted-foreground hover:text-foreground">
@@ -193,7 +194,7 @@ export default function CadastroMembro() {
         </Button>
       </div>
 
-      <div className="max-w-xl mx-auto w-full bg-card border border-border rounded-2xl p-6 sm:p-10 shadow-xl space-y-8 animate-fade-in">
+      <div className="bg-card border border-border rounded-2xl p-6 sm:p-10 shadow-xl space-y-8 animate-fade-in">
         {/* Header */}
         <div className="text-center">
           <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-accent to-[hsl(30_80%_45%)] flex items-center justify-center mx-auto mb-4 shadow-gold">
@@ -218,6 +219,7 @@ export default function CadastroMembro() {
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                 className="pl-10"
                 required
+                onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               />
             </div>
           </div>
@@ -236,6 +238,7 @@ export default function CadastroMembro() {
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
                   className="pl-10"
                   required
+                  onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 />
               </div>
             </div>
@@ -249,6 +252,7 @@ export default function CadastroMembro() {
                   value={formData.phone}
                   onChange={e => setFormData({ ...formData, phone: e.target.value })}
                   className="pl-10"
+                  onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 />
               </div>
             </div>
@@ -265,6 +269,7 @@ export default function CadastroMembro() {
                 value={formData.password}
                 onChange={e => setFormData({ ...formData, password: e.target.value })}
                 required
+                onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               />
             </div>
             <div className="space-y-2">
@@ -276,6 +281,7 @@ export default function CadastroMembro() {
                 value={formData.confirmPassword}
                 onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
                 required
+                onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               />
             </div>
           </div>
@@ -318,6 +324,7 @@ export default function CadastroMembro() {
                 onChange={e => setFormData({ ...formData, inviteCode: e.target.value.toUpperCase() })}
                 className="pl-10 uppercase font-semibold font-mono tracking-wider"
                 required
+                onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               />
             </div>
             <p className="text-xs text-muted-foreground">Este código é gerado pelo administrador do sistema nas Configurações.</p>
@@ -329,6 +336,8 @@ export default function CadastroMembro() {
           </Button>
         </form>
       </div>
+      {/* Espaço extra para o teclado móvel não cortar o botão */}
+      <div className="h-24" />
     </div>
   );
 }
