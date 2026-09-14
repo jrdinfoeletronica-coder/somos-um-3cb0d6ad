@@ -205,7 +205,7 @@ export default function Repertorio() {
       const ytQuery = `${suggestion.artistName || ""} ${suggestion.trackName} oficial`;
       const youtubeUrl = await getOfficialYoutubeUrl(ytQuery);
       
-      const cleanArtistName = (artistName || "").split(/&|feat|ft\.|,|\b-\b|\be\b/i)[0].trim();
+      const cleanArtistName = (suggestion.artistName || "").split(/&|feat|ft\.|,|\b-\b|\be\b/i)[0].trim();
       const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
       const ccUrl = `https://www.cifraclub.com.br/${slugify(cleanArtistName)}/${slugify(suggestion.trackName)}/`;
 
