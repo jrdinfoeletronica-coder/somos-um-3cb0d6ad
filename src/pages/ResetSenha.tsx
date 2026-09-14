@@ -58,7 +58,7 @@ export default function ResetSenha() {
   // ── Sucesso ────────────────────────────────────────────────────────────────
   if (isDone) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-screen bg-background flex flex-col lg:justify-center py-12 pb-32 px-6">
         <div className="card-church max-w-md w-full p-8 text-center space-y-6 animate-scale-up">
           <div className="w-20 h-20 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-10 h-10 text-green-500" />
@@ -78,7 +78,7 @@ export default function ResetSenha() {
   // ── Aguardando sessão de recuperação ────────────────────────────────────────
   if (!sessionReady) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-screen bg-background flex flex-col lg:justify-center py-12 pb-32 px-6">
         <div className="card-church max-w-md w-full p-8 text-center space-y-4 animate-fade-in">
           <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-accent to-[hsl(30_80%_45%)] flex items-center justify-center mx-auto shadow-gold">
             <KeyRound className="w-8 h-8 text-primary" />
@@ -107,7 +107,7 @@ export default function ResetSenha() {
 
   // ── Formulário de nova senha ────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className="min-h-screen bg-background flex flex-col lg:justify-center py-12 pb-32 px-6">
       <div className="card-church max-w-md w-full p-8 space-y-6 animate-fade-in">
         {/* Header */}
         <div className="text-center">

@@ -71,7 +71,7 @@ export default function Confirmar() {
 
   if (!memberName) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-background flex flex-col items-center lg:justify-center py-12 pb-32 px-6 text-center">
         <XCircle className="w-14 h-14 text-red-500 mb-4" />
         <h1 className="text-2xl font-bold text-foreground mb-2">Link inválido</h1>
         <p className="text-muted-foreground">Este link não contém informações do membro.</p>

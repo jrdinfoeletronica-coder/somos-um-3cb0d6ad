@@ -90,7 +90,7 @@ export default function Login() {
   // ══════════════════════════════════════════════════════════════════════════
   if (view === "forgot") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-screen bg-background flex flex-col lg:justify-center py-12 pb-32 px-6">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Card */}
           <div className="card-church p-8 space-y-6">
@@ -196,7 +196,7 @@ export default function Login() {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex flex-col justify-center py-12 pb-32 px-6 lg:p-8 overflow-y-auto">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
