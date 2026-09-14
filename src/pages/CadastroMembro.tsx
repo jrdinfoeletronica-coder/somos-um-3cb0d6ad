@@ -184,7 +184,7 @@ export default function CadastroMembro() {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-y-auto">
+    <div className="min-h-screen bg-background pb-32">
       <div className="max-w-xl mx-auto w-full px-6 py-12 lg:px-8">
       {/* Back button */}
       <div className="max-w-xl mx-auto w-full mb-4">
@@ -219,7 +219,6 @@ export default function CadastroMembro() {
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                 className="pl-10"
                 required
-                onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               />
             </div>
           </div>
@@ -238,7 +237,6 @@ export default function CadastroMembro() {
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
                   className="pl-10"
                   required
-                  onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 />
               </div>
             </div>
@@ -252,7 +250,6 @@ export default function CadastroMembro() {
                   value={formData.phone}
                   onChange={e => setFormData({ ...formData, phone: e.target.value })}
                   className="pl-10"
-                  onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                 />
               </div>
             </div>
@@ -269,7 +266,6 @@ export default function CadastroMembro() {
                 value={formData.password}
                 onChange={e => setFormData({ ...formData, password: e.target.value })}
                 required
-                onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               />
             </div>
             <div className="space-y-2">
@@ -281,7 +277,6 @@ export default function CadastroMembro() {
                 value={formData.confirmPassword}
                 onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
                 required
-                onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               />
             </div>
           </div>
@@ -324,7 +319,6 @@ export default function CadastroMembro() {
                 onChange={e => setFormData({ ...formData, inviteCode: e.target.value.toUpperCase() })}
                 className="pl-10 uppercase font-semibold font-mono tracking-wider"
                 required
-                onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               />
             </div>
             <p className="text-xs text-muted-foreground">Este código é gerado pelo administrador do sistema nas Configurações.</p>
