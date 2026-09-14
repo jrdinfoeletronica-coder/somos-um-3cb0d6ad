@@ -338,6 +338,7 @@ export default function CadastroMembro() {
       </div>
       {/* Espaço extra para o teclado móvel não cortar o botão */}
       <div className="h-24" />
+      </div>
     </div>
   );
 }
