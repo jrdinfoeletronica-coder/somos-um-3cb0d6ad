@@ -549,8 +549,21 @@ export default function Repertorio() {
           </div>
         </div>
 
-        {/* Songs Grid */}
-        {isLoading ? (
+        {/* Songs Grid - só aparece quando buscar */}
+        {!searchQuery && !selectedTone ? (
+          <div className="card-church p-12 text-center">
+            <Search className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
+            <h3 className="font-display text-xl font-semibold text-foreground mb-2">
+              Busque um louvor
+            </h3>
+            <p className="text-muted-foreground">
+              Digite o nome da música ou artista na barra de busca acima, ou filtre por tom para visualizar os cards.
+            </p>
+            <p className="text-xs text-muted-foreground/60 mt-3">
+              {songs.length} músicas cadastradas no repertório
+            </p>
+          </div>
+        ) : isLoading ? (
           <div className="text-center py-8">Carregando músicas...</div>
         ) : filteredSongs.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -576,16 +589,8 @@ export default function Repertorio() {
               Nenhuma música encontrada
             </h3>
             <p className="text-muted-foreground mb-6">
-              {searchQuery || selectedTone
-                ? "Tente ajustar seus filtros"
-                : "Comece adicionando músicas ao repertório"}
+              Tente ajustar seus filtros
             </p>
-            {(userRole === "admin" || userRole === "editor") && (
-              <Button variant="gold" onClick={handleOpenNewSong}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Música
-              </Button>
-            )}
           </div>
         )}
       </div>
