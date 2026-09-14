@@ -803,10 +803,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   "haja de deus|aline barros": "G",
   "o haja de deus|aline barros": "G",
   "caminho de milagre|aline barros": "C",
-  "ressuscita-me|aline barros": "D",
-  "tudo e possivel|aline barros": "G",
-  "o pao da vida|aline barros": "C",
-  "rendido estou|aline barros": "G",
 
   // ═══════════════════════════════════════════════
   // JOTTA A
@@ -1019,7 +1015,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   "ousado amor|isaias saad": "Em",
   "incondicional|isaias saad": "G",
   "vou alem|isaias saad": "C",
-  "ruja o leao|isaias saad": "Em",
   "o carpinteiro|isaias saad": "D",
   "bondade de deus|isaias saad": "G",
 
@@ -1149,8 +1144,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   "promessa|renascer praise": "G",
   "plano melhor|renascer praise": "D",
   "nao ha outro igual|renascer praise": "G",
-  "1000 graus|renascer praise": "Am",
-  "mil graus|renascer praise": "Am",
   "esperanca|renascer praise": "C",
 
   // ═══════════════════════════════════════════════
@@ -1167,7 +1160,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   // ═══════════════════════════════════════════════
   // TRAZENDO A ARCA
   // ═══════════════════════════════════════════════
-  "marca da promessa|trazendo a arca": "Dm",
   "sobre as aguas|trazendo a arca": "C",
   "toca na rocha|trazendo a arca": "Am",
   "pra tocar no manto|trazendo a arca": "D",
@@ -1200,7 +1192,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   // ═══════════════════════════════════════════════
   // VOZ DA VERDADE
   // ═══════════════════════════════════════════════
-  "o escudo|voz da verdade": "Cm",
   "projeto no deserto|voz da verdade": "Am",
   "sou um milagre|voz da verdade": "G",
   "sangue cor de carmim|voz da verdade": "Am",
@@ -1279,13 +1270,11 @@ const WORSHIP_KEYS: Record<string, string> = {
   // ═══════════════════════════════════════════════
   // GABRIELA GOMES
   // ═══════════════════════════════════════════════
-  "deus provera|gabriela gomes": "C",
   "o meu pai e bom|gabriela gomes": "G",
 
   // ═══════════════════════════════════════════════
   // THEO RUBIA
   // ═══════════════════════════════════════════════
-  "pode morar aqui|theo rubia": "C",
   "eu so quero presenca|theo rubia": "G",
 
   // ═══════════════════════════════════════════════
@@ -1388,8 +1377,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   "chuvas de graca|": "G",
   "saudosa lembranca|": "D",
   "o exilado|": "A",
-  "firme nas promessas|": "G",
-  "alvo mais que a neve|": "C",
   "a face adorada de jesus|": "D",
   "grato a ti|": "G",
   "guia me sempre meu senhor|": "D",
@@ -1400,7 +1387,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   "o sangue purificador|": "G",
   "vem cear|": "C",
   "sobre as ondas do mar|": "G",
-  "vencendo vem jesus|": "G",
   "a mensagem da cruz|": "A",
   "olhai pra o cordeiro de deus|": "D",
   "conversao|": "G",
@@ -1485,8 +1471,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   // ═══════════════════════════════════════════════
   // PREGADOR LUO / APOCALIPSE 16 (MAIS MÚSICAS)
   // ═══════════════════════════════════════════════
-  "ja posso suportar|pregador luo": "Am",
-  "arvore de bons frutos|pregador luo": "Em",
   "bagaça|pregador luo": "Em",
   "apaga a luz|pregador luo": "Am",
   "vou colher sorrindo|pregador luo": "Bm",
@@ -1537,7 +1521,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   // SORAYA MORAES
   // ═══════════════════════════════════════════════
   "quao grande e o meu deus|soraya moraes": "G",
-  "caminho no deserto|soraya moraes": "D",
   "som da chuva|soraya moraes": "Em",
   "sobre as aguas|soraya moraes": "A",
   "cadete do espirito|soraya moraes": "Cm",
@@ -1633,7 +1616,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   // ═══════════════════════════════════════════════
   // JEFFERSON E SUELLEN
   // ═══════════════════════════════════════════════
-  "vem me buscar|jefferson e suellen": "Em",
   "saudade de casa|jefferson e suellen": "Am",
   "profetiza|jefferson e suellen": "Dm",
   "labareda|jefferson e suellen": "Em",
@@ -1641,7 +1623,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   // ═══════════════════════════════════════════════
   // CASA WORSHIP
   // ═══════════════════════════════════════════════
-  "a casa e sua|casa worship": "G",
   "eu te vejo em tudo|casa worship": "C",
   "faz arraial|casa worship": "Am",
   "era eu|casa worship": "C",
@@ -1677,7 +1658,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   // ═══════════════════════════════════════════════
   // JULIA VITORIA
   // ═══════════════════════════════════════════════
-  "de dentro pra fora|julia vitoria": "G",
   "alem do rio azul|julia vitoria": "D",
   "tuas aguas|julia vitoria": "C",
   "somos teu povo|julia vitoria": "Em",
@@ -1692,14 +1672,12 @@ const WORSHIP_KEYS: Record<string, string> = {
   // MIDIAN LIMA
   // ═══════════════════════════════════════════════
   "jo|midian lima": "Dm",
-  "nao pare|midian lima": "G",
   "prioridade|midian lima": "C",
   "olhai pra cruz|midian lima": "F",
 
   // ═══════════════════════════════════════════════
   // DELINO MARÇAL
   // ═══════════════════════════════════════════════
-  "deus e deus|delino marcal": "G",
   "guarda meu coracao|delino marcal": "D",
   "vim falar com deus|delino marcal": "A",
 
@@ -1765,7 +1743,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   // ═══════════════════════════════════════════════
   // SAMUEL MESSIAS
   // ═══════════════════════════════════════════════
-  "todavia me alegrarei|samuel messias": "E",
   "voce nao vai parar|samuel messias": "C",
   "os planos de deus|samuel messias": "G",
 
@@ -1822,7 +1799,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   // ADAHABY / CENTRAL 3 (HITS)
   // ═══════════════════════════════════════════════
   "me leva pra casa|central 3": "Em",
-  "tudo a ver com ele|central 3": "Em",
   "nao ha outro lugar|central 3": "G",
   "eu me rendo|central 3": "D",
 
@@ -1869,7 +1845,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   "tributo a yehovah|adhemar de campos": "Em",
   "bem supremo|adhemar de campos": "D",
   "grande e o senhor|adhemar de campos": "A",
-  "nosso general|adhemar de campos": "Em",
   "homem de guerra|adhemar de campos": "Am",
   "o leao da tribo de juda|adhemar de campos": "Em",
   "pela fe|adhemar de campos": "D",
@@ -1892,9 +1867,7 @@ const WORSHIP_KEYS: Record<string, string> = {
   "posso pisar numa tropa|": "Em",
   "se o espirito de deus se move em mim|": "Em",
   "eu tenho um amigo que me ama|": "E",
-  "solta o cabo da nau|": "D",
   "vem com josue lutar em jerico|": "Am",
-  "espiritosanto|": "G",
   "jesus em tua presenca|": "D",
   "leao de juda prevaleceu|": "Em",
   "os que confiam no senhor|": "Am",
@@ -1912,7 +1885,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   // ═══════════════════════════════════════════════
   "ouco deus me chamar|ludmila ferber": "C",
   "uncao sem limites|ludmila ferber": "G",
-  "os sonhos de deus|ludmila ferber": "D",
   "a docura do teu falar|ludmila ferber": "E",
 
   // ═══════════════════════════════════════════════
@@ -2064,7 +2036,6 @@ const WORSHIP_KEYS: Record<string, string> = {
   // JEFFERSON E SUELLEN (EXPANSÃO)
   // ═══════════════════════════════════════════════
   "esperança|jefferson e suellen": "C",
-  "o amor de deus|jefferson e suellen": "Am",
   "fogo no pe|jefferson e suellen": "Em",
 
   // ═══════════════════════════════════════════════
