@@ -536,6 +536,7 @@ const WORSHIP_KEYS: Record<string, string> = {
   "mais alto|trazendo a arca": "D",
   "hosana|trazendo a arca": "G",
   "vai o impossivel|trazendo a arca": "D",
+  "deus do impossivel|trazendo a arca": "B",
 
   // ═══════════════════════════════════════════════
   // RENASCER PRAISE
