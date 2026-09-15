@@ -58,7 +58,7 @@ export default function Login() {
     localStorage.setItem("isAuthenticated", "true");
 
     queryClient.invalidateQueries({ queryKey: ["members"] });
-    navigate("/escalas");
+    navigate("/dashboard");
   };
 
   // ── Redefinir Senha ─────────────────────────────────────────────────────────

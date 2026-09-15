@@ -2334,26 +2334,9 @@ export function parseKeyAndMode(rawKey: string | null): { key: string; keyMode: 
   if (isMinor) {
     return { key: baseKey, keyMode: "Menor", fullKey: `${baseKey} Menor` };
   }
-  return { key: baseKey, keyMode: "Maior", fullKey: baseKey };
-}
-
-export async function fetchVercelTone(artist: string, title: string): Promise<{ key: string; keyMode: "Maior" | "Menor"; fullKey: string } | null> {
-  try {
-    const url = `/api/tone?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data.key) {
-      return parseKeyAndMode(data.key);
-    }
-    return null;
-  } catch (error) {
-    return null;
-  }
-}
-
 /**
- * Tenta identificar o tom original primeiro no banco interno e depois via servidor proxy.
+ * Identifica o tom original usando EXCLUSIVAMENTE o banco de dados interno local.
+ * Isso garante que a busca seja instantânea (0 milissegundos) e não dependa da internet ou do Cifra Club.
  */
 export async function getBestSongKey(artist: string, title: string): Promise<{ key: string; keyMode: "Maior" | "Menor"; fullKey: string }> {
   // 1. Tenta banco de dados local (instantâneo)
@@ -2362,17 +2345,7 @@ export async function getBestSongKey(artist: string, title: string): Promise<{ k
     return parseKeyAndMode(localKey);
   }
 
-  // 2. Tenta busca via servidor
-  try {
-    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
-    const serverKey = await Promise.race([fetchVercelTone(artist, title), timeoutPromise]);
-    if (serverKey) {
-      return serverKey;
-    }
-  } catch {
-    // Falha silenciosa
-  }
-
+  // 2. Se não encontrar no banco local, retorna C Maior imediatamente
   return { key: "C", keyMode: "Maior", fullKey: "C" };
 }
 
