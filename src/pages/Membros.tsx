@@ -37,6 +37,7 @@ export default function Membros() {
     name: "",
     email: "",
     phone: "",
+    birth_date: "",
     status: "active" as "active" | "inactive",
     access_level: "viewer" as "admin" | "editor" | "viewer",
     experience_level: "Intermediário",
@@ -80,6 +81,7 @@ export default function Membros() {
         name: formData.name.trim(),
         email: formData.email.trim() || null,
         phone: formData.phone.trim() || null,
+        birth_date: formData.birth_date || null,
         roles: selectedRoles,
         status: formData.status,
         access_level: formData.access_level,
@@ -155,6 +157,7 @@ export default function Membros() {
       name: "",
       email: "",
       phone: "",
+      birth_date: "",
       status: "active",
       access_level: "viewer",
       experience_level: "Intermediário",
@@ -174,6 +177,7 @@ export default function Membros() {
       name: member.name,
       email: member.email || "",
       phone: member.phone || "",
+      birth_date: member.birth_date || "",
       status: member.status || "active",
       access_level: member.access_level || "viewer",
       experience_level: member.experience_level || "Intermediário",
@@ -333,7 +337,7 @@ export default function Membros() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="member-email">E-mail</Label>
                   <Input
@@ -351,6 +355,15 @@ export default function Membros() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="(00) 00000-0000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="member-birth">Data de Nascimento</Label>
+                  <Input
+                    id="member-birth"
+                    type="date"
+                    value={formData.birth_date}
+                    onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
                   />
                 </div>
               </div>

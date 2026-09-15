@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { BirthdayBanner } from "@/components/dashboard/BirthdayBanner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Users, Music, Calendar, TrendingUp } from "lucide-react";
@@ -80,6 +81,9 @@ export default function Dashboard() {
     <DashboardLayout title="Painel">
       <div className="space-y-6 animate-fade-in pb-20">
         
+        {/* Banner de Aniversariantes do Dia */}
+        <BirthdayBanner />
+
         {/* Top Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="card-church p-6 flex flex-col gap-2 relative overflow-hidden group">

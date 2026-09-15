@@ -5,12 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { Settings, Mic2, Plus, Key, Copy, Check, Link2, ShieldCheck, DatabaseBackup, Download, RefreshCw } from "lucide-react";
+import { Settings, Mic2, Plus, Key, Copy, Check, Link2, ShieldCheck, DatabaseBackup, Download, RefreshCw, Cake, Gift, Send } from "lucide-react";
 import { toast } from "sonner";
 import { doManualBackup, downloadSystemBackup, listRemoteBackups } from "@/lib/chatBackup";
+import { isBirthdayToday, calculateAge, getWhatsAppBirthdayLink } from "@/lib/birthdays";
 
 export default function Configuracoes() {
-  const [activeTab, setActiveTab] = useState<"geral" | "funcoes" | "acesso" | "backup">("geral");
+  const [activeTab, setActiveTab] = useState<"geral" | "funcoes" | "acesso" | "backup" | "aniversarios">("geral");
   const [newRole, setNewRole] = useState("");
   const [customCode, setCustomCode] = useState("");
   const [isCodeActive, setIsCodeActive] = useState(true);
@@ -221,6 +222,19 @@ export default function Configuracoes() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  // Busca lista de membros para a aba de Aniversários
+  const { data: allMembers = [] } = useQuery({
+    queryKey: ["configMembersBirthdays"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, name, phone, birth_date, roles, avatar_url, status")
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   return (
     <DashboardLayout title="Configurações">
       <div className="space-y-6 animate-fade-in">
@@ -249,6 +263,14 @@ export default function Configuracoes() {
           >
             <Key className="w-4 h-4 mr-2" />
             Código de Acesso
+          </Button>
+          <Button
+            variant={activeTab === "aniversarios" ? "soft" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("aniversarios")}
+          >
+            <Cake className="w-4 h-4 mr-2 text-amber-500" />
+            Aniversários
           </Button>
           <Button
             variant={activeTab === "backup" ? "soft" : "ghost"}
@@ -576,6 +598,101 @@ export default function Configuracoes() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Aniversários */}
+        {activeTab === "aniversarios" && (
+          <div className="space-y-6">
+            <div className="card-church p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-amber-500/10 text-amber-500 rounded-lg">
+                  <Cake className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-semibold text-foreground">
+                    Aniversários do Ministério
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Datas de nascimento dos membros para comemorações e felicitações automáticas.
+                  </p>
+                </div>
+              </div>
+
+              {allMembers.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">Nenhum membro cadastrado.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {allMembers.map((member: any) => {
+                    const isToday = isBirthdayToday(member.birth_date);
+                    const age = calculateAge(member.birth_date);
+                    const whatsappLink = getWhatsAppBirthdayLink(member.name, member.phone);
+
+                    let formattedDate = "Não cadastrada";
+                    if (member.birth_date) {
+                      const parts = member.birth_date.split("-");
+                      if (parts.length >= 3) {
+                        formattedDate = `${parts[2]}/${parts[1]}`;
+                        if (parts[0] && parseInt(parts[0]) > 1900) {
+                          formattedDate += `/${parts[0]}`;
+                        }
+                      }
+                    }
+
+                    return (
+                      <div
+                        key={member.id}
+                        className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+                          isToday 
+                            ? "bg-amber-500/10 border-amber-500/40 shadow-sm" 
+                            : "bg-secondary/20 border-border hover:bg-secondary/40"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center font-bold text-accent">
+                            {member.name.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                              {member.name}
+                              {isToday && (
+                                <span className="text-xs bg-amber-500 text-primary px-2 py-0.5 rounded-full font-bold animate-pulse">
+                                  🎉 HOJE!
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              🎈 Data: <strong className="text-foreground">{formattedDate}</strong>
+                              {age && ` (${age} anos)`}
+                            </p>
+                          </div>
+                        </div>
+
+                        {member.phone ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 text-xs gap-1"
+                            onClick={() => window.open(whatsappLink, "_blank")}
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            Parabéns
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Sem tel.</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 text-xs text-muted-foreground flex items-center justify-between">
+              <span>
+                💡 Cada membro pode atualizar sua própria data de nascimento na página <strong>Meu Perfil</strong>, ou os Administradores podem editar na página <strong>Membros</strong>.
+              </span>
             </div>
           </div>
         )}
