@@ -26,35 +26,29 @@ interface SidebarProps {
 }
 
 const adminNavItems = [
-  { icon: Home, label: "Dashboard", path: "/dashboard" },
   { icon: Calendar, label: "Escalas", path: "/escalas" },
   { icon: Users, label: "Membros", path: "/membros" },
   { icon: Music, label: "Repertório", path: "/repertorio" },
   { icon: ListMusic, label: "Playlists", path: "/playlists" },
   { icon: Bell, label: "Comunicação", path: "/comunicacao" },
-  { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
   { icon: UserCircle, label: "Meu Perfil", path: "/perfil" },
 ];
 
 const editorNavItems = [
-  { icon: Home, label: "Dashboard", path: "/dashboard" },
   { icon: Calendar, label: "Escalas", path: "/escalas" },
   { icon: Music, label: "Repertório", path: "/repertorio" },
   { icon: ListMusic, label: "Playlists", path: "/playlists" },
   { icon: Users, label: "Membros", path: "/membros" },
   { icon: Bell, label: "Comunicação", path: "/comunicacao" },
-  { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
   { icon: UserCircle, label: "Meu Perfil", path: "/perfil" },
 ];
 
 const viewerNavItems = [
-  { icon: Home, label: "Dashboard", path: "/dashboard" },
   { icon: Calendar, label: "Minhas Escalas", path: "/escalas" },
   { icon: Music, label: "Repertório", path: "/repertorio" },
   { icon: ListMusic, label: "Playlists", path: "/playlists" },
   { icon: Bell, label: "Comunicação", path: "/comunicacao" },
-  { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
   { icon: UserCircle, label: "Meu Perfil", path: "/perfil" },
 ];
 
