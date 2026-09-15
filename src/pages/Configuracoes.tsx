@@ -22,14 +22,73 @@ export default function Configuracoes() {
   const queryClient = useQueryClient();
 
   // Estados para Informações do Ministério
-  const [ministryInfo, setMinistryInfo] = useState(() => {
-    const saved = localStorage.getItem("ministryInfo");
-    return saved ? JSON.parse(saved) : { name: "", church: "", email: "", phone: "" };
+  const [ministryInfo, setMinistryInfo] = useState({ id: "", name: "", church: "", email: "", phone: "" });
+
+  // Buscar informações do ministério do Supabase
+  const { isLoading: loadingMinistry } = useQuery({
+    queryKey: ["ministrySettings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ministry_settings")
+        .select("*")
+        .limit(1);
+      
+      if (error) {
+        console.error("Erro ao buscar ministry_settings:", error);
+        return null;
+      }
+      
+      const info = data && data.length > 0 ? data[0] : null;
+      if (info) {
+        setMinistryInfo({
+          id: info.id,
+          name: info.name || "",
+          church: info.church || "",
+          email: info.email || "",
+          phone: info.phone || "",
+        });
+      }
+      return info;
+    },
+  });
+
+  const saveMinistryMutation = useMutation({
+    mutationFn: async () => {
+      if (ministryInfo.id) {
+        const { error } = await supabase
+          .from("ministry_settings")
+          .update({
+            name: ministryInfo.name,
+            church: ministryInfo.church,
+            email: ministryInfo.email,
+            phone: ministryInfo.phone
+          })
+          .eq("id", ministryInfo.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("ministry_settings")
+          .insert([{
+            name: ministryInfo.name,
+            church: ministryInfo.church,
+            email: ministryInfo.email,
+            phone: ministryInfo.phone
+          }]);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ministrySettings"] });
+      toast.success("Informações do ministério salvas com sucesso no banco de dados!");
+    },
+    onError: (error: any) => {
+      console.error(error);
+      toast.error("Erro ao salvar informações: " + error.message);
+    }
   });
 
   const handleSaveMinistryInfo = () => {
-    localStorage.setItem("ministryInfo", JSON.stringify(ministryInfo));
-    toast.success("Configurações gerais salvas com sucesso!");
+    saveMinistryMutation.mutate();
   };
 
   // Buscar funções únicas dos membros
@@ -252,8 +311,12 @@ export default function Configuracoes() {
                 </div>
               </div>
               <div className="mt-6">
-                <Button variant="gold" onClick={handleSaveMinistryInfo}>
-                  Salvar Alterações
+                <Button 
+                  variant="gold" 
+                  onClick={handleSaveMinistryInfo}
+                  disabled={saveMinistryMutation.isPending || loadingMinistry}
+                >
+                  {saveMinistryMutation.isPending ? "Salvando..." : "Salvar Alterações"}
                 </Button>
               </div>
             </div>
