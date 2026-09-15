@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Calendar,
@@ -12,9 +13,12 @@ import {
   ChevronLeft,
   ChevronRight,
   UserCircle,
+  Speaker,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface SidebarProps {
   userRole?: string;
@@ -31,6 +35,7 @@ const adminNavItems = [
   { icon: Users, label: "Membros", path: "/membros" },
   { icon: Music, label: "Repertório", path: "/repertorio" },
   { icon: ListMusic, label: "Playlists", path: "/playlists" },
+  { icon: Speaker, label: "Equipamentos", path: "/equipamentos" },
   { icon: Bell, label: "Comunicação", path: "/comunicacao" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
@@ -42,6 +47,7 @@ const editorNavItems = [
   { icon: Calendar, label: "Escalas", path: "/escalas" },
   { icon: Music, label: "Repertório", path: "/repertorio" },
   { icon: ListMusic, label: "Playlists", path: "/playlists" },
+  { icon: Speaker, label: "Equipamentos", path: "/equipamentos" },
   { icon: Users, label: "Membros", path: "/membros" },
   { icon: Bell, label: "Comunicação", path: "/comunicacao" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
@@ -67,6 +73,30 @@ export function AppSidebar({
   onMobileClose 
 }: SidebarProps) {
   const location = useLocation();
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) {
+      toast.info("Para instalar no iOS/Safari: toque no botão Compartilhar e selecione 'Adicionar à Tela de Início'.");
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      toast.success("Aplicativo instalado no seu dispositivo!");
+    }
+    setDeferredPrompt(null);
+  };
+
   const navItems = userRole === "admin" 
     ? adminNavItems 
     : userRole === "editor" 
@@ -140,6 +170,21 @@ export function AppSidebar({
 
         {/* Footer */}
         <div className="p-3 border-t border-sidebar-border space-y-1.5">
+          {deferredPrompt && (
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start border-accent/40 text-accent hover:bg-accent/10 mb-1",
+                collapsed && "justify-center px-0"
+              )}
+              onClick={handleInstallPWA}
+              title={collapsed ? "Instalar App" : undefined}
+            >
+              <Download className="w-5 h-5 shrink-0 text-accent" />
+              {!collapsed && <span className="ml-2 whitespace-nowrap text-xs font-semibold">Instalar App</span>}
+            </Button>
+          )}
+
           <Button
             variant="ghost"
             className={cn(

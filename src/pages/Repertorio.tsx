@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { getBestSongKey } from "@/lib/worshipKeys";
 import { searchYoutubeVideoId, getOfficialYoutubeUrl } from "@/lib/youtube";
 import { MemberSongKeys } from "@/components/dashboard/MemberSongKeys";
+import { Metronome } from "@/components/dashboard/Metronome";
 
 export default function Repertorio() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,6 +35,10 @@ export default function Repertorio() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isLoadingSearchResults, setIsLoadingSearchResults] = useState(false);
 
+  // Estados para o Modal de Apresentação (Cifra e Metrônomo)
+  const [isPresenting, setIsPresenting] = useState(false);
+  const [presentationSong, setPresentationSong] = useState<any>(null);
+
   // Estados para o Modal de Música
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSearchingWeb, setIsSearchingWeb] = useState(false);
@@ -48,7 +53,8 @@ export default function Repertorio() {
     spotify_url: "",
     cifraclub_url: "",
     audio_url: "",
-    tags: ""
+    tags: "",
+    lyrics: ""
   });
 
   const tones = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B"];
@@ -65,7 +71,8 @@ export default function Repertorio() {
         youtubeUrl: s.youtube_url,
         spotifyUrl: s.spotify_url,
         cifraclubUrl: s.cifraclub_url,
-        audioUrl: s.audio_url
+        audioUrl: s.audio_url,
+        lyrics: s.lyrics
       }));
     }
   });
@@ -81,7 +88,8 @@ export default function Repertorio() {
         spotify_url: formData.spotify_url.trim() || null,
         cifraclub_url: formData.cifraclub_url.trim() || null,
         audio_url: formData.audio_url.trim() || null,
-        tags: formData.tags ? formData.tags.split(",").map(t => t.trim()).filter(Boolean) : []
+        tags: formData.tags ? formData.tags.split(",").map(t => t.trim()).filter(Boolean) : [],
+        lyrics: formData.lyrics.trim() || null
       };
 
       if (!payload.title) {
@@ -140,13 +148,19 @@ export default function Repertorio() {
       spotify_url: "",
       cifraclub_url: "",
       audio_url: "",
-      tags: ""
+      tags: "",
+      lyrics: ""
     });
   };
 
   const handleOpenNewSong = () => {
     resetForm();
     setIsDialogOpen(true);
+  };
+
+  const handleOpenPresentation = (song: any) => {
+    setPresentationSong(song);
+    setIsPresenting(true);
   };
 
   const handleOpenEditSong = (song: any) => {
@@ -165,7 +179,8 @@ export default function Repertorio() {
       spotify_url: song.spotify_url || "",
       cifraclub_url: song.cifraclub_url || "",
       audio_url: song.audio_url || "",
-      tags: song.tags ? song.tags.join(", ") : ""
+      tags: song.tags ? song.tags.join(", ") : "",
+      lyrics: song.lyrics || ""
     });
     setIsDialogOpen(true);
   };
@@ -578,6 +593,7 @@ export default function Repertorio() {
                   showActions={userRole === "admin" || userRole === "editor"}
                   onEdit={() => handleOpenEditSong(song)}
                   onDelete={() => handleDeleteSong(song.id)}
+                  onView={() => handleOpenPresentation(song)}
                 />
               </div>
             ))}
@@ -795,6 +811,17 @@ export default function Repertorio() {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="song-lyrics">Letra / Cifra (Opcional)</Label>
+                  <textarea
+                    id="song-lyrics"
+                    value={formData.lyrics}
+                    onChange={(e) => setFormData({ ...formData, lyrics: e.target.value })}
+                    placeholder="Cole a letra ou cifra completa aqui para ver no modo apresentação..."
+                    className="flex min-h-[150px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+
                 {/* Tons Específicos por Cantor */}
                 {editingSong && <MemberSongKeys songId={editingSong.id} />}
 
@@ -904,6 +931,49 @@ export default function Repertorio() {
         </DialogContent>
       </Dialog>
 
+      {/* Modal de Apresentação (Cifras e Metrônomo) */}
+      <Dialog open={isPresenting} onOpenChange={setIsPresenting}>
+        <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col p-0 overflow-hidden bg-background">
+          <DialogHeader className="p-6 pb-2 border-b border-border shrink-0">
+            <DialogTitle className="flex justify-between items-center text-xl">
+              <div>
+                <span className="font-display font-bold">{presentationSong?.title}</span>
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  {presentationSong?.artist}
+                </span>
+              </div>
+              <div className="flex gap-2 items-center text-sm font-normal">
+                <span className="px-3 py-1 rounded-full bg-accent/20 text-accent font-semibold border border-accent/30">
+                  Tom: {presentationSong?.key}
+                </span>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-6 text-lg font-mono leading-relaxed bg-[#1e1e1e] text-[#d4d4d4] whitespace-pre-wrap">
+              {presentationSong?.lyrics ? (
+                presentationSong.lyrics
+              ) : (
+                <div className="flex h-full items-center justify-center text-muted-foreground/50 text-center font-sans">
+                  Nenhuma letra ou cifra cadastrada para esta música.<br/>
+                  Clique em Editar e cole a cifra completa lá.
+                </div>
+              )}
+            </div>
+            
+            {presentationSong?.bpm && (
+              <div className="w-64 border-l border-border p-6 bg-card flex flex-col gap-4">
+                <h4 className="font-semibold text-sm">Controles de Apresentação</h4>
+                <Metronome bpm={parseInt(presentationSong.bpm)} />
+                <p className="text-xs text-muted-foreground mt-4 leading-normal">
+                  Use o metrônomo visual para garantir que a banda comece a música no tempo correto. O andamento cadastrado para esta música é de {presentationSong.bpm} batidas por minuto.
+                </p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 .vs
 .vs/
+scratch/
+cifra_sample.html

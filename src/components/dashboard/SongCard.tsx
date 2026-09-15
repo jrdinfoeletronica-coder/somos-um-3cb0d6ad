@@ -17,6 +17,7 @@ interface SongCardProps {
   showActions?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
+  onView?: () => void;
 }
 
 const formatUrl = (url: string) => {
@@ -50,6 +51,7 @@ export function SongCard({
   showActions = false,
   onEdit,
   onDelete,
+  onView,
 }: SongCardProps) {
   if (variant === "compact") {
     return (
@@ -107,7 +109,7 @@ export function SongCard({
         </div>
       </div>
 
-      {(youtubeUrl || spotifyUrl || cifraclubUrl || audioUrl || showActions) && (
+      {(youtubeUrl || spotifyUrl || cifraclubUrl || audioUrl || showActions || onView) && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-border">
           <div className="flex flex-wrap items-center gap-2">
             {cifraclubUrl && (
@@ -153,21 +155,28 @@ export function SongCard({
               </Button>
             )}
           </div>
-          {showActions && (
             <div className="flex items-center gap-2 justify-end sm:ml-auto">
-              <Button variant="soft" size="sm" onClick={onEdit} className="h-8">
-                Editar
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onDelete}
-                className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                Remover
-              </Button>
+              {onView && (
+                <Button variant="soft" size="sm" onClick={onView} className="h-8">
+                  Visualizar Cifra
+                </Button>
+              )}
+              {showActions && (
+                <>
+                  <Button variant="soft" size="sm" onClick={onEdit} className="h-8">
+                    Editar
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onDelete}
+                    className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    Remover
+                  </Button>
+                </>
+              )}
             </div>
-          )}
         </div>
       )}
     </div>

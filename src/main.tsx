@@ -41,6 +41,20 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   }
 }
 
+// Registra o Service Worker para PWA e Notificações Push
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(
+      (registration) => {
+        console.log('[PWA] Service Worker registrado com sucesso no escopo:', registration.scope);
+      },
+      (err) => {
+        console.warn('[PWA] Falha ao registrar Service Worker:', err);
+      }
+    );
+  });
+}
+
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>
     <App />
