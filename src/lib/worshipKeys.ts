@@ -2349,7 +2349,7 @@ export async function getBestSongKey(artist: string, title: string): Promise<{ k
     return parseKeyAndMode(localKey);
   }
 
-  // 2. Se não encontrar no banco local, retorna C Maior imediatamente
-  return { key: "C", keyMode: "Maior", fullKey: "C" };
+  // 2. Se não encontrar no banco local, retorna em branco
+  return { key: "", keyMode: "Maior", fullKey: "" };
 }
 
