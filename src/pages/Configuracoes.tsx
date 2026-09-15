@@ -21,6 +21,17 @@ export default function Configuracoes() {
   const [doingBackup, setDoingBackup] = useState(false);
   const queryClient = useQueryClient();
 
+  // Estados para Informações do Ministério
+  const [ministryInfo, setMinistryInfo] = useState(() => {
+    const saved = localStorage.getItem("ministryInfo");
+    return saved ? JSON.parse(saved) : { name: "", church: "", email: "", phone: "" };
+  });
+
+  const handleSaveMinistryInfo = () => {
+    localStorage.setItem("ministryInfo", JSON.stringify(ministryInfo));
+    toast.success("Configurações gerais salvas com sucesso!");
+  };
+
   // Buscar funções únicas dos membros
   const { data: roles = [], isLoading } = useQuery({
     queryKey: ["roles"],
@@ -202,29 +213,48 @@ export default function Configuracoes() {
                   <label className="text-sm font-medium text-foreground">
                     Nome do Ministério
                   </label>
-                  <Input placeholder="Ex: Ministério de Louvor Central" />
+                  <Input 
+                    placeholder="Ex: Ministério de Louvor Central" 
+                    value={ministryInfo.name}
+                    onChange={(e) => setMinistryInfo({ ...ministryInfo, name: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">
                     Nome da Igreja
                   </label>
-                  <Input placeholder="Ex: Igreja Evangélica" />
+                  <Input 
+                    placeholder="Ex: Igreja Evangélica" 
+                    value={ministryInfo.church}
+                    onChange={(e) => setMinistryInfo({ ...ministryInfo, church: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">
                     Email de Contato
                   </label>
-                  <Input type="email" placeholder="contato@igreja.com" />
+                  <Input 
+                    type="email" 
+                    placeholder="contato@igreja.com" 
+                    value={ministryInfo.email}
+                    onChange={(e) => setMinistryInfo({ ...ministryInfo, email: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">
                     Telefone
                   </label>
-                  <Input placeholder="(00) 00000-0000" />
+                  <Input 
+                    placeholder="(00) 00000-0000" 
+                    value={ministryInfo.phone}
+                    onChange={(e) => setMinistryInfo({ ...ministryInfo, phone: e.target.value })}
+                  />
                 </div>
               </div>
               <div className="mt-6">
-                <Button variant="gold" onClick={() => toast.success("Configurações gerais salvas com sucesso!")}>Salvar Alterações</Button>
+                <Button variant="gold" onClick={handleSaveMinistryInfo}>
+                  Salvar Alterações
+                </Button>
               </div>
             </div>
           </div>
