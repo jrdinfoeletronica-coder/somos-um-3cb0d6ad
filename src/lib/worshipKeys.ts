@@ -2337,10 +2337,23 @@ export function parseKeyAndMode(rawKey: string | null): { key: string; keyMode: 
   return { key: baseKey, keyMode: "Maior", fullKey: baseKey };
 }
 
-import { fetchSpotifyKey } from "./spotifyApi";
+export async function fetchVercelTone(artist: string, title: string): Promise<{ key: string; keyMode: "Maior" | "Menor"; fullKey: string } | null> {
+  try {
+    const url = `/api/tone?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.key) {
+      return parseKeyAndMode(data.key);
+    }
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
 
 /**
- * Tenta identificar o tom original primeiro no banco interno e depois via API do Spotify.
+ * Tenta identificar o tom original primeiro no banco interno e depois via servidor proxy.
  */
 export async function getBestSongKey(artist: string, title: string): Promise<{ key: string; keyMode: "Maior" | "Menor"; fullKey: string }> {
   // 1. Tenta banco de dados local (instantâneo)
@@ -2349,12 +2362,12 @@ export async function getBestSongKey(artist: string, title: string): Promise<{ k
     return parseKeyAndMode(localKey);
   }
 
-  // 2. Tenta busca online no Spotify
+  // 2. Tenta busca via servidor
   try {
-    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
-    const spotifyKey = await Promise.race([fetchSpotifyKey(artist, title), timeoutPromise]);
-    if (spotifyKey) {
-      return spotifyKey;
+    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+    const serverKey = await Promise.race([fetchVercelTone(artist, title), timeoutPromise]);
+    if (serverKey) {
+      return serverKey;
     }
   } catch {
     // Falha silenciosa
