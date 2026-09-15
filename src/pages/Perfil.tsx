@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { UserCircle, Camera, Loader2, Save, CalendarOff, Trash2 } from "lucide-react";
+import { UserCircle, Camera, Loader2, Save, CalendarOff, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -256,26 +256,49 @@ export default function Perfil() {
                   )}
                 </div>
                 
-                {/* Botão de Câmera invisível até o hover, ou sempre visível no mobile */}
-                <label 
-                  htmlFor="photo-upload" 
-                  className="absolute bottom-0 right-0 w-10 h-10 bg-accent hover:bg-accent/90 text-primary rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-transform duration-200 hover:scale-110"
-                  title="Alterar foto"
-                >
-                  {uploading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Camera className="w-5 h-5" />
-                  )}
-                  <input 
-                    id="photo-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePhotoUpload}
-                    disabled={uploading}
-                  />
-                </label>
+                {/* Botões para foto */}
+                <div className="absolute -bottom-2 -right-2 flex space-x-2">
+                  <label 
+                    htmlFor="photo-capture" 
+                    className="w-10 h-10 bg-accent hover:bg-accent/90 text-primary rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-transform duration-200 hover:scale-110"
+                    title="Tirar foto com a câmera"
+                  >
+                    {uploading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Camera className="w-4 h-4" />
+                    )}
+                    <input 
+                      id="photo-capture"
+                      type="file"
+                      accept="image/*"
+                      capture="user"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                      disabled={uploading}
+                    />
+                  </label>
+                  
+                  <label 
+                    htmlFor="photo-upload" 
+                    className="w-10 h-10 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-transform duration-200 hover:scale-110"
+                    title="Escolher arquivo"
+                  >
+                    {uploading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    <input 
+                      id="photo-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                      disabled={uploading}
+                    />
+                  </label>
+                </div>
               </div>
               <h2 className="text-xl font-bold font-display">{formData.name || "Seu Nome"}</h2>
               <p className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
