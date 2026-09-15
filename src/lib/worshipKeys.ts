@@ -2337,9 +2337,10 @@ export function parseKeyAndMode(rawKey: string | null): { key: string; keyMode: 
   return { key: baseKey, keyMode: "Maior", fullKey: baseKey };
 }
 
+import { fetchSpotifyKey } from "./spotifyApi";
+
 /**
- * Tenta identificar o tom original primeiro no banco interno e depois via scraping online do Cifra Club.
- * Timeout de 3s no Cifra Club para não travar o fluxo de importação.
+ * Tenta identificar o tom original primeiro no banco interno e depois via API do Spotify.
  */
 export async function getBestSongKey(artist: string, title: string): Promise<{ key: string; keyMode: "Maior" | "Menor"; fullKey: string }> {
   // 1. Tenta banco de dados local (instantâneo)
@@ -2348,15 +2349,15 @@ export async function getBestSongKey(artist: string, title: string): Promise<{ k
     return parseKeyAndMode(localKey);
   }
 
-  // 2. Tenta busca online no Cifra Club com timeout de 3 segundos
+  // 2. Tenta busca online no Spotify
   try {
     const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
-    const onlineKey = await Promise.race([fetchCifraClubKey(artist, title), timeoutPromise]);
-    if (onlineKey) {
-      return parseKeyAndMode(onlineKey);
+    const spotifyKey = await Promise.race([fetchSpotifyKey(artist, title), timeoutPromise]);
+    if (spotifyKey) {
+      return spotifyKey;
     }
   } catch {
-    // Falha silenciosa, usa padrão abaixo
+    // Falha silenciosa
   }
 
   return { key: "C", keyMode: "Maior", fullKey: "C" };

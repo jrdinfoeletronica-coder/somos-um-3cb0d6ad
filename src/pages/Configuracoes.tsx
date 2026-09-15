@@ -21,6 +21,12 @@ export default function Configuracoes() {
   const [doingBackup, setDoingBackup] = useState(false);
   const queryClient = useQueryClient();
 
+  // Estados para API do Spotify
+  const [spotifyKeys, setSpotifyKeys] = useState({
+    clientId: localStorage.getItem("spotify_client_id") || "",
+    clientSecret: localStorage.getItem("spotify_client_secret") || ""
+  });
+
   // Estados para Informações do Ministério
   const [ministryInfo, setMinistryInfo] = useState({ id: "", name: "", church: "", email: "", phone: "" });
 
@@ -79,6 +85,9 @@ export default function Configuracoes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ministrySettings"] });
+      // Salva chaves do Spotify localmente
+      localStorage.setItem("spotify_client_id", spotifyKeys.clientId);
+      localStorage.setItem("spotify_client_secret", spotifyKeys.clientSecret);
       toast.success("Informações do ministério salvas com sucesso no banco de dados!");
     },
     onError: (error: any) => {
@@ -310,6 +319,39 @@ export default function Configuracoes() {
                   />
                 </div>
               </div>
+
+              <div className="mt-8 pt-6 border-t border-border">
+                <h3 className="font-display text-lg font-semibold text-foreground mb-4">
+                  Integração Spotify (Busca de Tom)
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Para buscar o tom automático usando o Spotify, crie um App no <strong>Spotify for Developers</strong> e cole as chaves abaixo. (As chaves ficam salvas apenas no seu navegador).
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      Client ID
+                    </label>
+                    <Input 
+                      placeholder="Cole o Client ID" 
+                      value={spotifyKeys.clientId}
+                      onChange={(e) => setSpotifyKeys({ ...spotifyKeys, clientId: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      Client Secret
+                    </label>
+                    <Input 
+                      type="password"
+                      placeholder="Cole o Client Secret" 
+                      value={spotifyKeys.clientSecret}
+                      onChange={(e) => setSpotifyKeys({ ...spotifyKeys, clientSecret: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="mt-6">
                 <Button 
                   variant="gold" 
