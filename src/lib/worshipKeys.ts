@@ -2334,6 +2334,10 @@ export function parseKeyAndMode(rawKey: string | null): { key: string; keyMode: 
   if (isMinor) {
     return { key: baseKey, keyMode: "Menor", fullKey: `${baseKey} Menor` };
   }
+
+  return { key: baseKey, keyMode: "Maior", fullKey: baseKey };
+}
+
 /**
  * Identifica o tom original usando EXCLUSIVAMENTE o banco de dados interno local.
  * Isso garante que a busca seja instantânea (0 milissegundos) e não dependa da internet ou do Cifra Club.
