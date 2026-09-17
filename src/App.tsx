@@ -19,6 +19,7 @@ import Confirmar from "./pages/Confirmar";
 import NotFound from "./pages/NotFound";
 import Playlists from "./pages/Playlists";
 import Equipamentos from "./pages/Equipamentos";
+import Caixinha from "./pages/Caixinha";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -43,6 +44,7 @@ const App = () => (
           <Route path="/confirmar" element={<Confirmar />} />
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/equipamentos" element={<Equipamentos />} />
+          <Route path="/caixinha" element={<Caixinha />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

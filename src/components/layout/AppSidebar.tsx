@@ -15,6 +15,7 @@ import {
   UserCircle,
   Speaker,
   Download,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ const adminNavItems = [
   { icon: Bell, label: "Comunicação", path: "/comunicacao" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
+  { icon: Wallet, label: "Caixinha", path: "/caixinha" },
   { icon: UserCircle, label: "Meu Perfil", path: "/perfil" },
 ];
 
@@ -51,6 +53,7 @@ const editorNavItems = [
   { icon: Users, label: "Membros", path: "/membros" },
   { icon: Bell, label: "Comunicação", path: "/comunicacao" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
+  { icon: Wallet, label: "Caixinha", path: "/caixinha" },
   { icon: UserCircle, label: "Meu Perfil", path: "/perfil" },
 ];
 
@@ -61,6 +64,7 @@ const viewerNavItems = [
   { icon: ListMusic, label: "Playlists", path: "/playlists" },
   { icon: Bell, label: "Comunicação", path: "/comunicacao" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
+  { icon: Wallet, label: "Caixinha", path: "/caixinha" },
   { icon: UserCircle, label: "Meu Perfil", path: "/perfil" },
 ];
 

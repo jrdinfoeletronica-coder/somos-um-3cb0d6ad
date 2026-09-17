@@ -2,7 +2,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { BirthdayBanner } from "@/components/dashboard/BirthdayBanner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { Users, Music, Calendar, TrendingUp } from "lucide-react";
+import { Users, Music, Calendar, TrendingUp, Wallet } from "lucide-react";
 import { format, isAfter, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -77,6 +77,25 @@ export default function Dashboard() {
     staleTime: 0
   });
 
+  // 5. Saldo da Caixinha
+  const { data: caixinhaBalance } = useQuery({
+    queryKey: ["caixinhaBalance"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("transactions").select("amount, type");
+      if (error || !data) return 0;
+      
+      const income = data.filter(t => t.type === "income").reduce((acc, curr) => acc + Number(curr.amount), 0);
+      const expense = data.filter(t => t.type === "expense").reduce((acc, curr) => acc + Number(curr.amount), 0);
+      return income - expense;
+    },
+    refetchOnMount: "always",
+    staleTime: 0
+  });
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+  };
+
   return (
     <DashboardLayout title="Painel">
       <div className="space-y-6 animate-fade-in pb-20">
@@ -84,8 +103,7 @@ export default function Dashboard() {
         {/* Banner de Aniversariantes do Dia */}
         <BirthdayBanner />
 
-        {/* Top Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div className="card-church p-6 flex flex-col gap-2 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
               <Users size={64} />
@@ -105,6 +123,19 @@ export default function Dashboard() {
             </p>
             <h3 className="text-4xl font-bold text-foreground">{songsCount ?? "..."}</h3>
             <p className="text-xs text-muted-foreground">Louvores cadastrados</p>
+          </div>
+
+          <div className="card-church p-6 flex flex-col gap-2 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Wallet size={64} />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Wallet size={16} className="text-gold" /> Caixinha
+            </p>
+            <h3 className={`text-3xl font-bold ${caixinhaBalance !== undefined && caixinhaBalance < 0 ? 'text-red-500' : 'text-foreground'}`}>
+              {caixinhaBalance !== undefined ? formatCurrency(caixinhaBalance) : "..."}
+            </h3>
+            <p className="text-xs text-muted-foreground">Saldo atual</p>
           </div>
 
           <div className="card-church p-6 flex flex-col gap-2 relative overflow-hidden group lg:col-span-2">

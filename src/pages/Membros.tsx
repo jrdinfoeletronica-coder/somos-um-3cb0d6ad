@@ -287,6 +287,7 @@ export default function Membros() {
               >
                 <MemberCard
                   {...member}
+                  avatar={member.avatar_url}
                   showActions={userRole === "admin"}
                   onEdit={() => handleOpenEditMember(member)}
                   onDelete={() => handleDeleteMember(member.id)}

@@ -68,10 +68,10 @@ export function getWhatsAppBirthdayLink(name: string, phone?: string | null): st
   if (cleanPhone) {
     // Adiciona DDI 55 caso não tenha
     const fullPhone = cleanPhone.length <= 11 ? `55${cleanPhone}` : cleanPhone;
-    return `https://wa.me/${fullPhone}?text=${text}`;
+    return `https://web.whatsapp.com/send?phone=${fullPhone}&text=${text}`;
   }
 
-  return `https://wa.me/?text=${text}`;
+  return `https://web.whatsapp.com/send?text=${text}`;
 }
 
 /**
