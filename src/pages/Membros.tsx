@@ -41,7 +41,8 @@ export default function Membros() {
     status: "active" as "active" | "inactive",
     access_level: "viewer" as "admin" | "editor" | "viewer",
     experience_level: "Intermediário",
-    available_days: [] as number[]
+    available_days: [] as number[],
+    is_treasurer: false
   });
 
   const userRole = localStorage.getItem("userRole") || "viewer";
@@ -86,7 +87,8 @@ export default function Membros() {
         status: formData.status,
         access_level: formData.access_level,
         experience_level: formData.experience_level,
-        available_days: formData.available_days.length > 0 ? formData.available_days : null
+        available_days: formData.available_days.length > 0 ? formData.available_days : null,
+        is_treasurer: formData.is_treasurer
       };
 
       if (!payload.name) {
@@ -161,7 +163,8 @@ export default function Membros() {
       status: "active",
       access_level: "viewer",
       experience_level: "Intermediário",
-      available_days: []
+      available_days: [],
+      is_treasurer: false
     });
   };
 
@@ -181,7 +184,8 @@ export default function Membros() {
       status: member.status || "active",
       access_level: member.access_level || "viewer",
       experience_level: member.experience_level || "Intermediário",
-      available_days: member.available_days || []
+      available_days: member.available_days || [],
+      is_treasurer: member.is_treasurer || false
     });
     setIsDialogOpen(true);
   };
@@ -410,6 +414,20 @@ export default function Membros() {
                     <option value="Experiente">Experiente</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Opções Extras (Tesoureiro) */}
+              <div className="flex items-center space-x-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="member-treasurer"
+                  checked={formData.is_treasurer}
+                  onChange={(e) => setFormData({ ...formData, is_treasurer: e.target.checked })}
+                  className="w-4 h-4 rounded border-input bg-background text-gold focus:ring-gold"
+                />
+                <Label htmlFor="member-treasurer" className="cursor-pointer">
+                  Designar como Tesoureiro (Acesso total à Caixinha)
+                </Label>
               </div>
 
               {/* Funções do Louvor */}

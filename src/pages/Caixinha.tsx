@@ -35,6 +35,19 @@ export default function Caixinha() {
     date: new Date().toISOString().split('T')[0],
   });
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["currentUser", memberId],
+    queryFn: async () => {
+      if (!memberId) return null;
+      const { data } = await supabase.from("members").select("is_treasurer").eq("id", memberId).single();
+      return data;
+    },
+    enabled: !!memberId
+  });
+
+  const isTreasurer = currentUser?.is_treasurer || false;
+  const canManage = userRole === "admin" || isTreasurer;
+
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["transactions"],
     queryFn: async () => {
@@ -133,7 +146,7 @@ export default function Caixinha() {
         {/* Header Actions */}
         <div className="flex justify-between items-center">
           <p className="text-muted-foreground">Controle financeiro do ministério</p>
-          {(userRole === "admin" || userRole === "editor") && (
+          {canManage && (
             <Button variant="gold" onClick={() => setIsModalOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Nova Transação
@@ -215,7 +228,7 @@ export default function Caixinha() {
                       <span className={`font-semibold ${t.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
                         {t.type === 'income' ? '+' : '-'} {formatCurrency(Number(t.amount))}
                       </span>
-                      {(userRole === "admin" || userRole === "editor") && (
+                      {canManage && (
                         <button 
                           onClick={() => handleDelete(t.id)}
                           className="text-muted-foreground hover:text-red-500 transition-colors p-1"
@@ -312,8 +325,8 @@ export default function Caixinha() {
                     {formData.type === "income" ? (
                       <>
                         <option value="Oferta">Oferta</option>
-                        <option value="Dízimo">Dízimo</option>
                         <option value="Evento">Evento / Cantina</option>
+                        <option value="Patrocínio">Patrocínio</option>
                         <option value="Outro">Outro</option>
                       </>
                     ) : (
