@@ -933,7 +933,7 @@ export default function Playlists() {
               </Button>
             </div>
 
-            <ScrollArea className="border border-border rounded-xl" style={{ height: '400px' }}>
+            <div className="border border-border rounded-xl overflow-auto scroll-both" style={{ height: '400px' }}>
               <div className="p-3 space-y-2">
 
                 {/* Resultados da internet */}
@@ -1025,7 +1025,7 @@ export default function Playlists() {
                   })
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </div>
           <DialogFooter className="pt-3 border-t border-border">
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Fechar</Button>
