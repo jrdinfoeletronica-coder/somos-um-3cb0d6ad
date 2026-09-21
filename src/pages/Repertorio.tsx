@@ -870,22 +870,22 @@ export default function Repertorio() {
 
                     return (
                       <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 hover:bg-muted/30 transition-colors">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           {song.artworkUrl100 ? (
                             <img 
                               src={song.artworkUrl100} 
                               alt={song.trackName} 
-                              className="w-12 h-12 rounded-lg object-cover border"
+                              className="w-12 h-12 rounded-lg object-cover border shrink-0"
                             />
                           ) : (
-                            <div className="w-12 h-12 rounded-lg bg-accent/20 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
                               <Music className="w-5 h-5 text-accent" />
                             </div>
                           )}
-                          <div>
-                            <h4 className="font-semibold text-foreground text-sm sm:text-base">{song.trackName}</h4>
-                            <p className="text-xs sm:text-sm text-muted-foreground">{song.artistName}</p>
-                            <span className="text-[10px] bg-secondary px-2 py-0.5 rounded text-muted-foreground mt-1 inline-block">
+                          <div className="min-w-0">
+                            <h4 className="font-semibold text-foreground text-sm sm:text-base truncate">{song.trackName}</h4>
+                            <p className="text-xs sm:text-sm text-muted-foreground truncate">{song.artistName}</p>
+                            <span className="text-[10px] bg-secondary px-2 py-0.5 rounded text-muted-foreground mt-1 inline-block truncate max-w-full">
                               {exists ? "Já no Repertório" : "Sugestão da Internet"}
                             </span>
                           </div>
