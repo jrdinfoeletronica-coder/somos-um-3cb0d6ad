@@ -237,3 +237,30 @@ div:has(> a[href*="lovable.dev"]) {
 .chat-scroll::-webkit-scrollbar-track { background: transparent; }
 .chat-scroll::-webkit-scrollbar-thumb { background: hsl(var(--accent) / 0.5); border-radius: 10px; }
 .chat-scroll::-webkit-scrollbar-thumb:hover { background: hsl(var(--accent)); }
+
+/* Barras de rolagem sempre visíveis (vertical + horizontal) */
+.scroll-both {
+  overflow-x: auto;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--accent) / 0.6) hsl(var(--muted));
+}
+.scroll-both::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.scroll-both::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 10px;
+}
+.scroll-both::-webkit-scrollbar-thumb {
+  background: hsl(var(--accent) / 0.7);
+  border-radius: 10px;
+  border: 2px solid hsl(var(--muted));
+}
+.scroll-both::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--accent));
+}
+.scroll-both::-webkit-scrollbar-corner {
+  background: hsl(var(--muted));
+}
