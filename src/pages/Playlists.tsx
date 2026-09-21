@@ -946,7 +946,7 @@ export default function Playlists() {
                       const tid = String(result.trackId);
                       const isAdding = addingId === tid;
                       return (
-                        <div key={tid} className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/40 bg-background transition-all">
+                        <div key={tid} className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/40 bg-background transition-all w-max min-w-full">
                           {result.artworkUrl60 && (
                             <img src={result.artworkUrl60} alt="" className="w-11 h-11 rounded-lg object-cover shrink-0" />
                           )}
@@ -988,7 +988,7 @@ export default function Playlists() {
                       <div
                         key={song.id}
                         className={cn(
-                          "flex items-center gap-3 p-3 rounded-xl border transition-all",
+                          "flex items-center gap-3 p-3 rounded-xl border transition-all w-max min-w-full",
                           alreadyIn
                             ? "border-primary/30 bg-primary/5 opacity-60"
                             : "border-border hover:border-accent/40 bg-background"
