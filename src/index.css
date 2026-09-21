@@ -264,3 +264,19 @@ div:has(> a[href*="lovable.dev"]) {
 .scroll-both::-webkit-scrollbar-corner {
   background: hsl(var(--muted));
 }
+
+/* Segurança responsiva: a página nunca rola horizontalmente */
+html,
+body {
+  overflow-x: hidden;
+}
+
+/* Notificações nunca ultrapassam a largura da tela no celular */
+[data-sonner-toaster] {
+  max-width: 100vw;
+}
+@media (max-width: 640px) {
+  [data-sonner-toaster] [data-sonner-toast] {
+    width: calc(100vw - 32px);
+  }
+}
