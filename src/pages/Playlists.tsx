@@ -933,7 +933,7 @@ export default function Playlists() {
               </Button>
             </div>
 
-            <ScrollArea className="border border-border rounded-xl" style={{ height: '400px' }}>
+            <div className="border border-border rounded-xl overflow-auto scroll-both" style={{ height: '400px' }}>
               <div className="p-3 space-y-2">
 
                 {/* Resultados da internet */}
@@ -946,13 +946,13 @@ export default function Playlists() {
                       const tid = String(result.trackId);
                       const isAdding = addingId === tid;
                       return (
-                        <div key={tid} className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/40 bg-background transition-all">
+                        <div key={tid} className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-accent/40 bg-background transition-all w-max min-w-full">
                           {result.artworkUrl60 && (
                             <img src={result.artworkUrl60} alt="" className="w-11 h-11 rounded-lg object-cover shrink-0" />
                           )}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-foreground truncate text-sm">{result.trackName}</p>
-                            <p className="text-xs text-muted-foreground truncate">{result.artistName}</p>
+                          <div className="flex-1 whitespace-nowrap">
+                            <p className="font-semibold text-foreground whitespace-nowrap text-sm">{result.trackName}</p>
+                            <p className="text-xs text-muted-foreground whitespace-nowrap">{result.artistName}</p>
                           </div>
                           <Button
                             size="sm"
@@ -988,7 +988,7 @@ export default function Playlists() {
                       <div
                         key={song.id}
                         className={cn(
-                          "flex items-center gap-3 p-3 rounded-xl border transition-all",
+                          "flex items-center gap-3 p-3 rounded-xl border transition-all w-max min-w-full",
                           alreadyIn
                             ? "border-primary/30 bg-primary/5 opacity-60"
                             : "border-border hover:border-accent/40 bg-background"
@@ -997,9 +997,9 @@ export default function Playlists() {
                         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent/20 to-accent/10 flex items-center justify-center shrink-0">
                           <Music className="w-4 h-4 text-accent" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground truncate text-sm">{song.title}</p>
-                          <p className="text-xs text-muted-foreground truncate">{song.artist || "—"}</p>
+                        <div className="flex-1 whitespace-nowrap">
+                          <p className="font-semibold text-foreground whitespace-nowrap text-sm">{song.title}</p>
+                          <p className="text-xs text-muted-foreground whitespace-nowrap">{song.artist || "—"}</p>
                         </div>
                         {song.key && (
                           <span className="px-2 py-0.5 bg-accent/10 rounded text-xs font-bold text-accent shrink-0">{song.key}</span>
@@ -1025,7 +1025,7 @@ export default function Playlists() {
                   })
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </div>
           <DialogFooter className="pt-3 border-t border-border">
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>Fechar</Button>
