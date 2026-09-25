@@ -202,16 +202,23 @@ export default function Playlists() {
 
     const initOrLoadYT = () => {
       const win = window as any;
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.loadVideoById === "function") {
-        try {
-          ytPlayerRef.current.loadVideoById(resolvedVideoId);
-          ytPlayerRef.current.seekTo(0);
-          ytPlayerRef.current.playVideo();
-        } catch (e) {
-          console.error("Erro ao forçar play do YouTube", e);
+      
+      if (ytPlayerRef.current) {
+        // Se o player já existe, tenta carregar o vídeo se a API já estiver pronta
+        if (typeof ytPlayerRef.current.loadVideoById === "function") {
+          try {
+            ytPlayerRef.current.loadVideoById(resolvedVideoId);
+            ytPlayerRef.current.seekTo(0);
+            ytPlayerRef.current.playVideo();
+          } catch (e) {
+            console.error("Erro ao forçar play do YouTube", e);
+          }
+          setIsPlaying(true);
         }
-        setIsPlaying(true);
+        // Se não for função ainda, significa que onReady não disparou.
+        // Não criamos outro player. O evento onReady fará o play do vídeo atual.
       } else if (win.YT && win.YT.Player) {
+        // Só criamos um novo player se não existir NENHUM
         try {
           ytPlayerRef.current = new win.YT.Player("yt-player-element", {
             height: "1",

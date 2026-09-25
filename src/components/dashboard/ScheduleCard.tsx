@@ -28,6 +28,7 @@ export function ScheduleCard({
   event,
   location,
   members,
+  songs = [],
   status = "pending",
   onConfirm,
   onDecline,
