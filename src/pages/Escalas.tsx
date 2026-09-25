@@ -227,7 +227,8 @@ export default function Escalas() {
         const membersPayload = assignedMembers.map((m) => ({
           schedule_id: scheduleId,
           member_name: m.name,
-          role: m.role
+          role: m.role,
+          status: m.status || 'pending'
         }));
         const { error: insertMembersError } = await supabase.from("schedule_members").insert(membersPayload);
         if (insertMembersError) throw insertMembersError;

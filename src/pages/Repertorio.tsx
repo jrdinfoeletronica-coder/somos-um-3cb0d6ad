@@ -23,12 +23,24 @@ import {
 import { MemberSongKeys } from "@/components/dashboard/MemberSongKeys";
 import { Metronome } from "@/components/dashboard/Metronome";
 
+import { useLocation } from "react-router-dom";
+import { useEffect } from "react";
+
 export default function Repertorio() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const location = useLocation();
+  const [searchQuery, setSearchQuery] = useState(location.state?.search || "");
   const [themeSearchQuery, setThemeSearchQuery] = useState("");
   const [selectedTone, setSelectedTone] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const userRole = localStorage.getItem("userRole") || "viewer";
+
+  useEffect(() => {
+    if (location.state?.search) {
+      setSearchQuery(location.state.search);
+      // Limpa o state para nǜo manter na navegaǜo
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
 
   

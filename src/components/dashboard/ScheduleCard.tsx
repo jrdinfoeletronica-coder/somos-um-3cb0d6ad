@@ -1,5 +1,7 @@
-import { Calendar, Clock, MapPin, Users } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface ScheduleCardProps {
@@ -40,6 +42,10 @@ export function ScheduleCard({
   onConfirmMember,
   onDeclineMember,
 }: ScheduleCardProps) {
+  const [isMembersOpen, setIsMembersOpen] = useState(false);
+  const [isSongsOpen, setIsSongsOpen] = useState(false);
+  const navigate = useNavigate();
+
   const statusConfig: Record<string, { bg: string, text: string, label: string }> = {
     confirmed: {
       bg: "bg-green-50 border-green-200",
@@ -103,53 +109,74 @@ export function ScheduleCard({
 
       {/* Members */}
       <div className="flex-1 space-y-3 pt-2 pl-2">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground border-b border-border/50 pb-1">
-          <Users className="w-4 h-4 text-accent" />
-          <span>Equipe ({members.length})</span>
+        <div 
+          className="flex items-center justify-between gap-2 text-sm font-semibold text-foreground border-b border-border/50 pb-1 cursor-pointer hover:text-accent transition-colors"
+          onClick={() => setIsMembersOpen(!isMembersOpen)}
+        >
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-accent" />
+            <span>Equipe ({members.length})</span>
+          </div>
+          {isMembersOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
-        <div className="flex flex-wrap gap-2">
-          {members.map((member, index) => (
-            <div
-              key={index}
-              className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-lg"
-            >
-              <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
-                <span className="text-xs font-medium text-accent">
-                  {member.name.charAt(0)}
-                </span>
+        {isMembersOpen && (
+          <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+            {members.map((member, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-lg"
+              >
+                <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
+                  <span className="text-xs font-medium text-accent">
+                    {member.name.charAt(0)}
+                  </span>
+                </div>
+                <div className="text-xs">
+                  <p className="font-medium text-foreground flex items-center gap-1">
+                    {member.name}
+                    {member.status === "accepted" && <span className="text-green-500">✅</span>}
+                    {member.status === "declined" && <span className="text-red-500">❌</span>}
+                    {(!member.status || member.status === "pending") && <span className="text-amber-500 text-[10px]">⏳</span>}
+                  </p>
+                  <p className="text-muted-foreground">{member.role}</p>
+                </div>
               </div>
-              <div className="text-xs">
-                <p className="font-medium text-foreground flex items-center gap-1">
-                  {member.name}
-                  {member.status === "accepted" && <span className="text-green-500">✅</span>}
-                  {member.status === "declined" && <span className="text-red-500">❌</span>}
-                  {(!member.status || member.status === "pending") && <span className="text-amber-500 text-[10px]">⏳</span>}
-                </p>
-                <p className="text-muted-foreground">{member.role}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Repertório do dia */}
       {songs && songs.length > 0 && (
         <div className="space-y-3 pt-4 pl-2 border-t border-border/50">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
-            <span className="text-accent/80 text-base">🎵</span>
-            <span>Repertório do Dia ({songs.length})</span>
+          <div 
+            className="flex items-center justify-between gap-2 text-sm font-semibold text-foreground pb-1 cursor-pointer hover:text-accent transition-colors"
+            onClick={() => setIsSongsOpen(!isSongsOpen)}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-accent/80 text-base">🎵</span>
+              <span>Repertório do Dia ({songs.length})</span>
+            </div>
+            {isSongsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </div>
-          <div className="space-y-1.5 pl-1">
-            {songs.map((song, index) => (
-              <div key={index} className="flex items-start gap-2 text-sm">
-                <span className="text-muted-foreground font-mono text-xs w-4 mt-0.5">{index + 1}.</span>
-                <div>
-                  <p className="font-medium text-foreground leading-tight">{song.title}</p>
-                  <p className="text-xs text-muted-foreground">{song.artist}</p>
+          {isSongsOpen && (
+            <div className="space-y-1.5 pl-1 animate-in fade-in slide-in-from-top-2 duration-200">
+              {songs.map((song, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-start gap-2 text-sm p-1.5 -ml-1.5 rounded-md hover:bg-secondary/50 cursor-pointer transition-colors"
+                  onClick={() => navigate('/repertorio', { state: { search: song.title } })}
+                  title="Ver detalhes no repertório"
+                >
+                  <span className="text-muted-foreground font-mono text-xs w-4 mt-0.5">{index + 1}.</span>
+                  <div>
+                    <p className="font-medium text-foreground leading-tight group-hover:text-accent transition-colors">{song.title}</p>
+                    <p className="text-xs text-muted-foreground">{song.artist}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
