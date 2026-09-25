@@ -167,7 +167,7 @@ export default function Playlists() {
     }
   }, [playerIndex, isPlayerOpen, playerQueue, playRequestId]);
 
-  // Limpa o player do YouTube quando o componente (ou modal) for fechado
+  // Limpa o player do YouTube quando o componente (ou modal) for fechado, ou quando desmontar
   useEffect(() => {
     if (!isPlayerOpen && ytPlayerRef.current) {
       try {
@@ -179,6 +179,21 @@ export default function Playlists() {
       }
       ytPlayerRef.current = null;
     }
+    
+    // Cleanup de unmount
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      if (ytPlayerRef.current) {
+        try {
+          if (typeof ytPlayerRef.current.destroy === "function") {
+            ytPlayerRef.current.destroy();
+          }
+        } catch (e) { }
+        ytPlayerRef.current = null;
+      }
+    };
   }, [isPlayerOpen]);
 
   // Inicializa ou recarrega o IFrame Player do YouTube
@@ -188,7 +203,13 @@ export default function Playlists() {
     const initOrLoadYT = () => {
       const win = window as any;
       if (ytPlayerRef.current && typeof ytPlayerRef.current.loadVideoById === "function") {
-        ytPlayerRef.current.loadVideoById(resolvedVideoId);
+        try {
+          ytPlayerRef.current.loadVideoById(resolvedVideoId);
+          ytPlayerRef.current.seekTo(0);
+          ytPlayerRef.current.playVideo();
+        } catch (e) {
+          console.error("Erro ao forçar play do YouTube", e);
+        }
         setIsPlaying(true);
       } else if (win.YT && win.YT.Player) {
         try {
