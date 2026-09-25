@@ -90,6 +90,7 @@ export default function Playlists() {
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [playerQueue, setPlayerQueue] = useState<{ title: string; artist: string; youtubeUrl: string; audioUrl?: string | null }[]>([]);
   const [playerIndex, setPlayerIndex] = useState(0);
+  const [playRequestId, setPlayRequestId] = useState(0);
   
   // Controles do Player
   const [isPlaying, setIsPlaying] = useState(false);
@@ -124,29 +125,27 @@ export default function Playlists() {
   useEffect(() => {
     if (!isPlayerOpen || playerQueue.length === 0) return;
     
+    // Para o player imediatamente enquanto resolve a nova música
     setIsPlaying(false);
     setPlayedProgress(0);
     setCurrentTime(0);
     setDuration(0);
-    setResolvedVideoId(null);
-    setAudioPreviewUrl(null);
     
+    if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === "function") {
+      try { ytPlayerRef.current.pauseVideo(); } catch(e){}
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
     const track = playerQueue[playerIndex];
     if (!track) return;
 
-    let id = null;
-    if (track.youtubeUrl && !track.youtubeUrl.includes('google.com/search') && !track.youtubeUrl.includes('duckduckgo.com') && !track.youtubeUrl.includes('youtube.com/results')) {
-      const v = track.youtubeUrl.match(/[?&]v=([^&]+)/);
-      if (v) id = v[1];
-      else {
-        const s = track.youtubeUrl.match(/youtu\.be\/([^?]+)/);
-        if (s) id = s[1];
-        else {
-          const e = track.youtubeUrl.match(/youtube\.com\/embed\/([^?]+)/);
-          if (e) id = e[1];
-        }
-      }
-    }
+    setResolvedVideoId(null);
+    setAudioPreviewUrl(null);
+
+    let id = extractYoutubeVideoId(track.youtubeUrl);
 
     if (id) {
       setResolvedVideoId(id);
@@ -161,12 +160,12 @@ export default function Playlists() {
           toast.info("Tocando prévia de áudio.", { duration: 4000 });
           setIsPlaying(true);
         } else {
-          toast.error("Áudio indisponível para esta música. Adicione um link do YouTube.");
+          toast.error("Áudio indisponível para esta música.");
         }
       });
       return () => { cancelled = true; };
     }
-  }, [playerIndex, isPlayerOpen, playerQueue]);
+  }, [playerIndex, isPlayerOpen, playerQueue, playRequestId]);
 
   // Limpa o player do YouTube quando o componente (ou modal) for fechado
   useEffect(() => {
@@ -235,7 +234,7 @@ export default function Playlists() {
         initOrLoadYT();
       };
     }
-  }, [resolvedVideoId, isPlayerOpen]);
+  }, [resolvedVideoId, isPlayerOpen, playRequestId]);
 
   // Atualiza tempo corrente, duração e progresso em tempo real
   useEffect(() => {
@@ -869,6 +868,7 @@ export default function Playlists() {
     }));
     setPlayerQueue(queue);
     setPlayerIndex(index);
+    setPlayRequestId(id => id + 1);
     setIsPlayerOpen(true);
     // Pequeno delay para garantir que o player abra e o efeito dispare
     setTimeout(() => setIsPlaying(true), 300);
