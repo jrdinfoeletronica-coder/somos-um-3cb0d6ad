@@ -9,6 +9,7 @@ interface ScheduleCardProps {
   event: string;
   location?: string;
   members: { name: string; role: string; status?: string }[];
+  songs?: { id: string; title: string; artist: string }[];
   status?: "confirmed" | "pending" | "cancelled";
   onConfirm?: () => void;
   onDecline?: () => void;
@@ -129,6 +130,27 @@ export function ScheduleCard({
           ))}
         </div>
       </div>
+
+      {/* Repertório do dia */}
+      {songs && songs.length > 0 && (
+        <div className="space-y-3 pt-4 pl-2 border-t border-border/50">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground pb-1">
+            <span className="text-accent/80 text-base">🎵</span>
+            <span>Repertório do Dia ({songs.length})</span>
+          </div>
+          <div className="space-y-1.5 pl-1">
+            {songs.map((song, index) => (
+              <div key={index} className="flex items-start gap-2 text-sm">
+                <span className="text-muted-foreground font-mono text-xs w-4 mt-0.5">{index + 1}.</span>
+                <div>
+                  <p className="font-medium text-foreground leading-tight">{song.title}</p>
+                  <p className="text-xs text-muted-foreground">{song.artist}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       {(showActions || showMemberActions || onEdit || onDelete) && (
