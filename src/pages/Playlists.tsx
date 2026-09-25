@@ -124,15 +124,22 @@ export default function Playlists() {
   // Efeito para configurar a música atual e buscar o videoId se necessário
   useEffect(() => {
     if (!isPlayerOpen || playerQueue.length === 0) return;
-    
-    // Para o player imediatamente enquanto resolve a nova música
+
+    // 1. Para tudo imediatamente
     setIsPlaying(false);
     setPlayedProgress(0);
     setCurrentTime(0);
     setDuration(0);
-    
-    if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === "function") {
-      try { ytPlayerRef.current.pauseVideo(); } catch(e){}
+    setResolvedVideoId(null);
+    setAudioPreviewUrl(null);
+
+    // 2. Destrói o player antigo para evitar que qualquer evento residual interfira
+    if (ytPlayerRef.current) {
+      try {
+        if (typeof ytPlayerRef.current.stopVideo === "function") ytPlayerRef.current.stopVideo();
+        if (typeof ytPlayerRef.current.destroy === "function") ytPlayerRef.current.destroy();
+      } catch (e) {}
+      ytPlayerRef.current = null;
     }
     if (audioRef.current) {
       audioRef.current.pause();
@@ -142,17 +149,17 @@ export default function Playlists() {
     const track = playerQueue[playerIndex];
     if (!track) return;
 
-    setResolvedVideoId(null);
-    setAudioPreviewUrl(null);
+    // 3. Resolve o videoId
+    const directId = extractYoutubeVideoId(track.youtubeUrl);
 
-    let id = extractYoutubeVideoId(track.youtubeUrl);
-
-    if (id) {
-      setResolvedVideoId(id);
+    if (directId) {
+      // Tem URL direta: usa imediatamente
+      setResolvedVideoId(directId);
     } else {
+      // Sem URL: busca no YouTube, com cancelamento se a música mudar
       let cancelled = false;
       searchYoutubeVideoId(`${track.artist || ''} ${track.title} oficial`).then(fetchedId => {
-        if (cancelled) return;
+        if (cancelled) return; // Ignorar se o usuário já trocou de música
         if (fetchedId) {
           setResolvedVideoId(fetchedId);
         } else if (track.audioUrl) {
@@ -898,8 +905,6 @@ export default function Playlists() {
     setPlayerIndex(index);
     setPlayRequestId(id => id + 1);
     setIsPlayerOpen(true);
-    // Pequeno delay para garantir que o player abra e o efeito dispare
-    setTimeout(() => setIsPlaying(true), 300);
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
