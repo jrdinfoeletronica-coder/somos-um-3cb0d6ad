@@ -10,7 +10,7 @@ interface DashboardLayoutProps {
   title?: string;
 }
 
-import { NotificationBanner } from "@/components/ui/NotificationBanner";
+import { GlobalNotifications } from "@/components/layout/GlobalNotifications";
 
 export function DashboardLayout({ children, title }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -153,6 +153,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
           {children}
         </div>
       </main>
+      <GlobalNotifications />
     </div>
   );
 }
