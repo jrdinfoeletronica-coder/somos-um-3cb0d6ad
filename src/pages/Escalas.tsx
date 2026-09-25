@@ -1318,11 +1318,25 @@ export default function Escalas() {
                   )}
                   {previewData.map((sched, si) => (
                     <div key={si} className="border border-border rounded-xl p-4 bg-card/60 space-y-3">
-                      <div>
-                        <p className="font-semibold text-foreground">{sched.event}</p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {new Date(sched.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })} — {sched.time}
-                        </p>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold text-foreground">{sched.event}</p>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {new Date(sched.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })} — {sched.time}
+                          </p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-muted-foreground hover:text-destructive h-8 w-8"
+                          onClick={() => {
+                            const updated = previewData.filter((_, i) => i !== si);
+                            setPreviewData(updated);
+                          }}
+                          title="Remover esta escala da geração (ex: não terá louvor)"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                       {sched.members.length === 0 ? (
                         <p className="text-xs text-muted-foreground italic">Nenhum membro atribuído para esta data.</p>

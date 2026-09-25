@@ -116,9 +116,20 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
               </Button>
               
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-accent to-[hsl(30_80%_45%)] flex items-center justify-center">
-                  <span className="text-sm font-semibold text-primary">{localStorage.getItem("chat_my_name")?.charAt(0)?.toUpperCase() || "U"}</span>
-                </div>
+                {(() => {
+                  const avatarUrl = localStorage.getItem("member_avatar");
+                  const name = localStorage.getItem("chat_my_name") || "Usuário";
+                  const initial = name.charAt(0).toUpperCase();
+                  return avatarUrl ? (
+                    <div className="w-9 h-9 rounded-full overflow-hidden border border-border shrink-0">
+                      <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-accent to-[hsl(30_80%_45%)] flex items-center justify-center shrink-0">
+                      <span className="text-sm font-semibold text-primary">{initial}</span>
+                    </div>
+                  );
+                })()}
                 <div className="hidden sm:block">
                   <p className="text-sm font-medium text-foreground">{localStorage.getItem("chat_my_name") || "Usuário"}</p>
                   <p className="text-xs text-muted-foreground">

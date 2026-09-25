@@ -29,6 +29,7 @@ interface Conversation {
   id: string;
   name: string;
   isGroup: boolean;
+  avatar_url?: string;
 }
 
 function formatTime(dateStr: string) {
@@ -99,6 +100,7 @@ export default function Comunicacao() {
         id: getDMConversationId(myName, m.name),
         name: m.name,
         isGroup: false,
+        avatar_url: m.avatar_url,
       })),
   ];
 
@@ -354,11 +356,15 @@ export default function Comunicacao() {
                 >
                   <div className="relative shrink-0">
                     {conv.isGroup ? (
-                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[hsl(220_50%_30%)] to-[hsl(220_50%_45%)] flex items-center justify-center">
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[hsl(220_50%_30%)] to-[hsl(220_50%_45%)] flex items-center justify-center shrink-0 border border-border/50 shadow-sm">
                         <Music className="w-5 h-5 text-white" />
                       </div>
+                    ) : conv.avatar_url ? (
+                      <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 border border-border/50 shadow-sm">
+                        <img src={conv.avatar_url} alt={conv.name} className="w-full h-full object-cover" />
+                      </div>
                     ) : (
-                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-accent/70 to-accent flex items-center justify-center">
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-accent/70 to-accent flex items-center justify-center shrink-0 border border-border/50 shadow-sm">
                         <span className="text-base font-bold text-primary">
                           {conv.name.charAt(0).toUpperCase()}
                         </span>
@@ -472,11 +478,15 @@ export default function Comunicacao() {
                 </button>
 
                 {activeConversation.isGroup ? (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[hsl(220_50%_30%)] to-[hsl(220_50%_45%)] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[hsl(220_50%_30%)] to-[hsl(220_50%_45%)] flex items-center justify-center shrink-0 border border-border/50 shadow-sm">
                     <Music className="w-5 h-5 text-white" />
                   </div>
+                ) : activeConversation.avatar_url ? (
+                  <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-border/50 shadow-sm">
+                    <img src={activeConversation.avatar_url} alt={activeConversation.name} className="w-full h-full object-cover" />
+                  </div>
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/70 to-accent flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/70 to-accent flex items-center justify-center shrink-0 border border-border/50 shadow-sm">
                     <span className="text-sm font-bold text-primary">
                       {activeConversation.name.charAt(0).toUpperCase()}
                     </span>
@@ -528,8 +538,25 @@ export default function Comunicacao() {
                           return (
                             <div
                               key={msg.id}
-                              className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                              className={`flex ${isMe ? "justify-end" : "justify-start"} mb-1`}
                             >
+                              {!isMe && (
+                                <div className="w-8 h-8 rounded-full overflow-hidden mr-2 shrink-0 border border-border/50 self-end mb-1">
+                                  {(() => {
+                                    const senderInfo = members.find((m: any) => m.name === msg.sender_name);
+                                    if (senderInfo?.avatar_url) {
+                                      return <img src={senderInfo.avatar_url} alt={msg.sender_name} className="w-full h-full object-cover" />;
+                                    }
+                                    return (
+                                      <div className="w-full h-full bg-gradient-to-br from-accent/70 to-accent flex items-center justify-center">
+                                        <span className="text-[10px] font-bold text-primary">
+                                          {msg.sender_name.charAt(0).toUpperCase()}
+                                        </span>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              )}
                               <div
                                 className={`max-w-[85%] md:max-w-[70%] flex flex-col ${
                                   isMe ? "items-end" : "items-start"
