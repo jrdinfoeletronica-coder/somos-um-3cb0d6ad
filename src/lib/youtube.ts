@@ -70,3 +70,38 @@ export async function getOfficialYoutubeUrl(query: string): Promise<string> {
   }
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim())}`;
 }
+
+/**
+ * Extracts a YouTube Video ID from a URL and fetches its title using the Data API.
+ */
+export async function getYoutubeVideoTitle(url: string): Promise<string | null> {
+  let videoId = "";
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname.includes("youtube.com")) {
+      videoId = urlObj.searchParams.get("v") || "";
+    } else if (urlObj.hostname.includes("youtu.be")) {
+      videoId = urlObj.pathname.slice(1);
+    }
+  } catch (e) {
+    // Falha ao parsear URL
+    return null;
+  }
+
+  if (!videoId) return null;
+
+  try {
+    const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
+    const response = await fetch(apiUrl);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.items && data.items.length > 0) {
+        return data.items[0].snippet.title;
+      }
+    }
+  } catch (error) {
+    console.error("Erro ao buscar título do YouTube:", error);
+  }
+
+  return null;
+}

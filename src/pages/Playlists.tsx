@@ -7,13 +7,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import {
-  Plus, ListMusic, Trash2, Search, Globe, RefreshCw,
+  Plus, ListMusic, Trash2, Search, Globe, RefreshCw, ListPlus,
   Sun, Sunset, Moon, Heart, Grape, Youtube, Music, ExternalLink, FileText, Check, Edit2,
   Play, Pause, RotateCcw, RotateCw, SkipBack, SkipForward, X
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { lookupWorshipKey, getBestSongKey } from "@/lib/worshipKeys";
-import { searchYoutubeVideoId, getOfficialYoutubeUrl } from "@/lib/youtube";
+import { searchYoutubeVideoId, getOfficialYoutubeUrl, getYoutubeVideoTitle } from "@/lib/youtube";
 import { cn } from "@/lib/utils";
 
 // ─── Pastas padrão ───────────────────────────────────────────────────────────
@@ -71,6 +71,12 @@ export default function Playlists() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editYoutube, setEditYoutube] = useState("");
+
+  // Importação em massa
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [isBulkImporting, setIsBulkImporting] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, status: "" });
 
   // Player de áudio Global
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
@@ -153,6 +159,20 @@ export default function Playlists() {
       return () => { cancelled = true; };
     }
   }, [playerIndex, isPlayerOpen, playerQueue]);
+
+  // Limpa o player do YouTube quando o componente (ou modal) for fechado
+  useEffect(() => {
+    if (!isPlayerOpen && ytPlayerRef.current) {
+      try {
+        if (typeof ytPlayerRef.current.destroy === "function") {
+          ytPlayerRef.current.destroy();
+        }
+      } catch (e) {
+        console.error("Erro ao destruir YouTube Player:", e);
+      }
+      ytPlayerRef.current = null;
+    }
+  }, [isPlayerOpen]);
 
   // Inicializa ou recarrega o IFrame Player do YouTube
   useEffect(() => {
@@ -504,6 +524,129 @@ export default function Playlists() {
     onError: (err: any) => toast.error("Erro: " + err.message),
   });
 
+  // ── Importação em Massa ──────────────────────────────────────────────────
+
+  const handleBulkImport = async () => {
+    if (!bulkText.trim()) return;
+    setIsBulkImporting(true);
+    
+    // Separa por linhas e limpa linhas vazias
+    const lines = bulkText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    setBulkProgress({ current: 0, total: lines.length, status: "Iniciando..." });
+
+    let addedCount = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      let query = lines[i];
+      setBulkProgress({ current: i + 1, total: lines.length, status: `Analisando: ${query}` });
+      
+      try {
+        // 1. Verifica se é um link do YouTube
+        if (query.includes('youtube.com') || query.includes('youtu.be')) {
+          setBulkProgress({ current: i + 1, total: lines.length, status: `Extraindo título do YouTube...` });
+          const ytTitle = await getYoutubeVideoTitle(query);
+          if (ytTitle) {
+            // Limpa o título de marcações para melhorar a busca no iTunes/Banco
+            query = ytTitle.replace(/[\(\[].*?[\)\]]/g, '').replace(/oficial|official video|lyric video|ao vivo/gi, '').trim();
+          }
+        }
+
+        setBulkProgress({ current: i + 1, total: lines.length, status: `Buscando no acervo: ${query}` });
+
+        // 2. Verifica se já existe no repertório local
+        const searchBase = query.split('-')[0].trim(); // pega só a primeira parte antes do hífen para buscar no banco
+        const { data: existing } = await supabase
+          .from("songs")
+          .select("*")
+          .ilike("title", `%${searchBase}%`)
+          .limit(1);
+        
+        if (existing && existing.length > 0) {
+          const song = existing[0];
+          const already = playlistItems.some((pi: any) => pi.song_id === song.id);
+          if (!already) {
+             await insertPlaylistSong({
+               playlist_id: selectedPlaylist.id,
+               song_id: song.id,
+               youtube_url: song.youtube_url || null,
+               custom_title: song.title,
+               sort_order: playlistItems.length + addedCount,
+             });
+             addedCount++;
+          }
+          continue; // achou no banco e processou, pula para a próxima linha
+        }
+
+        // 3. Se não existe no banco, busca no iTunes
+        setBulkProgress({ current: i + 1, total: lines.length, status: `Buscando na Internet: ${query}` });
+        const qExact  = encodeURIComponent(query);
+        const r1 = await fetch(`https://itunes.apple.com/search?term=${qExact}&entity=song&limit=10&country=br`).then(r => r.json());
+        
+        let bestResult = null;
+        if (r1.results && r1.results.length > 0) {
+           bestResult = r1.results[0]; 
+        } else {
+           // Fallback adicionando gospel
+           const qGospel  = encodeURIComponent(query + " gospel");
+           const r2 = await fetch(`https://itunes.apple.com/search?term=${qGospel}&entity=song&limit=10&country=br`).then(r => r.json());
+           if (r2.results && r2.results.length > 0) {
+              bestResult = r2.results[0];
+           }
+        }
+
+        // 4. Se achou no iTunes, gera metadados, salva no banco e adiciona na playlist
+        if (bestResult) {
+          const trackName = String(bestResult.trackName || "");
+          const artistName = String(bestResult.artistName || "Autor Desconhecido");
+          setBulkProgress({ current: i + 1, total: lines.length, status: `Baixando cifra e tom para: ${trackName}` });
+
+          const keyInfo = await getBestSongKey(artistName, trackName);
+          const detectedTone = keyInfo.fullKey;
+          const ytQuery = `${artistName} ${trackName} oficial`;
+          const youtubeUrl = await getOfficialYoutubeUrl(ytQuery);
+          const ccUrl = `https://www.cifraclub.com.br/${slugify(artistName)}/${slugify(trackName)}/`;
+
+          const { data: newSong, error: songErr } = await supabase
+            .from("songs")
+            .insert([{
+              title: trackName,
+              artist: artistName,
+              key: detectedTone,
+              bpm: null,
+              youtube_url: youtubeUrl,
+              spotify_url: null,
+              cifraclub_url: ccUrl,
+              audio_url: bestResult.previewUrl || null,
+              tags: [],
+            }])
+            .select();
+          
+          if (songErr) throw songErr;
+          
+          await insertPlaylistSong({
+            playlist_id: selectedPlaylist.id,
+            song_id: newSong[0].id,
+            youtube_url: youtubeUrl,
+            custom_title: trackName,
+            sort_order: playlistItems.length + addedCount,
+          });
+          addedCount++;
+        }
+
+      } catch (err) {
+         console.error(`Erro ao processar linha ${i}:`, err);
+      }
+    }
+
+    // Finaliza
+    queryClient.invalidateQueries({ queryKey: ["playlist_songs", selectedPlaylist.id] });
+    queryClient.invalidateQueries({ queryKey: ["songs"] });
+    toast.success(`${addedCount} música(s) importada(s) com sucesso!`);
+    setIsBulkImporting(false);
+    setIsBulkOpen(false);
+    setBulkText("");
+  };
+
   // ── Busca na internet (rigorosa) ─────────────────────────────────────────
 
   const handleSearchWeb = async () => {
@@ -778,6 +921,10 @@ export default function Playlists() {
                       <Button onClick={handleOpenPlayer} variant="outline" className="gap-2 border-violet-200 text-violet-600 hover:bg-violet-50" disabled={playlistItems.length === 0}>
                         <Music className="w-4 h-4" />
                         Ouvir Playlist
+                      </Button>
+                      <Button onClick={() => setIsBulkOpen(true)} variant="outline" className="gap-2 border-primary/30 text-primary hover:bg-primary/10">
+                        <ListPlus className="w-4 h-4" />
+                        Importação em Massa
                       </Button>
                       <Button onClick={handleAddOpen} className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground">
                         <Plus className="w-4 h-4" />
@@ -1058,6 +1205,47 @@ export default function Playlists() {
           </form>
         </DialogContent>
       </Dialog>
+      {/* Dialog: Importação em Massa */}
+      <Dialog open={isBulkOpen} onOpenChange={(open) => !isBulkImporting && setIsBulkOpen(open)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader><DialogTitle>Importação em Massa</DialogTitle></DialogHeader>
+          <div className="space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground">
+              Cole abaixo uma lista de nomes de músicas (ex: <i>Gratidão - Gabriela Rocha</i>) ou <b>Links do YouTube</b> (um por linha). O sistema irá analisar, buscar os dados originais e adicionar todas à playlist de uma vez.
+            </p>
+            <textarea
+              className="w-full min-h-[200px] p-3 text-sm rounded-md border border-input bg-transparent shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+              placeholder="Exemplo:&#10;A Casa é Sua - Casa Worship&#10;https://www.youtube.com/watch?v=M9-sB4oB..."
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+              disabled={isBulkImporting}
+            />
+            {isBulkImporting && (
+              <div className="space-y-2 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <div className="flex justify-between text-xs font-semibold text-primary">
+                  <span>Processando... ({bulkProgress.current} de {bulkProgress.total})</span>
+                  <span>{Math.round((bulkProgress.current / (bulkProgress.total || 1)) * 100)}%</span>
+                </div>
+                <div className="h-2 w-full bg-primary/20 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-300" 
+                    style={{ width: `${(bulkProgress.current / (bulkProgress.total || 1)) * 100}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground truncate">{bulkProgress.status}</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsBulkOpen(false)} disabled={isBulkImporting}>Cancelar</Button>
+            <Button type="button" onClick={handleBulkImport} disabled={!bulkText.trim() || isBulkImporting}>
+              {isBulkImporting ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <ListPlus className="w-4 h-4 mr-2" />}
+              {isBulkImporting ? "Importando..." : "Iniciar Importação"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ─── Global Player (Com Barra Interativa + YouTube API + HTML5 Audio) ── */}
       {isPlayerOpen && (() => {
         const track = playerQueue[playerIndex];
