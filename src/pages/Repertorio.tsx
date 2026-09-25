@@ -4,7 +4,7 @@ import { SongCard } from "@/components/dashboard/SongCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Music, Plus, Search, ListMusic, Globe, RefreshCw, Lightbulb } from "lucide-react";
+import { Music, Plus, Search, ListMusic, Globe, RefreshCw, Lightbulb, ListPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,7 +12,14 @@ import { cn, fuzzyIncludes } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { getBestSongKey } from "@/lib/worshipKeys";
-import { searchYoutubeVideoId, getOfficialYoutubeUrl } from "@/lib/youtube";
+import { 
+  searchYoutubeVideoId, 
+  getOfficialYoutubeUrl, 
+  getYoutubeVideoInfo, 
+  extractYoutubeVideoId, 
+  getCanonicalYoutubeUrl, 
+  parseSongAndArtist 
+} from "@/lib/youtube";
 import { MemberSongKeys } from "@/components/dashboard/MemberSongKeys";
 import { Metronome } from "@/components/dashboard/Metronome";
 
@@ -43,6 +50,13 @@ export default function Repertorio() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSearchingWeb, setIsSearchingWeb] = useState(false);
   const [editingSong, setEditingSong] = useState<any>(null);
+
+  // Estados para Importação em Massa no Repertório
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [isBulkImporting, setIsBulkImporting] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, status: "" });
+
   const [formData, setFormData] = useState({
     title: "",
     artist: "",
@@ -379,9 +393,196 @@ export default function Repertorio() {
     }
   };
 
+  const handleBulkImport = async () => {
+    if (!bulkText.trim()) return;
+    setIsBulkImporting(true);
+
+    const lines = bulkText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    setBulkProgress({ current: 0, total: lines.length, status: "Iniciando importação..." });
+
+    let addedCount = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      setBulkProgress({ current: i + 1, total: lines.length, status: `Analisando: ${line}` });
+
+      try {
+        const videoId = extractYoutubeVideoId(line);
+        let title = "";
+        let artist = "";
+        let youtubeUrl = "";
+        let audioUrl: string | null = null;
+
+        if (videoId) {
+          setBulkProgress({ current: i + 1, total: lines.length, status: `Extraindo dados do vídeo...` });
+          youtubeUrl = getCanonicalYoutubeUrl(videoId);
+          
+          const ytInfo = await getYoutubeVideoInfo(videoId);
+          const rawTitle = ytInfo?.title || "";
+          const parsed = parseSongAndArtist(rawTitle, ytInfo?.author || "YouTube");
+          title = parsed.title;
+          artist = parsed.artist;
+
+          if (!title) title = `Vídeo ${videoId}`;
+          if (!artist) artist = "Autor Desconhecido";
+        } else {
+          const parsed = parseSongAndArtist(line);
+          title = parsed.title;
+          artist = parsed.artist;
+        }
+
+        setBulkProgress({ current: i + 1, total: lines.length, status: `Verificando acervo: ${title}` });
+
+        let existingSong: any = null;
+
+        if (videoId) {
+          const { data: byYt } = await supabase
+            .from("songs")
+            .select("*")
+            .ilike("youtube_url", `%${videoId}%`)
+            .limit(1);
+
+          if (byYt && byYt.length > 0) {
+            existingSong = byYt[0];
+          }
+        }
+
+        if (!existingSong && title) {
+          const { data: byTitle } = await supabase
+            .from("songs")
+            .select("*")
+            .ilike("title", title)
+            .limit(5);
+
+          if (byTitle && byTitle.length > 0) {
+            if (artist && artist !== "Autor Desconhecido" && artist !== "YouTube") {
+              const matched = byTitle.find((s: any) => 
+                s.artist && (
+                  s.artist.toLowerCase().includes(artist.toLowerCase()) || 
+                  artist.toLowerCase().includes(s.artist.toLowerCase())
+                )
+              );
+              if (matched) existingSong = matched;
+            } else {
+              existingSong = byTitle[0];
+            }
+          }
+        }
+
+        if (existingSong) {
+          if (videoId && (!existingSong.youtube_url || existingSong.youtube_url !== youtubeUrl)) {
+            await supabase
+              .from("songs")
+              .update({ youtube_url: youtubeUrl })
+              .eq("id", existingSong.id);
+          }
+          continue;
+        }
+
+        setBulkProgress({ current: i + 1, total: lines.length, status: `Identificando tom e cifra: ${title}` });
+
+        const keyInfo = await getBestSongKey(artist, title);
+        const detectedTone = keyInfo.fullKey || null;
+
+        const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+        const cleanArtistName = (artist || "").split(/&|feat|ft\.|,|\b-\b|\be\b/i)[0].trim();
+        const ccUrl = `https://www.cifraclub.com.br/${slugify(cleanArtistName)}/${slugify(title)}/`;
+
+        if (!youtubeUrl) {
+          const ytQuery = `${artist && artist !== "Autor Desconhecido" ? artist + " " : ""}${title} oficial`;
+          youtubeUrl = await getOfficialYoutubeUrl(ytQuery);
+        }
+
+        try {
+          const itunesQuery = encodeURIComponent(`${artist && artist !== "Autor Desconhecido" ? artist + " " : ""}${title}`);
+          const itunesRes = await fetch(`https://itunes.apple.com/search?term=${itunesQuery}&entity=song&limit=5&country=br`);
+          if (itunesRes.ok) {
+            const itunesData = await itunesRes.json();
+            if (itunesData.results && itunesData.results.length > 0) {
+              const normT = title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+              const matchItunes = itunesData.results.find((r: any) => {
+                const normR = (r.trackName || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return normR.includes(normT) || normT.includes(normR);
+              });
+              if (matchItunes && matchItunes.previewUrl) {
+                audioUrl = matchItunes.previewUrl;
+              }
+            }
+          }
+        } catch (e) {
+          // Ignora
+        }
+
+        const { error: songErr } = await supabase
+          .from("songs")
+          .insert([{
+            title: title,
+            artist: artist,
+            key: detectedTone,
+            bpm: null,
+            youtube_url: youtubeUrl || null,
+            spotify_url: null,
+            cifraclub_url: ccUrl,
+            audio_url: audioUrl,
+            tags: [],
+          }]);
+
+        if (songErr) throw songErr;
+        addedCount++;
+
+      } catch (err) {
+        console.error(`Erro ao importar linha ${i + 1}:`, err);
+      }
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["songs"] });
+    toast.success(`${addedCount} música(s) adicionada(s) ao repertório!`);
+    setIsBulkImporting(false);
+    setIsBulkOpen(false);
+    setBulkText("");
+  };
+
   const handleSmartSearch = async () => {
-    if (!formData.title || !formData.artist) {
-      toast.error("Preencha o Título e o Artista primeiro para buscar!");
+    // 1. Se informou um link direto do YouTube em algum campo
+    const directYtId = extractYoutubeVideoId(formData.title) || extractYoutubeVideoId(formData.youtube_url);
+    if (directYtId) {
+      setIsSearchingWeb(true);
+      toast.loading("Extraindo dados do link do YouTube...", { id: "yt-smart" });
+      try {
+        const canonicalUrl = getCanonicalYoutubeUrl(directYtId);
+        const ytInfo = await getYoutubeVideoInfo(directYtId);
+        const rawTitle = ytInfo?.title || "";
+        const parsed = parseSongAndArtist(rawTitle, ytInfo?.author || "YouTube");
+        const keyInfo = await getBestSongKey(parsed.artist, parsed.title);
+
+        const slugify = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+        const cleanArtistName = (parsed.artist || "").split(/&|feat|ft\.|,|\b-\b|\be\b/i)[0].trim();
+        const generatedCifraUrl = `https://www.cifraclub.com.br/${slugify(cleanArtistName)}/${slugify(parsed.title)}/`;
+
+        setFormData(prev => ({
+          ...prev,
+          title: parsed.title,
+          artist: parsed.artist,
+          key: keyInfo.key || prev.key,
+          keyMode: keyInfo.keyMode || prev.keyMode,
+          youtube_url: canonicalUrl,
+          cifraclub_url: generatedCifraUrl,
+        }));
+
+        toast.dismiss("yt-smart");
+        toast.success("Dados identificados com sucesso do YouTube!");
+        setIsSearchResultsOpen(false);
+      } catch (err: any) {
+        toast.dismiss("yt-smart");
+        toast.error("Erro ao ler dados do vídeo: " + err.message);
+      } finally {
+        setIsSearchingWeb(false);
+      }
+      return;
+    }
+
+    if (!formData.title && !formData.artist) {
+      toast.error("Preencha o Título ou Artista primeiro para buscar!");
       return;
     }
     setIsSearchingWeb(true);
@@ -390,27 +591,35 @@ export default function Repertorio() {
     setIsSearchResultsOpen(true);
     
     try {
-      // Tenta buscar com Artista + Titulo
-      const queryCompleta = encodeURIComponent(formData.artist + ' ' + formData.title);
-      let iRes = await fetch(`https://itunes.apple.com/search?term=${queryCompleta}&entity=song&limit=10&country=br`);
-      let iData = await iRes.json();
-      
-      // Se não encontrou, tenta buscar SÓ pelo título (Fallback para caso o nome do artista esteja escrito errado)
-      if (!iData.results || iData.results.length === 0) {
-        const querySoTitulo = encodeURIComponent(formData.title);
-        iRes = await fetch(`https://itunes.apple.com/search?term=${querySoTitulo}&entity=song&limit=15&country=br`);
-        iData = await iRes.json();
+      const searchTerms = [
+        formData.artist && formData.title ? `${formData.artist} ${formData.title}` : "",
+        formData.title || "",
+        formData.artist || ""
+      ].filter(Boolean);
+
+      let foundResults: any[] = [];
+
+      for (const term of searchTerms) {
+        const query = encodeURIComponent(term);
+        const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=15&country=br`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.results && data.results.length > 0) {
+            foundResults = data.results;
+            break;
+          }
+        }
       }
 
-      if (iData.results && iData.results.length > 0) {
-        setSearchResults(iData.results);
+      if (foundResults.length > 0) {
+        setSearchResults(foundResults);
       } else {
-        toast.error("Nenhuma música encontrada nem mesmo apenas pelo título.");
+        toast.error("Nenhuma música encontrada na internet.");
         setIsSearchResultsOpen(false);
       }
     } catch (e) {
       console.error("Erro ao buscar na internet", e);
-      toast.error("Erro ao buscar informacoes.");
+      toast.error("Erro ao buscar informações.");
       setIsSearchResultsOpen(false);
     } finally {
       setIsSearchingWeb(false);
@@ -531,10 +740,16 @@ export default function Repertorio() {
           </div>
 
           {(userRole === "admin" || userRole === "editor") && (
-            <Button variant="gold" onClick={handleOpenNewSong}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Música
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setIsBulkOpen(true)}>
+                <ListPlus className="w-4 h-4 mr-2" />
+                Importação em Massa
+              </Button>
+              <Button variant="gold" onClick={handleOpenNewSong}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Música
+              </Button>
+            </div>
           )}
         </div>
 
@@ -972,6 +1187,47 @@ export default function Repertorio() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Importação em Massa no Repertório */}
+      <Dialog open={isBulkOpen} onOpenChange={(open) => !isBulkImporting && setIsBulkOpen(open)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader><DialogTitle>Importação em Massa no Repertório</DialogTitle></DialogHeader>
+          <div className="space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground">
+              Cole abaixo uma lista de nomes de músicas (ex: <i>Gratidão - Gabriela Rocha</i>) ou <b>Links do YouTube</b> (um por linha). O sistema irá identificar automaticamente o título, artista, tom original e cifra, adicionando todas ao acervo de uma vez.
+            </p>
+            <textarea
+              className="w-full min-h-[200px] p-3 text-sm rounded-md border border-input bg-transparent shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+              placeholder="Exemplo:&#10;A Casa é Sua - Casa Worship&#10;https://www.youtube.com/watch?v=mIWxPgGnVFU"
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+              disabled={isBulkImporting}
+            />
+            {isBulkImporting && (
+              <div className="space-y-2 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <div className="flex justify-between text-xs font-semibold text-primary">
+                  <span>Processando... ({bulkProgress.current} de {bulkProgress.total})</span>
+                  <span>{Math.round((bulkProgress.current / (bulkProgress.total || 1)) * 100)}%</span>
+                </div>
+                <div className="h-2 w-full bg-primary/20 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-300" 
+                    style={{ width: `${(bulkProgress.current / (bulkProgress.total || 1)) * 100}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground truncate">{bulkProgress.status}</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsBulkOpen(false)} disabled={isBulkImporting}>Cancelar</Button>
+            <Button type="button" onClick={handleBulkImport} disabled={!bulkText.trim() || isBulkImporting}>
+              {isBulkImporting ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <ListPlus className="w-4 h-4 mr-2" />}
+              {isBulkImporting ? "Importando..." : "Iniciar Importação"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

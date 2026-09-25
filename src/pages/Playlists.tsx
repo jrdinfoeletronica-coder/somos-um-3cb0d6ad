@@ -13,7 +13,15 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { lookupWorshipKey, getBestSongKey } from "@/lib/worshipKeys";
-import { searchYoutubeVideoId, getOfficialYoutubeUrl, getYoutubeVideoTitle } from "@/lib/youtube";
+import { 
+  searchYoutubeVideoId, 
+  getOfficialYoutubeUrl, 
+  getYoutubeVideoTitle, 
+  getYoutubeVideoInfo, 
+  extractYoutubeVideoId, 
+  getCanonicalYoutubeUrl, 
+  parseSongAndArtist 
+} from "@/lib/youtube";
 import { cn } from "@/lib/utils";
 
 // ─── Pastas padrão ───────────────────────────────────────────────────────────
@@ -524,124 +532,188 @@ export default function Playlists() {
     onError: (err: any) => toast.error("Erro: " + err.message),
   });
 
-  // ── Importação em Massa ──────────────────────────────────────────────────
+  // ── Importação em Massa (Alta Precisão e Fidelidade) ───────────────────────
 
   const handleBulkImport = async () => {
     if (!bulkText.trim()) return;
     setIsBulkImporting(true);
     
-    // Separa por linhas e limpa linhas vazias
     const lines = bulkText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    setBulkProgress({ current: 0, total: lines.length, status: "Iniciando..." });
+    setBulkProgress({ current: 0, total: lines.length, status: "Iniciando importação..." });
 
     let addedCount = 0;
 
     for (let i = 0; i < lines.length; i++) {
-      let query = lines[i];
-      setBulkProgress({ current: i + 1, total: lines.length, status: `Analisando: ${query}` });
+      const line = lines[i];
+      setBulkProgress({ current: i + 1, total: lines.length, status: `Analisando: ${line}` });
       
       try {
-        // 1. Verifica se é um link do YouTube
-        if (query.includes('youtube.com') || query.includes('youtu.be')) {
-          setBulkProgress({ current: i + 1, total: lines.length, status: `Extraindo título do YouTube...` });
-          const ytTitle = await getYoutubeVideoTitle(query);
-          if (ytTitle) {
-            // Limpa o título de marcações para melhorar a busca no iTunes/Banco
-            query = ytTitle.replace(/[\(\[].*?[\)\]]/g, '').replace(/oficial|official video|lyric video|ao vivo/gi, '').trim();
+        const videoId = extractYoutubeVideoId(line);
+        let title = "";
+        let artist = "";
+        let youtubeUrl = "";
+        let audioUrl: string | null = null;
+
+        if (videoId) {
+          // ── 1. É um link direto do YouTube ──
+          setBulkProgress({ current: i + 1, total: lines.length, status: `Extraindo dados do vídeo do YouTube...` });
+          youtubeUrl = getCanonicalYoutubeUrl(videoId);
+          
+          const ytInfo = await getYoutubeVideoInfo(videoId);
+          const rawTitle = ytInfo?.title || "";
+          const parsed = parseSongAndArtist(rawTitle, ytInfo?.author || "YouTube");
+          title = parsed.title;
+          artist = parsed.artist;
+
+          if (!title) {
+            title = `Vídeo ${videoId}`;
           }
-        }
-
-        setBulkProgress({ current: i + 1, total: lines.length, status: `Buscando no acervo: ${query}` });
-
-        // 2. Verifica se já existe no repertório local
-        const searchBase = query.split('-')[0].trim(); // pega só a primeira parte antes do hífen para buscar no banco
-        const { data: existing } = await supabase
-          .from("songs")
-          .select("*")
-          .ilike("title", `%${searchBase}%`)
-          .limit(1);
-        
-        if (existing && existing.length > 0) {
-          const song = existing[0];
-          const already = playlistItems.some((pi: any) => pi.song_id === song.id);
-          if (!already) {
-             await insertPlaylistSong({
-               playlist_id: selectedPlaylist.id,
-               song_id: song.id,
-               youtube_url: song.youtube_url || null,
-               custom_title: song.title,
-               sort_order: playlistItems.length + addedCount,
-             });
-             addedCount++;
+          if (!artist) {
+            artist = "Autor Desconhecido";
           }
-          continue; // achou no banco e processou, pula para a próxima linha
-        }
-
-        // 3. Se não existe no banco, busca no iTunes
-        setBulkProgress({ current: i + 1, total: lines.length, status: `Buscando na Internet: ${query}` });
-        const qExact  = encodeURIComponent(query);
-        const r1 = await fetch(`https://itunes.apple.com/search?term=${qExact}&entity=song&limit=10&country=br`).then(r => r.json());
-        
-        let bestResult = null;
-        if (r1.results && r1.results.length > 0) {
-           bestResult = r1.results[0]; 
         } else {
-           // Fallback adicionando gospel
-           const qGospel  = encodeURIComponent(query + " gospel");
-           const r2 = await fetch(`https://itunes.apple.com/search?term=${qGospel}&entity=song&limit=10&country=br`).then(r => r.json());
-           if (r2.results && r2.results.length > 0) {
-              bestResult = r2.results[0];
-           }
+          // ── 2. É uma linha de texto (Título / Artista) ──
+          const parsed = parseSongAndArtist(line);
+          title = parsed.title;
+          artist = parsed.artist;
         }
 
-        // 4. Se achou no iTunes, gera metadados, salva no banco e adiciona na playlist
-        if (bestResult) {
-          const trackName = String(bestResult.trackName || "");
-          const artistName = String(bestResult.artistName || "Autor Desconhecido");
-          setBulkProgress({ current: i + 1, total: lines.length, status: `Baixando cifra e tom para: ${trackName}` });
+        // ── 3. Busca no repertório existente (songs) de forma precisa ──
+        setBulkProgress({ current: i + 1, total: lines.length, status: `Verificando acervo: ${title}` });
 
-          const keyInfo = await getBestSongKey(artistName, trackName);
-          const detectedTone = keyInfo.fullKey;
-          const ytQuery = `${artistName} ${trackName} oficial`;
-          const youtubeUrl = await getOfficialYoutubeUrl(ytQuery);
-          const ccUrl = `https://www.cifraclub.com.br/${slugify(artistName)}/${slugify(trackName)}/`;
+        let existingSong: any = null;
+
+        // Se veio de link do YouTube, prioriza busca pelo próprio vídeo
+        if (videoId) {
+          const { data: byYt } = await supabase
+            .from("songs")
+            .select("*")
+            .ilike("youtube_url", `%${videoId}%`)
+            .limit(1);
+
+          if (byYt && byYt.length > 0) {
+            existingSong = byYt[0];
+          }
+        }
+
+        // Se não achou por link do YouTube, busca por título exato ou aproximado
+        if (!existingSong && title) {
+          const { data: byTitle } = await supabase
+            .from("songs")
+            .select("*")
+            .ilike("title", title)
+            .limit(5);
+
+          if (byTitle && byTitle.length > 0) {
+            if (artist && artist !== "Autor Desconhecido" && artist !== "YouTube") {
+              const matched = byTitle.find((s: any) => 
+                s.artist && (
+                  s.artist.toLowerCase().includes(artist.toLowerCase()) || 
+                  artist.toLowerCase().includes(s.artist.toLowerCase())
+                )
+              );
+              if (matched) {
+                existingSong = matched;
+              }
+            } else {
+              existingSong = byTitle[0];
+            }
+          }
+        }
+
+        let songId: string;
+
+        if (existingSong) {
+          songId = existingSong.id;
+          // Se o usuário passou um link específico do YouTube e o cadastro não tinha, atualiza
+          if (videoId && (!existingSong.youtube_url || existingSong.youtube_url !== youtubeUrl)) {
+            await supabase
+              .from("songs")
+              .update({ youtube_url: youtubeUrl })
+              .eq("id", existingSong.id);
+          }
+          // Garante que a URL da música para a playlist seja a URL do YouTube
+          if (!youtubeUrl && existingSong.youtube_url) {
+            youtubeUrl = existingSong.youtube_url;
+          }
+        } else {
+          // ── 4. Não existe no repertório -> Gera tom, CifraClub, YouTube e áudio ──
+          setBulkProgress({ current: i + 1, total: lines.length, status: `Identificando tom e cifra: ${title}` });
+
+          const keyInfo = await getBestSongKey(artist, title);
+          const detectedTone = keyInfo.fullKey || null;
+
+          const cleanArtistName = (artist || "").split(/&|feat|ft\.|,|\b-\b|\be\b/i)[0].trim();
+          const ccUrl = `https://www.cifraclub.com.br/${slugify(cleanArtistName)}/${slugify(title)}/`;
+
+          // Se não veio link do YouTube, busca o oficial
+          if (!youtubeUrl) {
+            const ytQuery = `${artist && artist !== "Autor Desconhecido" ? artist + " " : ""}${title} oficial`;
+            youtubeUrl = await getOfficialYoutubeUrl(ytQuery);
+          }
+
+          // Busca prévia de áudio no iTunes (com validação estrita do título)
+          try {
+            const itunesQuery = encodeURIComponent(`${artist && artist !== "Autor Desconhecido" ? artist + " " : ""}${title}`);
+            const itunesRes = await fetch(`https://itunes.apple.com/search?term=${itunesQuery}&entity=song&limit=5&country=br`);
+            if (itunesRes.ok) {
+              const itunesData = await itunesRes.json();
+              if (itunesData.results && itunesData.results.length > 0) {
+                const normT = title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const matchItunes = itunesData.results.find((r: any) => {
+                  const normR = (r.trackName || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                  return normR.includes(normT) || normT.includes(normR);
+                });
+                if (matchItunes && matchItunes.previewUrl) {
+                  audioUrl = matchItunes.previewUrl;
+                }
+              }
+            }
+          } catch (e) {
+            // Ignora erro de rede do iTunes
+          }
 
           const { data: newSong, error: songErr } = await supabase
             .from("songs")
             .insert([{
-              title: trackName,
-              artist: artistName,
+              title: title,
+              artist: artist,
               key: detectedTone,
               bpm: null,
-              youtube_url: youtubeUrl,
+              youtube_url: youtubeUrl || null,
               spotify_url: null,
               cifraclub_url: ccUrl,
-              audio_url: bestResult.previewUrl || null,
+              audio_url: audioUrl,
               tags: [],
             }])
             .select();
-          
+
           if (songErr) throw songErr;
-          
+          songId = newSong[0].id;
+        }
+
+        // ── 5. Adiciona à Playlist selecionada ──
+        const alreadyInPlaylist = playlistItems.some((pi: any) => pi.song_id === songId);
+        if (!alreadyInPlaylist) {
           await insertPlaylistSong({
             playlist_id: selectedPlaylist.id,
-            song_id: newSong[0].id,
-            youtube_url: youtubeUrl,
-            custom_title: trackName,
+            song_id: songId,
+            youtube_url: youtubeUrl || null,
+            custom_title: title,
             sort_order: playlistItems.length + addedCount,
           });
           addedCount++;
         }
 
       } catch (err) {
-         console.error(`Erro ao processar linha ${i}:`, err);
+        console.error(`Erro ao processar linha ${i + 1}:`, err);
       }
     }
 
-    // Finaliza
+    // Finaliza e atualiza telas
     queryClient.invalidateQueries({ queryKey: ["playlist_songs", selectedPlaylist.id] });
     queryClient.invalidateQueries({ queryKey: ["songs"] });
-    toast.success(`${addedCount} música(s) importada(s) com sucesso!`);
+    toast.success(`${addedCount} música(s) processada(s) com sucesso!`);
     setIsBulkImporting(false);
     setIsBulkOpen(false);
     setBulkText("");
