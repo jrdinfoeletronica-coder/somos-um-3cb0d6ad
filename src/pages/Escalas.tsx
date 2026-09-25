@@ -454,6 +454,7 @@ export default function Escalas() {
       for (const sched of weekSchedules) {
         const reqs = typeof sched._template_ref.role_requirements === 'string' ? JSON.parse(sched._template_ref.role_requirements) : sched._template_ref.role_requirements || [];
         const membersForDay: { name: string; role: string; phone?: string }[] = [];
+        const usedInDay = new Set<string>(); // Evita mesma pessoa em 2 funções no mesmo dia
         for (const req of reqs) {
           const team = weekTeam.filter((wt) => wt.role === req.role);
           for (let i = 0; i < Math.min(req.count, team.length); i++) {
@@ -469,9 +470,13 @@ export default function Escalas() {
               return u.member_id === m.id && uDate === sched.date;
             });
             
-            if (isUnavailDays || (isUnavailCalendar && unavailabilityStrategy === "only_day")) {
+            // Substitui se indisponível OU se já está escalado neste mesmo dia com outra função
+            const needsSub = isUnavailDays || (isUnavailCalendar && unavailabilityStrategy === "only_day") || usedInDay.has(m.id);
+            
+            if (needsSub) {
               const substitute = members.find((sub: any) => {
                 if (!sub.roles?.includes(req.role) || sub.status !== 'active' || sub.id === m.id) return false;
+                if (usedInDay.has(sub.id)) return false; // Já escalado neste dia
                 const subUnavailDays = sub.available_days && sub.available_days.length > 0 && !sub.available_days.includes(currentDayOfW);
                 const subUnavailCal = unavailabilities.some((u: any) => {
                   const uDate = typeof u.date === 'string' ? u.date.split('T')[0] : '';
@@ -483,6 +488,7 @@ export default function Escalas() {
               else continue;
             }
             
+            usedInDay.add(m.id);
             membersForDay.push({ name: m.name, role: req.role, phone: m.phone });
           }
         }
