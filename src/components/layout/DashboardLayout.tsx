@@ -11,6 +11,7 @@ interface DashboardLayoutProps {
 }
 
 import { GlobalNotifications } from "@/components/layout/GlobalNotifications";
+import { NotificationBanner } from "@/components/ui/NotificationBanner";
 
 export function DashboardLayout({ children, title }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
