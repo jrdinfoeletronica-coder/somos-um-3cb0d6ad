@@ -858,6 +858,22 @@ export default function Playlists() {
     setIsPlayerOpen(true);
   };
 
+  // Abre o player global direto em uma música específica pelo índice
+  const handlePlaySingle = (index: number) => {
+    if (!playlistItems || playlistItems.length === 0) return;
+    const queue = playlistItems.map((item: any) => ({
+      title: item.custom_title || (item.song && item.song.title) || "Sem título",
+      artist: (item.song && item.song.artist) || "",
+      youtubeUrl: item.youtube_url || (item.song && item.song.youtube_url) || "",
+      audioUrl: item.song && item.song.audio_url || ""
+    }));
+    setPlayerQueue(queue);
+    setPlayerIndex(index);
+    setIsPlayerOpen(true);
+    // Pequeno delay para garantir que o player abra e o efeito dispare
+    setTimeout(() => setIsPlaying(true), 300);
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -1025,27 +1041,68 @@ export default function Playlists() {
                         const bpm = song.bpm;
                         const youtubeUrl = item.youtube_url || song.youtube_url || "";
                         const cifraclubUrl = song.cifraclub_url || "";
+                        const audioUrl = song.audio_url || "";
+                        const hasAudio = !!(youtubeUrl || audioUrl);
+                        const isCurrentlyPlaying = isPlayerOpen && playerIndex === index && isPlaying;
                         return (
                           <div key={item.id} className="relative group card-church p-5 space-y-3">
                             {/* Número */}
                             <span className="absolute top-3 right-3 text-xs font-bold text-muted-foreground/50">#{index + 1}</span>
 
                             <div className="flex items-start gap-3">
-                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent/20 to-accent/10 flex items-center justify-center shrink-0">
-                                <Music className="w-5 h-5 text-accent" />
-                              </div>
+                              {/* Ícone / Botão Play */}
+                              <button
+                                onClick={() => handlePlaySingle(index)}
+                                disabled={!hasAudio}
+                                title={hasAudio ? `Ouvir: ${title}` : "Sem link de áudio"}
+                                className={cn(
+                                  "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200 relative",
+                                  hasAudio
+                                    ? isCurrentlyPlaying
+                                      ? "bg-violet-600 text-white shadow-lg shadow-violet-500/40 scale-105"
+                                      : "bg-gradient-to-br from-accent/20 to-accent/10 hover:from-violet-500 hover:to-violet-600 hover:text-white hover:shadow-md hover:scale-105 text-accent"
+                                    : "bg-muted/40 text-muted-foreground cursor-not-allowed opacity-50"
+                                )}
+                              >
+                                {isCurrentlyPlaying ? (
+                                  <Pause className="w-5 h-5 fill-current" />
+                                ) : (
+                                  <Play className="w-5 h-5 fill-current ml-0.5" />
+                                )}
+                              </button>
+
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-display font-semibold text-foreground truncate">{title}</h3>
                                 {artist && <p className="text-sm text-muted-foreground truncate">{artist}</p>}
                                 <div className="flex items-center gap-2 mt-1">
                                   {tone && <span className="px-2 py-0.5 bg-accent/10 rounded text-xs font-semibold text-accent">Tom: {tone}</span>}
                                   {bpm && <span className="text-xs text-muted-foreground">{bpm} BPM</span>}
+                                  {!hasAudio && (
+                                    <span className="px-2 py-0.5 bg-yellow-500/10 rounded text-xs text-yellow-600">sem áudio</span>
+                                  )}
                                 </div>
                               </div>
                             </div>
 
                             <div className="flex items-center justify-between pt-2 border-t border-border">
                               <div className="flex gap-2">
+                                {/* Botão Prévia destaque */}
+                                {hasAudio && (
+                                  <button
+                                    onClick={() => handlePlaySingle(index)}
+                                    className={cn(
+                                      "inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-medium transition-colors",
+                                      isCurrentlyPlaying
+                                        ? "bg-violet-600 text-white"
+                                        : "bg-violet-500/10 text-violet-600 hover:bg-violet-500/20"
+                                    )}
+                                  >
+                                    {isCurrentlyPlaying
+                                      ? <><Pause className="w-3 h-3 fill-current" /> Pausar</>
+                                      : <><Play className="w-3 h-3 fill-current ml-px" /> Ouvir</>
+                                    }
+                                  </button>
+                                )}
                                 {cifraclubUrl && (
                                   <a href={cifraclubUrl} target="_blank" rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 font-medium"
