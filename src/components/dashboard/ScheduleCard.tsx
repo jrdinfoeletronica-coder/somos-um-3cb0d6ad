@@ -106,7 +106,7 @@ export function ScheduleCard({
           <span>Equipe ({members.length})</span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {members.slice(0, 5).map((member, index) => (
+          {members.map((member, index) => (
             <div
               key={index}
               className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-lg"
@@ -127,13 +127,6 @@ export function ScheduleCard({
               </div>
             </div>
           ))}
-          {members.length > 5 && (
-            <div className="flex items-center justify-center px-3 py-1.5 bg-secondary rounded-lg">
-              <span className="text-xs text-muted-foreground">
-                +{members.length - 5}
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
