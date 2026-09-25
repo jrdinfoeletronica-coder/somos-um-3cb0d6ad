@@ -347,17 +347,22 @@ export default function Escalas() {
   const buildPreview = () => {
     if (templates.length === 0) return;
     
-    // Calcula quem foi o último ministrante para evitar repetição
+    // Calcula quem tocou na última semana para evitar repetição (descanso)
     const sortedSchedules = [...schedules].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    let lastWeekMinistros = new Set<string>();
-    for (const s of sortedSchedules) {
-      const mins = s.members?.filter((m: any) => m.role === 'Ministro de Louvor');
-      if (mins && mins.length > 0) {
-        mins.forEach((m: any) => {
-           const found = (members as any[]).find(mb => mb.name === m.name);
-           if (found) lastWeekMinistros.add(found.id);
-        });
-        break;
+    let lastWeekMembers = new Set<string>();
+    if (sortedSchedules.length > 0) {
+      const lastDate = new Date(sortedSchedules[0].date);
+      for (const s of sortedSchedules) {
+        const d = new Date(s.date);
+        const diffDays = (lastDate.getTime() - d.getTime()) / (1000 * 3600 * 24);
+        if (diffDays <= 7) {
+          s.members?.forEach((m: any) => {
+             const found = (members as any[]).find(mb => mb.name === m.name);
+             if (found) lastWeekMembers.add(found.id);
+          });
+        } else {
+          break;
+        }
       }
     }
 
@@ -414,17 +419,38 @@ export default function Escalas() {
             if (!canAttendAtLeastOne) return false;
           }
 
-          if (role === 'Ministro de Louvor' && lastWeekMinistros.has(m.id)) return false;
+          if (unavailabilityStrategy === "whole_week") {
+            for (const sched of weekSchedules) {
+              const isUnavail = unavailabilities.some((u: any) => {
+                const uDate = typeof u.date === 'string' ? u.date.split('T')[0] : '';
+                return u.member_id === m.id && uDate === sched.date;
+              });
+              if (isUnavail) return false;
+            }
+          }
 
           return true;
         });
-        avail = avail.sort(() => 0.5 - Math.random()).slice(0, count as number);
+
+        avail = avail.sort(() => 0.5 - Math.random());
+        
+        const availRested = avail.filter(m => !lastWeekMembers.has(m.id));
+        if (availRested.length >= count) {
+            avail = availRested.slice(0, count as number);
+        } else {
+            avail.sort((a, b) => {
+                const aRest = lastWeekMembers.has(a.id) ? 1 : 0;
+                const bRest = lastWeekMembers.has(b.id) ? 1 : 0;
+                return aRest - bRest;
+            });
+            avail = avail.slice(0, count as number);
+        }
+
         for (const m of avail) { weekTeam.push({ role, member: m }); usedIds.add(m.id); }
       }
 
-      // Atualiza os ministrantes para a próxima iteração
-      const ministrosThisWeek = weekTeam.filter(wt => wt.role === 'Ministro de Louvor').map(wt => wt.member.id);
-      if (ministrosThisWeek.length > 0) lastWeekMinistros = new Set(ministrosThisWeek);
+      // Atualiza a equipe da semana passada para a PRÓXIMA semana no loop (descanso)
+      lastWeekMembers = new Set(weekTeam.map(wt => wt.member.id));
       for (const sched of weekSchedules) {
         const reqs = typeof sched._template_ref.role_requirements === 'string' ? JSON.parse(sched._template_ref.role_requirements) : sched._template_ref.role_requirements || [];
         const membersForDay: { name: string; role: string; phone?: string }[] = [];
@@ -438,11 +464,20 @@ export default function Escalas() {
             const currentDayOfW = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getDay();
             const isUnavailDays = m.available_days && m.available_days.length > 0 && !m.available_days.includes(currentDayOfW);
             
-            if (isUnavailDays) {
+            const isUnavailCalendar = unavailabilities.some((u: any) => {
+              const uDate = typeof u.date === 'string' ? u.date.split('T')[0] : '';
+              return u.member_id === m.id && uDate === sched.date;
+            });
+            
+            if (isUnavailDays || (isUnavailCalendar && unavailabilityStrategy === "only_day")) {
               const substitute = members.find((sub: any) => {
                 if (!sub.roles?.includes(req.role) || sub.status !== 'active' || sub.id === m.id) return false;
                 const subUnavailDays = sub.available_days && sub.available_days.length > 0 && !sub.available_days.includes(currentDayOfW);
-                return !subUnavailDays;
+                const subUnavailCal = unavailabilities.some((u: any) => {
+                  const uDate = typeof u.date === 'string' ? u.date.split('T')[0] : '';
+                  return u.member_id === sub.id && uDate === sched.date;
+                });
+                return !subUnavailDays && !subUnavailCal;
               });
               if (substitute) m = substitute;
               else continue;
@@ -461,264 +496,41 @@ export default function Escalas() {
   // Funções de Geração Automática
   const autoGenerateMutation = useMutation({
     mutationFn: async () => {
-      if (templates.length === 0) {
-        throw new Error("Nenhum modelo (template) encontrado. Execute o SQL de configuração primeiro.");
-      }
-
-      // Calcula quem foi o último ministrante para evitar repetição
-      const sortedSchedules = [...schedules].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      let lastWeekMinistros = new Set<string>();
-      for (const s of sortedSchedules) {
-        const mins = s.members?.filter((m: any) => m.role === 'Ministro de Louvor');
-        if (mins && mins.length > 0) {
-          mins.forEach((m: any) => {
-             const found = (members as any[]).find(mb => mb.name === m.name);
-             if (found) lastWeekMinistros.add(found.id);
-          });
-          break;
-        }
-      }
-
-      const newSchedules = [];
-      const today = new Date();
-      // Ajusta para a próxima segunda-feira como inicio (ou usar a data atual e ir iterando)
-      
-      const weeksToGenerate = [];
-      
-      // Itera pelas próximas N semanas (agrupando dias)
-      for (let w = 0; w < autoGenWeeks; w++) {
-        const weekSchedules = [];
-        
-        for (let d = 0; d < 7; d++) {
-          const currentDate = new Date(today);
-          currentDate.setDate(today.getDate() + (w * 7) + d + 1);
-          
-          const dayOfWeek = currentDate.getDay(); // 0-Dom, 1-Seg...
-          const dayOfMonth = currentDate.getDate();
-          const nthWeek = Math.ceil(dayOfMonth / 7);
-          
-          let selectedTemplate = null;
-          
-          // Verifica se existe template para este dia
-          for (const t of templates) {
-            let shouldCreate = false;
-            
-            if (t.is_special_monthly) {
-              if (dayOfWeek === t.day_of_week && nthWeek === t.nth_week) {
-                shouldCreate = true;
-              }
-            } else {
-              const isConflict = templates.some(st => 
-                st.is_special_monthly && 
-                st.day_of_week === dayOfWeek && 
-                nthWeek === st.nth_week
-              );
-              
-              if (dayOfWeek === t.day_of_week && !isConflict) {
-                shouldCreate = true;
-              }
-            }
-
-            if (shouldCreate) {
-              selectedTemplate = t;
-              break;
-            }
-          }
-
-          if (selectedTemplate) {
-            const formattedDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
-            const alreadyExists = schedules.some((s: any) => 
-              s.date === formattedDate && s.event === selectedTemplate.event_name
-            );
-            
-            if (!alreadyExists) {
-              weekSchedules.push({
-                date: formattedDate,
-                time: selectedTemplate.time,
-                event: selectedTemplate.event_name,
-                location: selectedTemplate.location || "Templo Principal",
-                status: "pending",
-                _template_ref: selectedTemplate,
-                _date_obj: currentDate
-              });
-            }
-          }
-        }
-        
-        if (weekSchedules.length > 0) {
-          weeksToGenerate.push(weekSchedules);
-        }
+      if (previewData.length === 0) {
+        throw new Error("Nenhuma escala na prévia para gerar.");
       }
 
       let totalInserted = 0;
 
-      // Processa semana por semana para manter a "Equipe da Semana"
-      for (const week of weeksToGenerate) {
-        // 1. Determina as funções necessárias da semana (união das necessidades)
-        const weeklyRoles = new Map();
-        for (const sched of week) {
-          const reqs = typeof sched._template_ref.role_requirements === 'string' 
-            ? JSON.parse(sched._template_ref.role_requirements) 
-            : sched._template_ref.role_requirements || [];
-            
-          for (const r of reqs) {
-            if (!weeklyRoles.has(r.role) || weeklyRoles.get(r.role) < r.count) {
-              weeklyRoles.set(r.role, r.count);
-            }
-          }
-        }
-
-        // 2. Sorteia a equipe base da semana
-        const weekTeam: { role: string; member: any }[] = [];
-        const usedMemberIds = new Set(); // Previne que o membro faça duas funções na mesma semana
-
-        if (autoGenAssign) {
-          for (const [role, count] of weeklyRoles.entries()) {
-            // Busca membros ativos para a função
-            let available = members.filter((m: any) => {
-              if (!m.roles || !m.roles.includes(role) || m.status !== 'active' || usedMemberIds.has(m.id)) return false;
-              
-              if (m.available_days && m.available_days.length > 0) {
-                let canAttendAtLeastOne = false;
-                for (const sched of week) {
-                  const parts = sched.date.split('-');
-                  const dayOfW = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getDay();
-                  if (m.available_days.includes(dayOfW)) {
-                    canAttendAtLeastOne = true;
-                    break;
-                  }
-                }
-                if (!canAttendAtLeastOne) return false;
-              }
-
-              if (role === 'Ministro de Louvor' && lastWeekMinistros.has(m.id)) return false;
-
-              return true;
-            });
-            
-            // Filtro de indisponibilidade (whole_week strategy)
-            if (unavailabilityStrategy === "whole_week") {
-              available = available.filter((m: any) => {
-                // Se estiver indisponível em QUALQUER dia de culto dessa semana, cai fora
-                for (const sched of week) {
-                  const isUnavail = unavailabilities.some((u: any) => {
-                    const uDate = typeof u.date === 'string' ? u.date.split('T')[0] : '';
-                    const sDate = typeof sched.date === 'string' ? sched.date.split('T')[0] : '';
-                    return u.member_id === m.id && uDate === sDate;
-                  });
-                  if (isUnavail) return false;
-                }
-                return true;
-              });
-            }
-
-            // Idealmente: ordenar randômico ou por "quem tocou menos recentemente"
-            // Por simplicidade: embaralha
-            available = available.sort(() => 0.5 - Math.random());
-            
-            const selected = available.slice(0, count);
-            for (const s of selected) {
-              weekTeam.push({ role, member: s });
-              usedMemberIds.add(s.id);
-            }
-          }
-
-          // Atualiza os ministrantes para a próxima iteração
-          const ministrosThisWeek = weekTeam.filter(wt => wt.role === 'Ministro de Louvor').map(wt => wt.member.id);
-          if (ministrosThisWeek.length > 0) lastWeekMinistros = new Set(ministrosThisWeek);
-        }
-
-        // 3. Insere os cultos e atribui a equipe
-        for (const sched of week) {
-          const templateRef = sched._template_ref;
-          delete sched._template_ref;
-          delete sched._date_obj;
+      for (const sched of previewData) {
+        // 1. Inserir a escala
+        const { data: insertedSched, error: insertError } = await supabase
+          .from("schedules")
+          .insert([{
+            date: sched.date,
+            time: sched.time,
+            event: sched.event,
+            location: sched.location,
+            status: "pending"
+          }])
+          .select()
+          .single();
           
-          const { data: insertedSched, error: insertError } = await supabase
-            .from("schedules")
-            .insert([sched])
-            .select()
-            .single();
-            
-          if (insertError) throw insertError;
-          totalInserted++;
-          
-          // Atribui os membros para ESTE dia específico
-          if (autoGenAssign && templateRef.role_requirements) {
-            const dayReqs = typeof templateRef.role_requirements === 'string' 
-              ? JSON.parse(templateRef.role_requirements) 
-              : templateRef.role_requirements || [];
-              
-            const membersToInsert = [];
-            
-            for (const req of dayReqs) {
-              // Pega o membro da weekTeam pra esta função
-              const teamMembersForRole = weekTeam.filter(wt => wt.role === req.role);
-              
-              for (let i = 0; i < Math.min(req.count, teamMembersForRole.length); i++) {
-                let memberToAssign = teamMembersForRole[i].member;
-                
-                const parts = sched.date.split('-');
-                const currentDayOfW = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getDay();
-                const isUnavailDays = memberToAssign.available_days && memberToAssign.available_days.length > 0 && !memberToAssign.available_days.includes(currentDayOfW);
+        if (insertError) throw insertError;
+        totalInserted++;
 
-                // Filtro de indisponibilidade
-                const isUnavail = unavailabilities.some((u: any) => {
-                  const uDate = typeof u.date === 'string' ? u.date.split('T')[0] : '';
-                  const sDate = typeof sched.date === 'string' ? sched.date.split('T')[0] : '';
-                  return u.member_id === memberToAssign.id && uDate === sDate;
-                });
-                
-                // Forçamos a substituição se o dia fixo dele não bater (isUnavailDays)
-                // OU se a estratégia for only_day e ele estiver indisponível no calendário de férias.
-                if (isUnavailDays || (isUnavail && unavailabilityStrategy === "only_day")) {
-                  // Substitui apenas pro dia
-                  const substitute = members.find((m: any) => {
-                    if (!m.roles || !m.roles.includes(req.role) || m.status !== 'active' || m.id === memberToAssign.id) return false;
-                    
-                    const subUnavailDays = m.available_days && m.available_days.length > 0 && !m.available_days.includes(currentDayOfW);
-                    if (subUnavailDays) return false;
-
-                    const subUnavail = unavailabilities.some((u: any) => {
-                      const uDate = typeof u.date === 'string' ? u.date.split('T')[0] : '';
-                      const sDate = typeof sched.date === 'string' ? sched.date.split('T')[0] : '';
-                      return u.member_id === m.id && uDate === sDate;
-                    });
-                    
-                    return !subUnavail;
-                  });
-                  
-                  if (substitute) {
-                    memberToAssign = substitute;
-                  } else {
-                    // Não achou substituto e o original tá indisponível. Pula a inserção para esta vaga.
-                    continue; // Pula para a próxima iteração do loop
-                  }
-                }
-                
-                // Se a estratégia for "whole_week" e ele passou pelo filtro lá em cima, ele está disponível
-                // Se for "only_day", e ele estava indisponível, a lógica acima substituiu ou deu continue.
-                
-                membersToInsert.push({
-                  schedule_id: insertedSched.id,
-                  member_name: memberToAssign.name,
-                  role: req.role,
-                  status: 'pending'
-                });
-              }
-            }
-            
-            if (membersToInsert.length > 0) {
-              await supabase.from("schedule_members").insert(membersToInsert);
-            }
-          }
+        // 2. Inserir os membros
+        if (sched.members.length > 0) {
+          const membersToInsert = sched.members.map(m => ({
+            schedule_id: insertedSched.id,
+            member_name: m.name,
+            role: m.role,
+            status: "pending"
+          }));
+          await supabase.from("schedule_members").insert(membersToInsert);
         }
       }
 
-      if (totalInserted === 0) {
-        throw new Error("Não há novas datas para gerar (talvez já estejam criadas).");
-      }
-      
       return totalInserted;
     },
     onSuccess: (count) => {
