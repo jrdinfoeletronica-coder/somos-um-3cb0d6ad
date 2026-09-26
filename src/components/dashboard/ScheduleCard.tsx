@@ -17,6 +17,7 @@ interface ScheduleCardProps {
   onDecline?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onNotify?: () => void;
   showActions?: boolean;
   showMemberActions?: boolean;
   memberStatus?: string | null;
@@ -36,6 +37,7 @@ export function ScheduleCard({
   onDecline,
   onEdit,
   onDelete,
+  onNotify,
   showActions = false,
   showMemberActions = false,
   memberStatus = null,
@@ -185,7 +187,7 @@ export function ScheduleCard({
       )}
 
       {/* Actions */}
-      {(showActions || showMemberActions || onEdit || onDelete) && (
+      {(showActions || showMemberActions || onEdit || onDelete || onNotify) && (
         <div className="flex flex-col gap-3 pt-4 border-t border-border mt-auto pl-2">
           {showActions && status === "pending" && onConfirm && onDecline && (
             <div className="flex items-center gap-2 w-full">
@@ -222,6 +224,11 @@ export function ScheduleCard({
           )}
           
           <div className="flex items-center justify-end gap-2 mt-1">
+            {onNotify && (
+              <Button variant="outline" size="sm" onClick={onNotify} className="h-8 border-green-500/50 text-green-600 hover:bg-green-500/10">
+                Notificar Equipe
+              </Button>
+            )}
             {onEdit && (
               <Button variant="soft" size="sm" onClick={onEdit} className="h-8">
                 Editar

@@ -600,6 +600,29 @@ export default function Escalas() {
     saveScheduleMutation.mutate();
   };
 
+  const handleNotifyTeam = (schedule: any) => {
+    let text = `🗓 *Escala: ${schedule.event}*\n`;
+    if (schedule.location) text += `📍 ${schedule.location}\n`;
+    text += `⏰ ${new Date(schedule.date + 'T12:00:00').toLocaleDateString('pt-BR')} às ${schedule.time}\n\n`;
+    
+    text += `*Equipe:*\n`;
+    schedule.members.forEach((m: any) => {
+      text += `- ${m.name} (${m.role})\n`;
+    });
+
+    if (schedule.songs && schedule.songs.length > 0) {
+      text += `\n*Repertório:*\n`;
+      schedule.songs.forEach((s: any, idx: number) => {
+        text += `${idx + 1}. ${s.title} - ${s.artist}\n`;
+      });
+    }
+
+    text += `\n👉 Acesse o app para confirmar sua presença e ver os louvores!`;
+    
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank");
+  };
+
   const selectedMemberObj = members.find((m: any) => m.name === selectedMemberName);
   const selectedMemberRoles = selectedMemberObj?.roles || [];
 
@@ -667,6 +690,7 @@ export default function Escalas() {
                   showActions={userRole === "admin"}
                   onEdit={userRole === "admin" ? () => handleOpenEditSchedule(schedule) : undefined}
                   onDelete={userRole === "admin" ? () => handleDeleteSchedule(schedule.id) : undefined}
+                  onNotify={userRole === "admin" ? () => handleNotifyTeam(schedule) : undefined}
                   onConfirm={userRole === "admin" ? () => updateStatusMutation.mutate({ id: schedule.id, status: "confirmed" }) : undefined}
                   onDecline={userRole === "admin" ? () => updateStatusMutation.mutate({ id: schedule.id, status: "cancelled" }) : undefined}
                   showMemberActions={
