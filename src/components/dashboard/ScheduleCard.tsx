@@ -10,7 +10,7 @@ interface ScheduleCardProps {
   time: string;
   event: string;
   location?: string;
-  members: { name: string; role: string; status?: string }[];
+  members: { name: string; role: string; status?: string; avatar_url?: string }[];
   songs?: { id: string; title: string; artist: string }[];
   status?: "confirmed" | "pending" | "cancelled";
   onConfirm?: () => void;
@@ -126,10 +126,14 @@ export function ScheduleCard({
                 key={index}
                 className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-lg"
               >
-                <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
-                  <span className="text-xs font-medium text-accent">
-                    {member.name.charAt(0)}
-                  </span>
+                <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden shrink-0">
+                  {member.avatar_url ? (
+                    <img src={member.avatar_url} alt={member.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xs font-medium text-accent">
+                      {member.name.charAt(0)}
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs">
                   <p className="font-medium text-foreground flex items-center gap-1">

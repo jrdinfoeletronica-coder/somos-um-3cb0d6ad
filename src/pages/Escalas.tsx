@@ -660,6 +660,10 @@ export default function Escalas() {
               <div key={schedule.id || index} className="animate-slide-up h-full" style={{ animationDelay: `${index * 50}ms` }}>
                 <ScheduleCard
                   {...schedule}
+                  members={schedule.members.map((sm: any) => {
+                    const matchedMember = members.find((m: any) => m.name === sm.name);
+                    return { ...sm, avatar_url: matchedMember?.avatar_url };
+                  })}
                   showActions={userRole === "admin"}
                   onEdit={userRole === "admin" ? () => handleOpenEditSchedule(schedule) : undefined}
                   onDelete={userRole === "admin" ? () => handleDeleteSchedule(schedule.id) : undefined}

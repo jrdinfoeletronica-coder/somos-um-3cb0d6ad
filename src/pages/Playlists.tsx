@@ -91,6 +91,7 @@ export default function Playlists() {
   const [playerQueue, setPlayerQueue] = useState<{ title: string; artist: string; youtubeUrl: string; audioUrl?: string | null }[]>([]);
   const [playerIndex, setPlayerIndex] = useState(0);
   const [playRequestId, setPlayRequestId] = useState(0);
+  const [playerKey, setPlayerKey] = useState(0); // Incrementar mata o iframe do YouTube silenciosamente
   
   // Controles do Player
   const [isPlaying, setIsPlaying] = useState(false);
@@ -1413,7 +1414,7 @@ export default function Playlists() {
         const track = playerQueue[playerIndex];
 
         return (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 text-white shadow-2xl animate-fade-in">
+          <div key={playerKey} className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 text-white shadow-2xl animate-fade-in">
             {/* Barra de progresso interativa (clicável para avançar/voltar) */}
             <div
               className="w-full h-3 bg-zinc-800/80 cursor-pointer relative group flex items-center"
@@ -1522,8 +1523,15 @@ export default function Playlists() {
               <div className="w-full sm:w-1/3 flex justify-end shrink-0">
                 <button
                   onClick={() => {
+                    // Incrementar o key força o React a destruir o iframe do YouTube
+                    // silenciosamente, sem recarregar a página
+                    setPlayerKey(k => k + 1);
                     setIsPlaying(false);
                     setIsPlayerOpen(false);
+                    setPlayerQueue([]);
+                    setResolvedVideoId(null);
+                    setAudioPreviewUrl(null);
+                    ytPlayerRef.current = null;
                   }}
                   className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
                   title="Fechar"
