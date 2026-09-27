@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { QRCodeSVG } from "qrcode.react";
 
 export default function Equipamentos() {
   const [search, setSearch] = useState("");
@@ -175,6 +176,15 @@ export default function Equipamentos() {
                   onChange={e => setFormData({...formData, notes: e.target.value})}
                 />
               </div>
+              {editingId && (
+                <div className="space-y-2 lg:col-span-3 flex flex-col items-center justify-center p-4 bg-background rounded-lg border border-border mt-2">
+                  <h4 className="text-sm font-medium mb-2 text-foreground">QR Code de Identificação</h4>
+                  <div className="p-3 bg-white rounded-md">
+                    <QRCodeSVG value={editingId} size={120} />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Identificador: {editingId}</p>
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <Button variant="ghost" onClick={() => setIsAdding(false)}>Cancelar</Button>

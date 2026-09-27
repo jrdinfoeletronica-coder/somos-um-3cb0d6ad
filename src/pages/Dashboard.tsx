@@ -1,5 +1,6 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { BirthdayBanner } from "@/components/dashboard/BirthdayBanner";
+import { TodayScheduleWidget } from "@/components/dashboard/TodayScheduleWidget";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Users, Music, Calendar, TrendingUp, Wallet } from "lucide-react";
@@ -100,6 +101,9 @@ export default function Dashboard() {
     <DashboardLayout title="Painel">
       <div className="space-y-6 animate-fade-in pb-20">
         
+        {/* Widget Escala Hoje */}
+        <TodayScheduleWidget />
+
         {/* Banner de Aniversariantes do Dia */}
         <BirthdayBanner />
 

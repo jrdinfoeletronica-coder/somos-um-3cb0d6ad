@@ -20,10 +20,21 @@ import NotFound from "./pages/NotFound";
 import Playlists from "./pages/Playlists";
 import Equipamentos from "./pages/Equipamentos";
 import Caixinha from "./pages/Caixinha";
+import Export from "./pages/Export";
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+import { SplashScreen } from "@/components/SplashScreen";
+import { useState } from "react";
+
+const App = () => {
+  const [showSplash, setShowSplash] = useState(true);
+
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
+
+  return (
+    <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -45,12 +56,14 @@ const App = () => (
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/equipamentos" element={<Equipamentos />} />
           <Route path="/caixinha" element={<Caixinha />} />
+          <Route path="/exportar" element={<Export />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

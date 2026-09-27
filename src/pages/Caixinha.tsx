@@ -34,6 +34,7 @@ export default function Caixinha() {
     category: "Oferta",
     date: new Date().toISOString().split('T')[0],
   });
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   const { data: currentUser } = useQuery({
     queryKey: ["currentUser", memberId],
@@ -76,13 +77,28 @@ export default function Caixinha() {
         throw new Error("O valor deve ser maior que zero.");
       }
       
+      let receipt_url = null;
+      if (receiptFile) {
+        const fileExt = receiptFile.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('receipts')
+          .upload(fileName, receiptFile);
+          
+        if (!uploadError && uploadData) {
+          const { data: publicUrlData } = supabase.storage.from('receipts').getPublicUrl(fileName);
+          receipt_url = publicUrlData.publicUrl;
+        }
+      }
+
       const { error } = await supabase.from("transactions").insert([{
         description: formData.description,
         amount: amountNum,
         type: formData.type,
         category: formData.category,
         date: formData.date,
-        member_id: memberId || null
+        member_id: memberId || null,
+        receipt_url
       }]);
 
       if (error) throw error;
@@ -220,6 +236,11 @@ export default function Caixinha() {
                         <p className="font-medium text-foreground">{t.description}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                           <span className="bg-secondary px-2 py-0.5 rounded-md">{t.category}</span>
+                          {(t as any).receipt_url && (
+                            <a href={(t as any).receipt_url} target="_blank" rel="noreferrer" className="text-accent underline">
+                              Comprovante
+                            </a>
+                          )}
                           <span>{format(parseISO(t.date), "dd 'de' MMMM, yyyy", { locale: ptBR })}</span>
                         </div>
                       </div>
@@ -312,6 +333,20 @@ export default function Caixinha() {
                       required
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="receipt">Comprovante (Opcional)</Label>
+                  <Input 
+                    id="receipt"
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setReceiptFile(e.target.files[0]);
+                      }
+                    }}
+                  />
                 </div>
 
                 <div className="space-y-2">

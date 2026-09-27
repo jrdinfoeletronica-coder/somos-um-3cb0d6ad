@@ -79,9 +79,13 @@ export default function Comunicacao() {
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [sending, setSending] = useState(false);
-  // Mobile: "list" = mostra lista, "chat" = mostra a conversa aberta
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Mentions State
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionIndex, setMentionIndex] = useState(0);
 
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
@@ -574,8 +578,15 @@ export default function Comunicacao() {
                                       : "bg-card border border-border text-foreground rounded-bl-sm"
                                   }`}
                                 >
-                                  <p className="leading-relaxed break-words">{msg.content}</p>
-                                  <div
+                                    <p className="leading-relaxed break-words">
+                                      {msg.content.split(/@(\w+)/g).map((part, index) => {
+                                        if (index % 2 === 1) {
+                                          return <span key={index} className="text-blue-500 dark:text-blue-400 font-bold bg-blue-500/10 px-1 rounded cursor-pointer hover:underline">@{part}</span>;
+                                        }
+                                        return part;
+                                      })}
+                                    </p>
+                                    <div
                                     className={`flex items-center gap-1 mt-0.5 ${
                                       isMe ? "justify-end" : "justify-start"
                                     }`}
@@ -602,42 +613,87 @@ export default function Comunicacao() {
               </div>
 
               {/* Campo de envio */}
-              <form
-                onSubmit={handleSendMessage}
-                className="flex items-center gap-2 px-3 md:px-4 py-3 border-t border-border bg-card shrink-0"
-              >
-                <Input
-                  type="text"
-                  name="chat_message"
-                  id="chat_message"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Digite uma mensagem..."
-                  className="flex-1 rounded-full bg-secondary/30 border-secondary focus:border-accent"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck="false"
-                  data-gramm="false"
-                  data-gramm_editor="false"
-                  data-enable-grammarly="false"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage(e as any);
-                    }
-                  }}
-                />
-                <Button
-                  type="submit"
-                  variant="gold"
-                  size="icon"
-                  className="rounded-full w-10 h-10 shrink-0"
-                  disabled={sending || !newMessage.trim()}
+              <div className="relative shrink-0">
+                {showMentions && (
+                  <div className="absolute bottom-[calc(100%-8px)] left-4 mb-2 bg-popover border border-border shadow-lg rounded-md w-64 max-h-48 overflow-y-auto z-50 py-1 animate-in fade-in slide-in-from-bottom-2">
+                    {members
+                      .filter((m: any) => m.name.toLowerCase().includes(mentionQuery.toLowerCase()) && m.name !== myName)
+                      .map((m: any) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-accent/20 flex items-center gap-2"
+                        onClick={() => {
+                          const before = newMessage.slice(0, mentionIndex);
+                          const after = newMessage.slice(mentionIndex + 1 + mentionQuery.length);
+                          setNewMessage(`${before}@${m.name} ${after}`);
+                          setShowMentions(false);
+                          setTimeout(() => document.getElementById('chat_message')?.focus(), 10);
+                        }}
+                      >
+                        <div className="w-6 h-6 rounded-full bg-secondary overflow-hidden shrink-0">
+                           {m.avatar_url ? <img src={m.avatar_url} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-[10px] bg-accent text-primary">{m.name.charAt(0)}</div>}
+                        </div>
+                        {m.name}
+                      </button>
+                    ))}
+                    {members.filter((m: any) => m.name.toLowerCase().includes(mentionQuery.toLowerCase()) && m.name !== myName).length === 0 && (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">Nenhum membro encontrado</div>
+                    )}
+                  </div>
+                )}
+                <form
+                  onSubmit={handleSendMessage}
+                  className="flex items-center gap-2 px-3 md:px-4 py-3 border-t border-border bg-card"
                 >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </form>
+                  <Input
+                    type="text"
+                    name="chat_message"
+                    id="chat_message"
+                    value={newMessage}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewMessage(val);
+                      
+                      const cursor = e.target.selectionStart || 0;
+                      const textBeforeCursor = val.slice(0, cursor);
+                      const match = textBeforeCursor.match(/@(\w*)$/);
+                      
+                      if (match) {
+                        setShowMentions(true);
+                        setMentionQuery(match[1]);
+                        setMentionIndex(match.index || 0);
+                      } else {
+                        setShowMentions(false);
+                      }
+                    }}
+                    placeholder="Digite uma mensagem..."
+                    className="flex-1 rounded-full bg-secondary/30 border-secondary focus:border-accent"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
+                    data-gramm="false"
+                    data-gramm_editor="false"
+                    data-enable-grammarly="false"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage(e as any);
+                      }
+                    }}
+                  />
+                  <Button
+                    type="submit"
+                    variant="gold"
+                    size="icon"
+                    className="rounded-full w-10 h-10 shrink-0"
+                    disabled={sending || !newMessage.trim()}
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </form>
+              </div>
             </div>
           )}
         </div>

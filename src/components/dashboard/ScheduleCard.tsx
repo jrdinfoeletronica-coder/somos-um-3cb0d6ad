@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import confetti from "canvas-confetti";
 
 interface ScheduleCardProps {
   id?: string;
@@ -10,7 +11,7 @@ interface ScheduleCardProps {
   time: string;
   event: string;
   location?: string;
-  members: { name: string; role: string; status?: string; avatar_url?: string }[];
+  members: { name: string; role: string; status?: string; avatar_url?: string; is_online?: boolean }[];
   songs?: { id: string; title: string; artist: string }[];
   status?: "confirmed" | "pending" | "cancelled";
   onConfirm?: () => void;
@@ -48,21 +49,24 @@ export function ScheduleCard({
   const [isSongsOpen, setIsSongsOpen] = useState(false);
   const navigate = useNavigate();
 
-  const statusConfig: Record<string, { bg: string, text: string, label: string }> = {
+  const statusConfig: Record<string, { bg: string, text: string, label: string, border: string }> = {
     confirmed: {
       bg: "bg-green-50 border-green-200",
       text: "text-green-700",
       label: "Confirmado",
+      border: "border-green-500"
     },
     pending: {
       bg: "bg-amber-50 border-amber-200",
       text: "text-amber-700",
       label: "Pendente",
+      border: "border-amber-500"
     },
     cancelled: {
       bg: "bg-red-50 border-red-200",
       text: "text-red-700",
       label: "Cancelado",
+      border: "border-red-500"
     },
   };
 
@@ -70,7 +74,7 @@ export function ScheduleCard({
   const currentStatus = statusConfig[safeStatus] || statusConfig["pending"];
 
   return (
-    <div className="card-church p-5 flex flex-col h-full space-y-4 relative overflow-hidden group">
+    <div className={cn("card-church p-5 flex flex-col h-full space-y-4 relative overflow-hidden group border-[1.5px]", currentStatus.border)}>
       {/* Decorative side accent */}
       <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-accent to-[hsl(30_80%_45%)] opacity-80" />
       
@@ -128,13 +132,18 @@ export function ScheduleCard({
                 key={index}
                 className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-lg"
               >
-                <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden shrink-0">
-                  {member.avatar_url ? (
-                    <img src={member.avatar_url} alt={member.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-xs font-medium text-accent">
-                      {member.name.charAt(0)}
-                    </span>
+                <div className="relative inline-block shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center overflow-hidden">
+                    {member.avatar_url ? (
+                      <img src={member.avatar_url} alt={member.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs font-medium text-accent">
+                        {member.name.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  {member.is_online && (
+                    <span className="absolute -bottom-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full bg-green-500 ring-1 ring-white"></span>
                   )}
                 </div>
                 <div className="text-xs">
@@ -202,10 +211,60 @@ export function ScheduleCard({
           
           {showMemberActions && (
             <div className="flex items-center gap-2 w-full">
-              <Button variant="gold" size="sm" onClick={onConfirmMember} className="flex-1 h-8 text-xs">
+              <Button variant="gold" size="sm" onClick={() => {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                if (onConfirmMember) onConfirmMember();
+              }} className="flex-1 h-8 text-xs">
                 ✅ Confirmar Presença
               </Button>
-              <Button variant="outline" size="sm" onClick={onDeclineMember} className="flex-1 h-8 text-xs">
+              <Button variant="outline" size="sm" onClick={() => {
+                // Efeito impactante de Recusa (Tristeza e Tremor)
+                const sadDiv = document.createElement("div");
+                sadDiv.innerHTML = "😭";
+                sadDiv.style.position = "fixed";
+                sadDiv.style.top = "50%";
+                sadDiv.style.left = "50%";
+                sadDiv.style.transform = "translate(-50%, -50%) scale(0.1)";
+                sadDiv.style.fontSize = "180px";
+                sadDiv.style.zIndex = "9999";
+                sadDiv.style.transition = "all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+                sadDiv.style.pointerEvents = "none";
+                sadDiv.style.filter = "drop-shadow(0 10px 20px rgba(0,0,0,0.5))";
+                document.body.appendChild(sadDiv);
+
+                // Tremor na tela
+                const originalTransform = document.body.style.transform;
+                document.body.style.transition = "none";
+                let shakeCount = 0;
+                const shakeInterval = setInterval(() => {
+                  shakeCount++;
+                  const x = (Math.random() - 0.5) * 15;
+                  const y = (Math.random() - 0.5) * 15;
+                  document.body.style.transform = `translate(${x}px, ${y}px)`;
+                  if (shakeCount > 8) {
+                    clearInterval(shakeInterval);
+                    document.body.style.transition = "transform 0.3s ease";
+                    document.body.style.transform = originalTransform;
+                  }
+                }, 50);
+
+                // Animar entrada do emoji
+                requestAnimationFrame(() => {
+                  sadDiv.style.transform = "translate(-50%, -50%) scale(1)";
+                });
+
+                // Remover depois de 2 segundos com fade down
+                setTimeout(() => {
+                  sadDiv.style.transition = "all 0.8s ease-in";
+                  sadDiv.style.transform = "translate(-50%, 100vh) scale(0.5)";
+                  sadDiv.style.opacity = "0";
+                  setTimeout(() => {
+                    if (document.body.contains(sadDiv)) document.body.removeChild(sadDiv);
+                  }, 800);
+                }, 1500);
+
+                if (onDeclineMember) onDeclineMember();
+              }} className="flex-1 h-8 text-xs border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700">
                 ❌ Recusar
               </Button>
             </div>

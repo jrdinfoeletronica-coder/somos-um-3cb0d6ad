@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ScheduleCard } from "@/components/dashboard/ScheduleCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ScheduleTemplateManager } from "@/components/dashboard/ScheduleTemplateManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -676,7 +677,11 @@ export default function Escalas() {
 
         {/* List View */}
         {isLoading ? (
-          <div className="text-center py-8">Carregando escalas...</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 py-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <Skeleton key={i} className="h-64 w-full rounded-xl bg-secondary/50 border border-border" />
+            ))}
+          </div>
         ) : view === "list" && schedules.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {schedules.map((schedule: any, index: number) => (
