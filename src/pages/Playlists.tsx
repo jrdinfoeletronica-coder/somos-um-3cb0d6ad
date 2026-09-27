@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { lookupWorshipKey, getBestSongKey } from "@/lib/worshipKeys";
-import { initAudioContext, resumeOnInteraction } from "@/lib/audio";
+import { initBackgroundAudioSettings, keepBackgroundAudioAlive, stopBackgroundAudio } from "@/lib/audio";
 import { 
   searchYoutubeVideoId, 
   getOfficialYoutubeUrl, 
@@ -102,9 +102,9 @@ export default function Playlists() {
   const [resolvedVideoId, setResolvedVideoId] = useState<string | null>(null);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
   
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioCtxRef = useRef<any>(null); // manter por fallback local caso precise
   useEffect(() => {
-    audioCtxRef.current = initAudioContext();
+    initBackgroundAudioSettings();
   }, []);
 
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -322,8 +322,6 @@ export default function Playlists() {
   };
 
   const togglePlayPause = () => {
-    resumeOnInteraction(audioCtxRef.current);
-    
     if (isPlaying) {
       if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === "function") {
         ytPlayerRef.current.pauseVideo();
@@ -331,8 +329,10 @@ export default function Playlists() {
       if (audioRef.current) {
         audioRef.current.pause();
       }
+      stopBackgroundAudio();
       setIsPlaying(false);
     } else {
+      keepBackgroundAudioAlive();
       if (ytPlayerRef.current && typeof ytPlayerRef.current.playVideo === "function") {
         ytPlayerRef.current.playVideo();
       }
