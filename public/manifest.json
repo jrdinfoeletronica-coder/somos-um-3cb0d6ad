@@ -1,7 +1,7 @@
 {
-  "name": "Somos Um - Gestão de Louvor",
+  "name": "Somos Um - Gestǜo de Louvor",
   "short_name": "Somos Um",
-  "description": "Sistema completo para gestão de ministério de louvor: escalas, repertório, cifras e equipamentos.",
+  "description": "Sistema completo para gestǜo de ministǸrio de louvor: escalas, repertrio, cifras e equipamentos.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
@@ -20,5 +20,12 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "background": {
+    "service_worker": "/sw.js",
+    "type": "audio"
+  },
+  "permissions": [
+    "audio"
   ]
 }

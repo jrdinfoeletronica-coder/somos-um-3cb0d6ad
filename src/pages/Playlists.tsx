@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { lookupWorshipKey, getBestSongKey } from "@/lib/worshipKeys";
+import { initAudioContext, resumeOnInteraction } from "@/lib/audio";
 import { 
   searchYoutubeVideoId, 
   getOfficialYoutubeUrl, 
@@ -101,6 +102,11 @@ export default function Playlists() {
   const [resolvedVideoId, setResolvedVideoId] = useState<string | null>(null);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
   
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  useEffect(() => {
+    audioCtxRef.current = initAudioContext();
+  }, []);
+
   const audioRef = useRef<HTMLAudioElement>(null);
   const ytPlayerRef = useRef<any>(null);
 
@@ -316,6 +322,8 @@ export default function Playlists() {
   };
 
   const togglePlayPause = () => {
+    resumeOnInteraction(audioCtxRef.current);
+    
     if (isPlaying) {
       if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === "function") {
         ytPlayerRef.current.pauseVideo();
