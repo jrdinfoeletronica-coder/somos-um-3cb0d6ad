@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { lookupWorshipKey, getBestSongKey } from "@/lib/worshipKeys";
-import { initBackgroundAudioSettings, keepBackgroundAudioAlive, stopBackgroundAudio } from "@/lib/audio";
+import { initBackgroundAudioSettings, keepBackgroundAudioAlive, stopBackgroundAudio, getYoutubeAudioStreamUrl } from "@/lib/audio";
 import { 
   searchYoutubeVideoId, 
   getOfficialYoutubeUrl, 
@@ -158,27 +158,52 @@ export default function Playlists() {
 
     // 3. Resolve o videoId
     const directId = extractYoutubeVideoId(track.youtubeUrl);
+    let cancelled = false;
 
-    if (directId) {
-      // Tem URL direta: usa imediatamente
-      setResolvedVideoId(directId);
-    } else {
-      // Sem URL: busca no YouTube, com cancelamento se a música mudar
-      let cancelled = false;
-      searchYoutubeVideoId(`${track.artist || ''} ${track.title} oficial`).then(fetchedId => {
-        if (cancelled) return; // Ignorar se o usuário já trocou de música
-        if (fetchedId) {
-          setResolvedVideoId(fetchedId);
-        } else if (track.audioUrl) {
-          setAudioPreviewUrl(track.audioUrl);
-          toast.info("Tocando prévia de áudio.", { duration: 4000 });
-          setIsPlaying(true);
-        } else {
-          toast.error("Áudio indisponível para esta música.");
+    const resolveTrack = async () => {
+      let videoId = directId;
+
+      // Se não tem URL direta, busca no YouTube
+      if (!videoId) {
+        videoId = await searchYoutubeVideoId(`${track.artist || ''} ${track.title} oficial`);
+      }
+
+      if (cancelled) return;
+
+      if (videoId) {
+        // ★ ESTRATÉGIA PRINCIPAL: Extrair stream de áudio nativo do YouTube
+        // Isso permite tocar via <audio> tag = funciona com tela apagada!
+        try {
+          const streamUrl = await getYoutubeAudioStreamUrl(videoId);
+          if (cancelled) return;
+          
+          if (streamUrl) {
+            // Sucesso! Tocar via elemento <audio> nativo (background-safe)
+            setAudioPreviewUrl(streamUrl);
+            setResolvedVideoId(null); // NÃO usar iframe
+            setIsPlaying(true);
+            keepBackgroundAudioAlive();
+            return;
+          }
+        } catch (e) {
+          console.warn("Stream extraction failed, falling back to iframe", e);
         }
-      });
-      return () => { cancelled = true; };
-    }
+
+        if (cancelled) return;
+
+        // Fallback: usar iframe do YouTube (não funciona com tela apagada)
+        setResolvedVideoId(videoId);
+      } else if (track.audioUrl) {
+        setAudioPreviewUrl(track.audioUrl);
+        toast.info("Tocando prévia de áudio.", { duration: 4000 });
+        setIsPlaying(true);
+      } else {
+        toast.error("Áudio indisponível para esta música.");
+      }
+    };
+
+    resolveTrack();
+    return () => { cancelled = true; };
   }, [playerIndex, isPlayerOpen, playerQueue, playRequestId]);
 
   // Limpa o player do YouTube quando o componente (ou modal) for fechado, ou quando desmontar
@@ -1453,14 +1478,19 @@ export default function Playlists() {
                     style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px' }}
                   />
 
-                  {/* Fallback Áudio HTML5 */}
+                  {/* Áudio HTML5 nativo (funciona com tela apagada!) */}
                   {audioPreviewUrl && (
                     <audio
                       ref={audioRef}
                       src={audioPreviewUrl}
+                      autoPlay
+                      playsInline
                       onEnded={() => {
                         if (playerIndex < playerQueue.length - 1) setPlayerIndex(i => i + 1);
-                        else setIsPlaying(false);
+                        else {
+                          setIsPlaying(false);
+                          stopBackgroundAudio();
+                        }
                       }}
                     />
                   )}
