@@ -128,6 +128,46 @@ export default function Playlists() {
     }
   }, [isPlaying]);
 
+  // ── Media Session API ─────────────────────────────────────────────────────
+  // Registra o app como "player de mídia" no Android, evitando que o Samsung
+  // otimizador de bateria mate o Chrome com a tela apagada.
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return;
+    const track = playerQueue[playerIndex];
+    if (!track) return;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: track.title || "Música",
+      artist: track.artist || "Ministério",
+      album: "Somos Um",
+      artwork: [
+        { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
+        { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      ],
+    });
+
+    navigator.mediaSession.setActionHandler("play", () => {
+      keepBackgroundAudioAlive();
+      if (ytPlayerRef.current?.playVideo) ytPlayerRef.current.playVideo();
+      if (audioRef.current) audioRef.current.play().catch(() => {});
+      setIsPlaying(true);
+    });
+    navigator.mediaSession.setActionHandler("pause", () => {
+      if (ytPlayerRef.current?.pauseVideo) ytPlayerRef.current.pauseVideo();
+      if (audioRef.current) audioRef.current.pause();
+      stopBackgroundAudio();
+      setIsPlaying(false);
+    });
+    navigator.mediaSession.setActionHandler("nexttrack", () => {
+      setPlayerIndex(i => Math.min(playerQueue.length - 1, i + 1));
+    });
+    navigator.mediaSession.setActionHandler("previoustrack", () => {
+      setPlayerIndex(i => Math.max(0, i - 1));
+    });
+
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  }, [playerQueue, playerIndex, isPlaying]);
+
   // Efeito para configurar a música atual e buscar o videoId se necessário
   useEffect(() => {
     if (!isPlayerOpen || playerQueue.length === 0) return;
