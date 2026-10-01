@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin, Users, ChevronDown, ChevronUp } from "lucide-react";
+﻿import { Calendar, Clock, MapPin, Users, ChevronDown, ChevronUp, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -176,11 +176,11 @@ export function ScheduleCard({
           </div>
           {isSongsOpen && (
             <div className="space-y-1.5 pl-1 animate-in fade-in slide-in-from-top-2 duration-200">
-              {songs.map((song, index) => (
+              <Button variant="secondary" size="sm" className="w-full justify-start gap-2 mb-2 h-8 text-xs font-semibold" onClick={() => navigate('/playlists', { state: { playQueue: songs, startIndex: 0, listName: 'Repertório' } })}><Play className="w-3.5 h-3.5 fill-current" />Ouvir Repertório na Playlist</Button>{songs.map((song, index) => (
                 <div 
                   key={index} 
                   className="flex items-start gap-2 text-sm p-1.5 -ml-1.5 rounded-md hover:bg-secondary/50 cursor-pointer transition-colors"
-                  onClick={() => navigate('/repertorio', { state: { search: song.title } })}
+                  onClick={() => navigate('/playlists', { state: { playQueue: songs, startIndex: index, listName: 'Repertório' } })}
                   title="Ver detalhes no repertório"
                 >
                   <span className="text-muted-foreground font-mono text-xs w-4 mt-0.5">{index + 1}.</span>

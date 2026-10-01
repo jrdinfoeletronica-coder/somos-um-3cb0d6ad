@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { isBirthdayToday, calculateAge, getWhatsAppBirthdayLink, getGroupBirthdayMessage } from "@/lib/birthdays";
@@ -28,32 +28,58 @@ export function BirthdayBanner() {
 
   const todayBirthdays = members.filter(m => isBirthdayToday(m.birth_date));
 
-  if (todayBirthdays.length === 0) {
-    return null;
-  }
-
-  const handlePostToGroup = async (member: any) => {
+  const handlePostToGroup = async (member: any, auto = false) => {
     try {
-      const myName = localStorage.getItem("chat_my_name") || "Sistema";
       const messageText = getGroupBirthdayMessage(member.name);
+      
+      // Verifica se JÁ existe uma mensagem enviada hoje para este membro (evita duplicação)
+      const today = new Date().toISOString().split('T')[0];
+      const { data: existingMsgs } = await supabase
+        .from("messages")
+        .select("id")
+        .eq("sender_name", "🎂 Aniversários")
+        .eq("conversation_id", "group")
+        .ilike("content", `%${member.name}%`)
+        .gte("created_at", today);
+        
+      if (existingMsgs && existingMsgs.length > 0) {
+        setSentToGroup(prev => ({ ...prev, [member.id]: true }));
+        if (!auto) toast.info("Já enviamos uma mensagem para este aniversariante hoje!");
+        return;
+      }
 
-      const { error } = await supabase.from("chat_messages").insert([
+      const { error } = await supabase.from("messages").insert([
         {
-          sender_name: "🎉 Aniversários",
-          message: messageText,
-          channel: "geral"
+          sender_name: "🎂 Aniversários",
+          content: messageText,
+          conversation_id: "group"
         }
       ]);
 
       if (error) throw error;
 
       setSentToGroup(prev => ({ ...prev, [member.id]: true }));
-      toast.success(`Mensagem de parabéns enviada no canal da Comunicação!`);
+      if (!auto) toast.success(`Mensagem de parabéns enviada no canal da Comunicação!`);
     } catch (err: any) {
       console.error(err);
-      toast.error("Erro ao enviar mensagem no chat: " + err.message);
+      if (!auto) toast.error("Erro ao enviar mensagem no chat: " + err.message);
     }
   };
+
+  // Envio automático quando o banner carrega
+  useEffect(() => {
+    if (todayBirthdays.length > 0) {
+      todayBirthdays.forEach(member => {
+        if (!sentToGroup[member.id]) {
+          handlePostToGroup(member, true);
+        }
+      });
+    }
+  }, [todayBirthdays]);
+
+  if (todayBirthdays.length === 0) {
+    return null;
+  }
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 border border-amber-500/30 p-5 sm:p-6 shadow-lg animate-fade-in">
