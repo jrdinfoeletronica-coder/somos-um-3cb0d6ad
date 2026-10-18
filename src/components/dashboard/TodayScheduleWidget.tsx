@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { sortScheduleMembers } from '@/lib/scheduleRoles';
 
 export function TodayScheduleWidget() {
   const [todaySchedules, setTodaySchedules] = useState<any[]>([]);
@@ -51,7 +52,7 @@ export function TodayScheduleWidget() {
         <div key={schedule.id} className="mb-3 last:mb-0">
           <h3 className="font-semibold text-sm mb-2 text-foreground">{schedule.event}</h3>
           <div className="flex gap-2 flex-wrap">
-            {(schedule.schedule_members || []).map((sm: any, idx: number) => {
+            {sortScheduleMembers(schedule.schedule_members || []).map((sm: any, idx: number) => {
               const matchedMember = allMembers.find(m => m.name === sm.member_name);
               return (
                 <div key={idx} className="flex items-center bg-background px-3 py-1.5 rounded-full shadow-sm text-xs font-medium border border-border/50">

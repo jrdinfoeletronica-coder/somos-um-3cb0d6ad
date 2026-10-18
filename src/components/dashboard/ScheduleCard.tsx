@@ -1,9 +1,10 @@
-﻿import { Calendar, Clock, MapPin, Users, ChevronDown, ChevronUp, Play } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, ChevronDown, ChevronUp, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
+import { sortScheduleMembers } from "@/lib/scheduleRoles";
 
 interface ScheduleCardProps {
   id?: string;
@@ -72,6 +73,7 @@ export function ScheduleCard({
 
   const safeStatus = status || "pending";
   const currentStatus = statusConfig[safeStatus] || statusConfig["pending"];
+  const sortedMembers = sortScheduleMembers(members);
 
   return (
     <div className={cn("card-church p-5 flex flex-col h-full space-y-4 relative overflow-hidden group border-[1.5px]", currentStatus.border)}>
@@ -121,13 +123,13 @@ export function ScheduleCard({
         >
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-accent" />
-            <span>Equipe ({members.length})</span>
+            <span>Equipe ({sortedMembers.length})</span>
           </div>
           {isMembersOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
         {isMembersOpen && (
           <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-            {members.map((member, index) => (
+            {sortedMembers.map((member, index) => (
               <div
                 key={index}
                 className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-lg"

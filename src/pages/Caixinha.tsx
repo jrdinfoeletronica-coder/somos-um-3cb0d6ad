@@ -25,6 +25,7 @@ export default function Caixinha() {
   const queryClient = useQueryClient();
   const userRole = localStorage.getItem("userRole") || "viewer";
   const memberId = localStorage.getItem("member_id");
+  const myName = localStorage.getItem("chat_my_name") || "";
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -37,16 +38,34 @@ export default function Caixinha() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   const { data: currentUser } = useQuery({
-    queryKey: ["currentUser", memberId],
+    queryKey: ["currentUser", memberId, myName],
     queryFn: async () => {
-      if (!memberId) return null;
-      const { data } = await supabase.from("members").select("is_treasurer").eq("id", memberId).single();
-      return data;
+      if (memberId) {
+        const { data } = await supabase
+          .from("members")
+          .select("id, is_treasurer, roles, access_level")
+          .eq("id", memberId)
+          .maybeSingle();
+        if (data) return data;
+      }
+      if (myName) {
+        const { data } = await supabase
+          .from("members")
+          .select("id, is_treasurer, roles, access_level")
+          .ilike("name", myName)
+          .maybeSingle();
+        if (data?.id) localStorage.setItem("member_id", data.id);
+        return data;
+      }
+      return null;
     },
-    enabled: !!memberId
+    enabled: !!(memberId || myName)
   });
 
-  const isTreasurer = currentUser?.is_treasurer || false;
+  const isTreasurer = 
+    currentUser?.is_treasurer || 
+    currentUser?.roles?.some((r: string) => r.toLowerCase().includes("tesour")) || 
+    false;
   const canManage = userRole === "admin" || isTreasurer;
 
   const { data: transactions = [], isLoading } = useQuery({
@@ -91,15 +110,34 @@ export default function Caixinha() {
         }
       }
 
-      const { error } = await supabase.from("transactions").insert([{
-        description: formData.description,
+      const payload: any = {
+        description: formData.description.trim(),
         amount: amountNum,
         type: formData.type,
         category: formData.category,
         date: formData.date,
-        member_id: memberId || null,
-        receipt_url
-      }]);
+        member_id: memberId || currentUser?.id || null,
+      };
+
+      if (receipt_url) {
+        payload.receipt_url = receipt_url;
+      }
+
+      let { error } = await supabase.from("transactions").insert([payload]);
+
+      // Fallback caso a coluna receipt_url não exista na tabela do Supabase
+      if (error && (error.message?.toLowerCase().includes("receipt_url") || error.code === "PGRST204" || error.code === "42703")) {
+        delete payload.receipt_url;
+        const res = await supabase.from("transactions").insert([payload]);
+        error = res.error;
+      }
+
+      // Fallback caso a coluna member_id não exista
+      if (error && (error.message?.toLowerCase().includes("member_id") || error.code === "PGRST204" || error.code === "42703")) {
+        delete payload.member_id;
+        const res = await supabase.from("transactions").insert([payload]);
+        error = res.error;
+      }
 
       if (error) throw error;
     },

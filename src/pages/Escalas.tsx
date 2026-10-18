@@ -34,6 +34,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { getTransposeHint } from "@/lib/transpose";
+import { sortScheduleMembers } from "@/lib/scheduleRoles";
 
 export default function Escalas() {
   const [currentMonth, setCurrentMonth] = useState("Junho 2026");
@@ -122,11 +123,11 @@ export default function Escalas() {
       if (error) throw error;
       return (data || []).map((s: any) => ({
         ...s,
-        members: s.schedule_members?.map((m: any) => ({
+        members: sortScheduleMembers(s.schedule_members?.map((m: any) => ({
           name: m.member_name,
           role: m.role,
           status: m.status
-        })) || [],
+        })) || []),
         songs: s.schedule_songs?.map((songRow: any) => ({
           id: songRow.song_id,
           title: songRow.songs?.title,
@@ -334,7 +335,7 @@ export default function Escalas() {
   const handleOpenEditSchedule = (schedule: any) => {
     resetForm();
     setEditingSchedule(schedule);
-    setAssignedMembers(schedule.members || []);
+    setAssignedMembers(sortScheduleMembers(schedule.members || []));
     setAssignedSongs(schedule.songs || []);
     setFormData({
       date: schedule.date,
@@ -501,7 +502,7 @@ export default function Escalas() {
             membersForDay.push({ name: m.name, role: req.role, phone: m.phone });
           }
         }
-        result.push({ date: sched.date, event: sched.event, time: sched.time, location: sched.location, members: membersForDay });
+        result.push({ date: sched.date, event: sched.event, time: sched.time, location: sched.location, members: sortScheduleMembers(membersForDay) });
       }
     }
     setPreviewData(result);
@@ -573,7 +574,10 @@ export default function Escalas() {
       toast.error("Integrante já está nesta função.");
       return;
     }
-    setAssignedMembers([...assignedMembers, { name: selectedMemberName, role: selectedMemberRole }]);
+    setAssignedMembers(sortScheduleMembers([
+      ...assignedMembers,
+      { name: selectedMemberName, role: selectedMemberRole }
+    ]));
     setSelectedMemberRole("");
   };
 
@@ -634,7 +638,7 @@ export default function Escalas() {
     text += `⏰ ${new Date(schedule.date + 'T12:00:00').toLocaleDateString('pt-BR')} às ${schedule.time}\n\n`;
     
     text += `*Equipe:*\n`;
-    schedule.members.forEach((m: any) => {
+    sortScheduleMembers(schedule.members || []).forEach((m: any) => {
       text += `- ${m.name} (${m.role})\n`;
     });
 
