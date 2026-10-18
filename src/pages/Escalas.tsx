@@ -24,8 +24,11 @@ import {
   MessageSquare,
   Eye,
   Send,
-  X
+  X,
+  Search,
+  Check
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -89,6 +92,8 @@ export default function Escalas() {
   // Repertório
   const [assignedSongs, setAssignedSongs] = useState<{ id: string; title: string; artist: string }[]>([]);
   const [selectedSongId, setSelectedSongId] = useState("");
+  const [songSearchQuery, setSongSearchQuery] = useState("");
+  const [showAllSongs, setShowAllSongs] = useState(false);
 
   // Buscar escalas e limpar escalas antigas automaticamente
   const { data: schedules = [], isLoading } = useQuery({
@@ -310,6 +315,8 @@ export default function Escalas() {
     setSelectedMemberRole("");
     setAssignedSongs([]);
     setSelectedSongId("");
+    setSongSearchQuery("");
+    setShowAllSongs(false);
     setFormData({
       date: "",
       time: "",
@@ -575,6 +582,26 @@ export default function Escalas() {
   };
 
   // Funções de Repertório
+  const handleAddSongDirect = (song: any) => {
+    if (!song) return;
+
+    if (assignedSongs.some((s) => s.id === song.id)) {
+      toast.error("Esta música já está no repertório.");
+      return;
+    }
+
+    setAssignedSongs((prev) => [...prev, { id: song.id, title: song.title, artist: song.artist }]);
+    toast.success(`"${song.title}" adicionada ao repertório!`);
+  };
+
+  const filteredAvailableSongs = songs.filter((s: any) => {
+    if (!songSearchQuery.trim()) return false;
+    const q = songSearchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const title = (s.title || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const artist = (s.artist || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return title.includes(q) || artist.includes(q);
+  });
+
   const handleAddSongToSchedule = () => {
     if (!selectedSongId) {
       toast.error("Selecione uma música.");
@@ -962,25 +989,179 @@ export default function Escalas() {
               {activeTab === "repertorio" && (
                 <div className="space-y-6 animate-fade-in">
                   <div className="p-4 bg-secondary/20 rounded-xl border border-border space-y-3">
-                    <h4 className="text-sm font-semibold flex items-center gap-2">
-                      <Music className="w-4 h-4 text-accent" />
-                      Adicionar Música
-                    </h4>
-                    <div className="flex gap-3">
-                      <select
-                        value={selectedSongId}
-                        onChange={(e) => setSelectedSongId(e.target.value)}
-                        className="flex-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
-                      >
-                        <option value="">Selecione a música no acervo...</option>
-                        {songs.map((s: any) => (
-                          <option key={s.id} value={s.id}>{s.title} - {s.artist}</option>
-                        ))}
-                      </select>
-                      <Button onClick={handleAddSongToSchedule} variant="soft" className="h-10 shrink-0">
-                        Incluir
-                      </Button>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold flex items-center gap-2">
+                        <Music className="w-4 h-4 text-accent" />
+                        Adicionar Música ao Repertório
+                      </h4>
+                      {songs.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowAllSongs(!showAllSongs);
+                            if (!showAllSongs) setSongSearchQuery("");
+                          }}
+                          className="text-xs text-accent hover:underline flex items-center gap-1 font-medium"
+                        >
+                          {showAllSongs ? "Ocultar lista completa" : `Ver todas (${songs.length})`}
+                        </button>
+                      )}
                     </div>
+
+                    {/* Campo de Busca de Louvor */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Buscar louvor pelo nome ou cantor..."
+                        value={songSearchQuery}
+                        onChange={(e) => {
+                          setSongSearchQuery(e.target.value);
+                          if (e.target.value) setShowAllSongs(false);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (filteredAvailableSongs.length > 0) {
+                              const firstUnassigned = filteredAvailableSongs.find(
+                                (s: any) => !assignedSongs.some((as) => as.id === s.id)
+                              );
+                              if (firstUnassigned) {
+                                handleAddSongDirect(firstUnassigned);
+                              } else {
+                                toast.info("Todas as músicas encontradas já foram adicionadas.");
+                              }
+                            }
+                          }
+                        }}
+                        className="pl-9 pr-8 h-10 bg-background text-sm"
+                        autoFocus
+                      />
+                      {songSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSongSearchQuery("")}
+                          className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground p-0.5 rounded-full"
+                          title="Limpar busca"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Resultados da busca ou acervo completo */}
+                    {songSearchQuery.trim() ? (
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] text-muted-foreground font-medium">
+                          {filteredAvailableSongs.length} {filteredAvailableSongs.length === 1 ? "louvor encontrado" : "louvores encontrados"}:
+                        </p>
+                        {filteredAvailableSongs.length === 0 ? (
+                          <div className="p-4 text-center border border-dashed border-border/70 rounded-lg text-xs text-muted-foreground">
+                            Nenhum louvor encontrado com "{songSearchQuery}".
+                          </div>
+                        ) : (
+                          <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+                            {filteredAvailableSongs.map((s: any) => {
+                              const isAlreadyAssigned = assignedSongs.some((as) => as.id === s.id);
+                              return (
+                                <div
+                                  key={s.id}
+                                  className={cn(
+                                    "flex items-center justify-between p-2.5 rounded-lg text-sm border transition-all",
+                                    isAlreadyAssigned
+                                      ? "bg-secondary/40 border-border/40 opacity-75"
+                                      : "bg-card border-border/60 hover:border-accent/40 hover:bg-secondary/20 shadow-sm"
+                                  )}
+                                >
+                                  <div className="min-w-0 flex-1 mr-2">
+                                    <p className="font-semibold text-foreground text-xs sm:text-sm truncate">
+                                      {s.title}
+                                    </p>
+                                    <p className="text-[11px] text-muted-foreground truncate flex items-center gap-2 mt-0.5">
+                                      <span>{s.artist || "Autor Desconhecido"}</span>
+                                      {s.key && (
+                                        <span className="px-1.5 py-0.5 bg-accent/10 text-accent rounded font-bold text-[9px]">
+                                          Tom: {s.key}
+                                        </span>
+                                      )}
+                                    </p>
+                                  </div>
+                                  {isAlreadyAssigned ? (
+                                    <span className="text-xs text-green-500 font-medium flex items-center gap-1 shrink-0 px-2 py-1">
+                                      <Check className="w-3.5 h-3.5" /> Incluída
+                                    </span>
+                                  ) : (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="soft"
+                                      className="h-7 text-xs px-2.5 shrink-0"
+                                      onClick={() => handleAddSongDirect(s)}
+                                    >
+                                      <Plus className="w-3.5 h-3.5 mr-1" /> Incluir
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ) : showAllSongs ? (
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] text-muted-foreground font-medium">Todas as músicas ({songs.length}):</p>
+                        <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+                          {songs.map((s: any) => {
+                            const isAlreadyAssigned = assignedSongs.some((as) => as.id === s.id);
+                            return (
+                              <div
+                                key={s.id}
+                                className={cn(
+                                  "flex items-center justify-between p-2.5 rounded-lg text-sm border transition-all",
+                                  isAlreadyAssigned
+                                    ? "bg-secondary/40 border-border/40 opacity-75"
+                                    : "bg-card border-border/60 hover:border-accent/40 hover:bg-secondary/20 shadow-sm"
+                                )}
+                              >
+                                <div className="min-w-0 flex-1 mr-2">
+                                  <p className="font-semibold text-foreground text-xs sm:text-sm truncate">
+                                    {s.title}
+                                  </p>
+                                  <p className="text-[11px] text-muted-foreground truncate flex items-center gap-2 mt-0.5">
+                                    <span>{s.artist || "Autor Desconhecido"}</span>
+                                    {s.key && (
+                                      <span className="px-1.5 py-0.5 bg-accent/10 text-accent rounded font-bold text-[9px]">
+                                        Tom: {s.key}
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                                {isAlreadyAssigned ? (
+                                  <span className="text-xs text-green-500 font-medium flex items-center gap-1 shrink-0 px-2 py-1">
+                                    <Check className="w-3.5 h-3.5" /> Incluída
+                                  </span>
+                                ) : (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="soft"
+                                    className="h-7 text-xs px-2.5 shrink-0"
+                                    onClick={() => handleAddSongDirect(s)}
+                                  >
+                                    <Plus className="w-3.5 h-3.5 mr-1" /> Incluir
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 text-center border border-dashed border-border/70 rounded-lg text-xs text-muted-foreground">
+                        <Search className="w-4 h-4 mx-auto mb-1 opacity-50" />
+                        Digite o nome do louvor ou cantor acima para buscar no acervo ({songs.length} músicas cadastradas)
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-3">
